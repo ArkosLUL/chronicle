@@ -764,6 +764,8 @@ export interface ReusableResourceChange {
   amount: number;
   resourceType: string;
   direction: string;
+  spellId: number | null;
+  spellAttackOutcome: number | null;
   overResource: number;
   activity: ReusableActivityEntry[];
   activityCount: number;
@@ -797,6 +799,8 @@ export class ResourceChangeDecoder {
     amount: 0,
     resourceType: "",
     direction: "",
+    spellId: null,
+    spellAttackOutcome: null,
     overResource: 0,
     activity: [],
     activityCount: 0,
@@ -820,6 +824,8 @@ export class ResourceChangeDecoder {
     msg.amount = 0;
     msg.resourceType = "";
     msg.direction = "";
+    msg.spellId = null;
+    msg.spellAttackOutcome = null;
     msg.overResource = 0;
     msg.activityCount = 0;
     msg.isSynthetic = false;
@@ -899,6 +905,22 @@ export class ResourceChangeDecoder {
         } else if (fieldNumber === 8) {
           msg.direction = this.textDecoder.decode(data.subarray(offset, offset + len));
           offset += len;
+        } else if (fieldNumber === 9) {
+          const spellEnd = offset + len;
+          while (offset < spellEnd) {
+            const spellTag = data[offset++];
+            const spellField = spellTag >> 3;
+            const spellWire = spellTag & 0x7;
+            if (spellWire === 0) {
+              const { value, bytesRead } = readVarintFast(data, offset);
+              offset += bytesRead;
+              if (spellField === 1) msg.spellId = value;
+              else if (spellField === 3) msg.spellAttackOutcome = value;
+            } else if (spellWire === 2) {
+              const { value: spellLen, bytesRead } = readVarintFast(data, offset);
+              offset += bytesRead + spellLen;
+            }
+          }
         } else {
           offset += len;
         }
@@ -1048,6 +1070,8 @@ export interface ReusableExtraAttack {
   target: string;
   amount: number;
   sourceName: string;
+  spellId: number | null;
+  spellAttackOutcome: number | null;
   activity: ReusableActivityEntry[];
   activityCount: number;
   isSynthetic: boolean;
@@ -1061,6 +1085,7 @@ export interface ReusableExtraAttack {
  *   2: target (string)
  *   3: amount (int32)
  *   5: sourceName (string)
+ *   6: spellData (SpellData) - nested: 1=id, 2=name, 3=attack_outcome
  */
 export class ExtraAttackDecoder {
   // Use shared TextDecoder for better memory efficiency
@@ -1074,6 +1099,8 @@ export class ExtraAttackDecoder {
     target: "",
     amount: 0,
     sourceName: "",
+    spellId: null,
+    spellAttackOutcome: null,
     activity: [],
     activityCount: 0,
     isSynthetic: false,
@@ -1093,6 +1120,8 @@ export class ExtraAttackDecoder {
     msg.target = "";
     msg.amount = 0;
     msg.sourceName = "";
+    msg.spellId = null;
+    msg.spellAttackOutcome = null;
     msg.activityCount = 0;
     msg.isSynthetic = false;
     
@@ -1155,6 +1184,22 @@ export class ExtraAttackDecoder {
         } else if (fieldNumber === 5) {
           msg.sourceName = this.textDecoder.decode(data.subarray(offset, offset + len));
           offset += len;
+        } else if (fieldNumber === 6) {
+          const spellEnd = offset + len;
+          while (offset < spellEnd) {
+            const spellTag = data[offset++];
+            const spellField = spellTag >> 3;
+            const spellWire = spellTag & 0x7;
+            if (spellWire === 0) {
+              const { value, bytesRead } = readVarintFast(data, offset);
+              offset += bytesRead;
+              if (spellField === 1) msg.spellId = value;
+              else if (spellField === 3) msg.spellAttackOutcome = value;
+            } else if (spellWire === 2) {
+              const { value: spellLen, bytesRead } = readVarintFast(data, offset);
+              offset += bytesRead + spellLen;
+            }
+          }
         } else {
           offset += len;
         }
@@ -1310,6 +1355,8 @@ export interface ReusableAttributionDamage {
   hitType: number;
   amount: number;
   school: number;
+  spellId: number | null;
+  spellAttackOutcome: number | null;
 }
 
 /**
@@ -1343,6 +1390,7 @@ export interface ReusableSlain {
  *   6: hitType (uint32)
  *   7: amount (int32)
  *   8: school (School enum)
+ *   10: spellData (SpellData) - nested: 1=id, 2=name, 3=attack_outcome
  */
 export class SlainDecoder {
   // Use shared TextDecoder for better memory efficiency
@@ -1355,6 +1403,8 @@ export class SlainDecoder {
     hitType: 0,
     amount: 0,
     school: 0,
+    spellId: null,
+    spellAttackOutcome: null,
   };
   
   /** Reusable message - mutated on each decode */
@@ -1454,6 +1504,8 @@ export class SlainDecoder {
           attr.hitType = 0;
           attr.amount = 0;
           attr.school = 0;
+          attr.spellId = null;
+          attr.spellAttackOutcome = null;
           
           const attrEnd = offset + len;
           while (offset < attrEnd) {
@@ -1474,11 +1526,30 @@ export class SlainDecoder {
               offset += bytesRead;
               if (attrField === 3) {
                 attr.caster = this.textDecoder.decode(data.subarray(offset, offset + attrLen));
+                offset += attrLen;
               } else if (attrField === 4) {
                 attr.sourceName = this.textDecoder.decode(data.subarray(offset, offset + attrLen));
+                offset += attrLen;
+              } else if (attrField === 10) {
+                const spellEnd = offset + attrLen;
+                while (offset < spellEnd) {
+                  const spellTag = data[offset++];
+                  const spellField = spellTag >> 3;
+                  const spellWire = spellTag & 0x7;
+                  if (spellWire === 0) {
+                    const { value, bytesRead } = readVarintFast(data, offset);
+                    offset += bytesRead;
+                    if (spellField === 1) attr.spellId = value;
+                    else if (spellField === 3) attr.spellAttackOutcome = value;
+                  } else if (spellWire === 2) {
+                    const { value: spellLen, bytesRead } = readVarintFast(data, offset);
+                    offset += bytesRead + spellLen;
+                  }
+                }
+              } else {
+                // Skip field 5 (target) and field 1 (meta) - not needed for attribution
+                offset += attrLen;
               }
-              // Skip field 5 (target) and field 1 (meta) - not needed for attribution
-              offset += attrLen;
             }
           }
           msg.attribution = attr;

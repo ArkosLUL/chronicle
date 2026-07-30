@@ -1,7 +1,7 @@
 import { create, toBinary } from '@bufbuild/protobuf';
-import { ConsumeSchema, EventMetaSchema, EvidenceConfidence, EvidenceKind, ResurrectionSchema, SpellDataSchema } from '@/api/proto/chronicle_pb';
+import { ConsumeSchema, DamageSchema, EventMetaSchema, EvidenceConfidence, EvidenceKind, ExtraAttackSchema, ResourceChangeSchema, ResurrectionSchema, SlainSchema, SpellDataSchema } from '@/api/proto/chronicle_pb';
 import { describe, it, expect } from 'vitest';
-import { AuraDecoder, FastConsumeCursor, FastResurrectionCursor, readVarint, readVarint64, parseAllHeaders } from './decode';
+import { AuraDecoder, FastConsumeCursor, FastExtraAttackCursor, FastResourceChangeCursor, FastResurrectionCursor, FastSlainCursor, readVarint, readVarint64, parseAllHeaders } from './decode';
 
 describe('readVarint', () => {
   it('reads single-byte varints', () => {
@@ -71,6 +71,92 @@ describe('readVarint64', () => {
     // More than 10 bytes with continuation bits
     const data = new Uint8Array([0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80]);
     expect(() => readVarint64(data, 0)).toThrow('Varint too long');
+  });
+});
+
+describe('FastExtraAttackCursor', () => {
+  it('decodes extra-attack spell data', () => {
+    const message = create(ExtraAttackSchema, {
+      meta: create(EventMetaSchema, { index: 10, offsetMilli: 2750n }),
+      target: '0xTARGET',
+      amount: 2,
+      sourceName: 'Windfury Attack',
+      spellData: create(SpellDataSchema, { id: 25504, name: 'Windfury Attack', attackOutcome: 7 }),
+    });
+    const encoded = toBinary(ExtraAttackSchema, message);
+    const messageData = new Uint8Array([...encodeVarint(encoded.length), ...encoded]);
+    const payload = buildPayload('encounter', 1706000000000n, 1, messageData.length, messageData);
+
+    const cursor = new FastExtraAttackCursor(payload);
+
+    expect(cursor.next()).toMatchObject({
+      type: 'extra_attack',
+      sourceName: 'Windfury Attack',
+      spellId: 25504,
+      spellAttackOutcome: 7,
+    });
+  });
+});
+
+describe('FastResourceChangeCursor', () => {
+  it('decodes resource spell data', () => {
+    const message = create(ResourceChangeSchema, {
+      meta: create(EventMetaSchema, { index: 9, offsetMilli: 2500n }),
+      caster: '0xSOURCE',
+      target: '0xTARGET',
+      sourceName: 'Mana Tide Totem',
+      amount: 120,
+      overResource: 20,
+      resourceType: 'Mana',
+      direction: 'Gain',
+      spellData: create(SpellDataSchema, { id: 16190, name: 'Mana Tide Totem', attackOutcome: 7 }),
+    });
+    const encoded = toBinary(ResourceChangeSchema, message);
+    const messageData = new Uint8Array([...encodeVarint(encoded.length), ...encoded]);
+    const payload = buildPayload('encounter', 1706000000000n, 1, messageData.length, messageData);
+
+    const cursor = new FastResourceChangeCursor(payload);
+
+    expect(cursor.next()).toMatchObject({
+      type: 'resource_change',
+      sourceName: 'Mana Tide Totem',
+      resourceType: 'Mana',
+      spellId: 16190,
+      spellAttackOutcome: 7,
+    });
+  });
+});
+
+describe('FastSlainCursor', () => {
+  it('decodes attribution spell data', () => {
+    const attribution = create(DamageSchema, {
+      caster: '0xSOURCE',
+      sourceName: 'Shadow Bolt',
+      target: '0xTARGET',
+      amount: 900,
+      school: 6,
+      spellData: create(SpellDataSchema, { id: 11659, name: 'Shadow Bolt', attackOutcome: 7 }),
+    });
+    const message = create(SlainSchema, {
+      meta: create(EventMetaSchema, { index: 11, offsetMilli: 3000n }),
+      target: '0xTARGET',
+      caster: '0xSOURCE',
+      attribution,
+    });
+    const encoded = toBinary(SlainSchema, message);
+    const messageData = new Uint8Array([...encodeVarint(encoded.length), ...encoded]);
+    const payload = buildPayload('encounter', 1706000000000n, 1, messageData.length, messageData);
+
+    const cursor = new FastSlainCursor(payload);
+
+    expect(cursor.next()).toMatchObject({
+      type: 'slain',
+      attribution: {
+        sourceName: 'Shadow Bolt',
+        spellId: 11659,
+        spellAttackOutcome: 7,
+      },
+    });
   });
 });
 

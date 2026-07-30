@@ -97,6 +97,8 @@ export interface ResourceChangeProcessorEvent extends EventMeta {
   amount: number;
   overResource: number;
   resourceType: string;
+  spellId: number | null;
+  spellAttackOutcome: number | null;
   direction: string;
 }
 
@@ -109,6 +111,8 @@ export interface ExtraAttackProcessorEvent extends EventMeta {
   target: string;  // The player who gained extra attacks
   amount: number;  // Number of extra attacks granted
   sourceName: string;  // Name of the ability that granted extra attacks
+  spellId: number | null;
+  spellAttackOutcome: number | null;
 }
 
 /**
@@ -121,6 +125,8 @@ export interface AttributionDamage {
   hitType: number;
   amount: number;
   school: number;
+  spellId?: number | null;
+  spellAttackOutcome?: number | null;
 }
 
 /**
@@ -338,6 +344,7 @@ export interface AbsorbedProcessorEvent extends EventMeta {
   absorbSpellName: string | null;
   absorbSchool: number;          // School of the absorb spell
   amount: number;                // Damage absorbed
+  estimated: boolean;            // Attribution was inferred rather than reported directly
 }
 
 export interface CompanionStatsProcessorEvent extends EventMeta {

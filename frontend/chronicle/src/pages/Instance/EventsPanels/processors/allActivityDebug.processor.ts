@@ -2,7 +2,7 @@
  * All Activity Debug processor - stores raw events for debugging stream interleaving
  */
 
-import type { DamageProcessorEvent, HealProcessorEvent, PanelProcessor, ProcessorContext, ResourceChangeProcessorEvent, CastProcessorEvent, CastAction, AuraProcessorEvent, AuraApplication, SlainProcessorEvent, ResurrectionProcessorEvent, SpellGoProcessorEvent, AuraCastProcessorEvent, SpellStartProcessorEvent, ExtraAttackProcessorEvent, UnitClassificationProcessorEvent, CombatantInfoProcessorEvent, DispelProcessorEvent, ConsumeProcessorEvent } from "../processorTypes";
+import type { AbsorbedProcessorEvent, AuraApplication, AuraCastProcessorEvent, AuraProcessorEvent, CastAction, CastProcessorEvent, CombatantInfoProcessorEvent, ConsumeProcessorEvent, DamageProcessorEvent, DispelProcessorEvent, ExtraAttackProcessorEvent, HealProcessorEvent, InterruptProcessorEvent, PanelProcessor, ProcessorContext, ResourceChangeProcessorEvent, ResurrectionProcessorEvent, SlainProcessorEvent, SpellFailProcessorEvent, SpellGoProcessorEvent, SpellStartProcessorEvent, UnitClassificationProcessorEvent } from "../processorTypes";
 import type { StreamType } from "@/hooks/instanceEvents";
 import { hitTypeNames } from "@/lib/hittype/hittype";
 
@@ -32,6 +32,11 @@ export interface DamageTrailerInfo {
   labels: string[];
 }
 
+export interface DebugEntityPresentation {
+  className?: string;
+  isEnemy?: boolean;
+}
+
 export interface RawDebugEvent {
   index: number;
   offsetMilli: number;
@@ -40,8 +45,12 @@ export interface RawDebugEvent {
   streamType: StreamType;
   caster: string;
   casterName: string;
+  sourceClass?: string;
+  sourceIsEnemy?: boolean;
   sourceName: string;
   target: string | null;
+  targetClass?: string;
+  targetIsEnemy?: boolean;
   targetName: string;
   amount: number;
   resourceType?: ResourceType; // For resource_change events
@@ -59,8 +68,13 @@ export interface RawDebugEvent {
   // Debug annotations (when WithDebug is enabled during reparse)
   // Can have multiple activity entries per event
   activityEvents?: ActivityEventInfo[];
-  // Combatant info gear (for hover tooltip)
+  // Combatant info gear (shown in the expanded row)
   gear?: { itemId: number; enchantId: number | null; temporaryEnchantId: number | null }[];
+  /** Diagnostic state that deserves a compact flag in the timeline. */
+  flags?: string[];
+  /** Additional actors or identifiers that do not fit the source/action/target columns. */
+  details?: { label: string; value: string }[];
+  isSynthetic: boolean;
 }
 
 /**
@@ -89,14 +103,35 @@ export interface AllActivityDebugState {
 }
 
 // This processor handles every stream exposed by the debug panel.
-type AllActivityEvent = DamageProcessorEvent | HealProcessorEvent | ResourceChangeProcessorEvent | CastProcessorEvent | AuraProcessorEvent | SlainProcessorEvent | ResurrectionProcessorEvent | SpellGoProcessorEvent | AuraCastProcessorEvent | SpellStartProcessorEvent | ExtraAttackProcessorEvent | UnitClassificationProcessorEvent | CombatantInfoProcessorEvent | DispelProcessorEvent | ConsumeProcessorEvent;
+type AllActivityEvent = DamageProcessorEvent | HealProcessorEvent | ResourceChangeProcessorEvent | CastProcessorEvent | AuraProcessorEvent | SlainProcessorEvent | ResurrectionProcessorEvent | SpellGoProcessorEvent | AuraCastProcessorEvent | SpellStartProcessorEvent | SpellFailProcessorEvent | ExtraAttackProcessorEvent | UnitClassificationProcessorEvent | CombatantInfoProcessorEvent | DispelProcessorEvent | InterruptProcessorEvent | AbsorbedProcessorEvent | ConsumeProcessorEvent;
+
+const SCHOOL_NAMES = ["Unknown", "None", "Physical", "Holy", "Fire", "Nature", "Frost", "Shadow", "Arcane"];
+
+function schoolName(school: number): string {
+  return SCHOOL_NAMES[school] ?? `School ${school}`;
+}
+
+function outcomeLabels(hitType: number): string[] {
+  return hitTypeNames(hitType).filter((label) => label !== "None");
+}
+
+function entityPresentation(guid: string | null, context: ProcessorContext): DebugEntityPresentation {
+  if (!guid) return {};
+  const player = context.players[guid];
+  if (player) return { className: player.class };
+
+  const unit = context.units?.[guid];
+  if (!unit) return {};
+  const isPlayerPet = context.unitState?.isPlayerPet(guid) ?? (unit.owner ? Boolean(context.players[unit.owner]) : false);
+  return { isEnemy: !isPlayerPet };
+}
 
 // Default page size if no pagination specified
 const DEFAULT_PAGE_SIZE = 100;
 
 export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActivityEvent> = {
   id: "all_activity",
-  streams: ["damage", "heal", "resource_change", "aura", "slain", "ressurection", "spell_go", "spell_start", "aura_cast", "extra_attack", "unit_classification", "combatant_info", "dispel", "consume"],
+  streams: ["damage", "heal", "resource_change", "aura", "slain", "ressurection", "spell_go", "spell_start", "spell_fail", "aura_cast", "extra_attack", "unit_classification", "combatant_info", "dispel", "interrupt", "absorbed", "consume"],
   
   createState: () => ({
     counts: new Map<string, number>(),
@@ -153,7 +188,7 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
     const { entitySelection } = context;
     // Aura events only have target, cast events have caster but may not have target.
     // Combatant info events use "guid" instead of caster/target.
-    const eventCaster = "caster" in event ? event.caster : ("source" in event ? event.source : ("guid" in event ? event.guid : ("player" in event ? event.player : "")));
+    const eventCaster = "attacker" in event ? event.attacker : ("caster" in event ? event.caster : ("source" in event ? event.source : ("guid" in event ? event.guid : ("player" in event ? event.player : ""))));
     const eventTarget = "target" in event ? event.target : ("guid" in event ? event.guid : "");
     if (entitySelection.playerIds.size > 0) {
       if(!(entitySelection.playerIds.has(eventCaster) || (eventTarget && entitySelection.playerIds.has(eventTarget)))) {
@@ -203,6 +238,14 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
       } else if (streamType === "spell_start") {
         const spellStartEvent = event as SpellStartProcessorEvent;
         abilityName = spellStartEvent.spell.name;
+      } else if (streamType === "spell_fail") {
+        const spellFailEvent = event as SpellFailProcessorEvent;
+        abilityName = spellFailEvent.spell.name;
+      } else if (streamType === "interrupt") {
+        abilityName = (event as InterruptProcessorEvent).spellName;
+      } else if (streamType === "absorbed") {
+        const absorbedEvent = event as AbsorbedProcessorEvent;
+        abilityName = absorbedEvent.absorbSpellName ?? absorbedEvent.damageSpellName ?? "Absorbed";
       } else if (streamType === "extra_attack") {
         const extraEvent = event as ExtraAttackProcessorEvent;
         abilityName = extraEvent.sourceName;
@@ -326,6 +369,18 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
       const spellStartEvent = event as SpellStartProcessorEvent;
       sourceName = spellStartEvent.spell.name;
       amount = 0;
+    } else if (streamType === "spell_fail") {
+      const spellFailEvent = event as SpellFailProcessorEvent;
+      sourceName = spellFailEvent.spell.name;
+      amount = 0;
+    } else if (streamType === "interrupt") {
+      const interruptEvent = event as InterruptProcessorEvent;
+      sourceName = interruptEvent.spellName;
+      amount = 0;
+    } else if (streamType === "absorbed") {
+      const absorbedEvent = event as AbsorbedProcessorEvent;
+      sourceName = absorbedEvent.absorbSpellName ?? "Absorb";
+      amount = absorbedEvent.amount;
     } else if (streamType === "extra_attack") {
       const extraEvent = event as ExtraAttackProcessorEvent;
       sourceName = extraEvent.sourceName;
@@ -369,6 +424,9 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
       }
     }
     
+    const sourcePresentation = entityPresentation(eventCaster, context);
+    const targetPresentation = entityPresentation(eventTarget, context);
+
     const rawEvent: RawDebugEvent = {
       index: event.index,
       offsetMilli: event.offsetMilli,
@@ -376,22 +434,46 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
       encounterID,
       streamType,
       caster: eventCaster,
+      sourceClass: sourcePresentation.className,
+      sourceIsEnemy: sourcePresentation.isEnemy,
       casterName,
       sourceName,
       target: eventTarget,
+      targetClass: targetPresentation.className,
+      targetIsEnemy: targetPresentation.isEnemy,
       targetName,
       amount,
       activityEvents,
+      flags: event.isSynthetic ? ["SYNTHETIC"] : [],
+      isSynthetic: event.isSynthetic,
     };
     
     // Add stream-specific info based on streamType
     if (streamType === "resource_change") {
       const rcEvent = event as ResourceChangeProcessorEvent;
       rawEvent.resourceType = rcEvent.resourceType as ResourceType;
-      rawEvent.extra = rcEvent.direction;
+      rawEvent.spellId = rcEvent.spellId ?? undefined;
+      const resourceType = rcEvent.resourceType || "Unknown";
+      const detail = [rcEvent.direction, resourceType];
+      if (rcEvent.overResource > 0) detail.push(`${rcEvent.overResource.toLocaleString()} wasted`);
+      rawEvent.extra = detail.filter(Boolean).join(" · ");
+      rawEvent.flags?.push(resourceType.toUpperCase());
     } else if (streamType === "damage") {
       const damageEvent = event as DamageProcessorEvent;
-      rawEvent.extra = `school=${damageEvent.school} hit=${damageEvent.hitType}`;
+      rawEvent.spellId = damageEvent.spellId ?? undefined;
+      const outcomes = outcomeLabels(damageEvent.hitType);
+      const detail = [...outcomes, schoolName(damageEvent.school)];
+      if (damageEvent.overkill > 0) {
+        detail.push(`${damageEvent.overkill.toLocaleString()} overkill`);
+        rawEvent.flags?.push("OVERKILL");
+      }
+      rawEvent.extra = detail.join(" · ");
+      if (outcomes.includes("Crit")) rawEvent.flags?.push("CRIT");
+      if (outcomes.includes("Glancing")) rawEvent.flags?.push("GLANCING");
+      if (outcomes.includes("Crushing")) rawEvent.flags?.push("CRUSHING");
+      if (outcomes.includes("Miss")) rawEvent.flags?.push("MISS");
+      if (outcomes.includes("Immune")) rawEvent.flags?.push("IMMUNE");
+      if (outcomes.includes("Full Resist")) rawEvent.flags?.push("FULL RESIST");
       if (damageEvent.tailerCount > 0) {
         rawEvent.damageTrailers = damageEvent.tailers
           .slice(0, damageEvent.tailerCount)
@@ -403,7 +485,19 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
       }
     } else if (streamType === "heal") {
       const healEvent = event as HealProcessorEvent;
-      rawEvent.extra = `school=${healEvent.school} hit=${healEvent.hitType}`;
+      rawEvent.spellId = healEvent.spellId ?? undefined;
+      const outcomes = outcomeLabels(healEvent.hitType);
+      const detail = [...outcomes, schoolName(healEvent.school)];
+      if (healEvent.overheal > 0) {
+        detail.push(`${healEvent.overheal.toLocaleString()} overheal`);
+        rawEvent.flags?.push("OVERHEAL");
+      }
+      if (healEvent.absorbed > 0) {
+        detail.push(`${healEvent.absorbed.toLocaleString()} absorbed`);
+        rawEvent.flags?.push("ABSORB");
+      }
+      rawEvent.extra = detail.join(" · ");
+      if (outcomes.includes("Crit")) rawEvent.flags?.push("CRIT");
     } else if (streamType === "cast") {
       const castEvent = event as CastProcessorEvent;
       rawEvent.castAction = castEvent.action;
@@ -414,6 +508,7 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
       rawEvent.extra = actionNames[castEvent.action] || "Unknown";
     } else if (streamType === "aura") {
       const auraEvent = event as AuraProcessorEvent;
+      rawEvent.spellId = auraEvent.spellId ?? undefined;
       rawEvent.auraApplication = auraEvent.application;
       // Show aura state in extra field (state is the preferred field)
       const stateNames = ["Unknown", "Added", "Removed", "Modified"];
@@ -423,9 +518,11 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
       const slainEvent = event as SlainProcessorEvent;
       // Show death info in extra field
       if (slainEvent.attribution) {
-        rawEvent.extra = `killed by ${slainEvent.attribution.sourceName} (${slainEvent.attribution.amount})`;
+        rawEvent.spellId = slainEvent.attribution.spellId ?? undefined;
+        rawEvent.extra = `${outcomeLabels(slainEvent.attribution.hitType).join(" · ")} · ${schoolName(slainEvent.attribution.school)}`;
       } else {
-        rawEvent.extra = "died";
+        rawEvent.extra = "attribution unavailable";
+        rawEvent.flags?.push("NO ATTRIB");
       }
     } else if (streamType === "ressurection") {
       const resurrectionEvent = event as ResurrectionProcessorEvent;
@@ -454,8 +551,37 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
       rawEvent.extra = spellStartEvent.itemId
         ? `${timing} item=${spellStartEvent.itemId}`
         : timing;
+      if (spellStartEvent.itemId) rawEvent.flags?.push("ITEM");
+    } else if (streamType === "spell_fail") {
+      const spellFailEvent = event as SpellFailProcessorEvent;
+      rawEvent.spellId = spellFailEvent.spell.id;
+      rawEvent.extra = spellFailEvent.failedByServer ? "failed by server" : "cast failed";
+      if (spellFailEvent.failedByServer) rawEvent.flags?.push("SERVER");
+    } else if (streamType === "interrupt") {
+      const interruptEvent = event as InterruptProcessorEvent;
+      rawEvent.spellId = interruptEvent.extraSpellId || undefined;
+      rawEvent.extra = `interrupted · school=${interruptEvent.extraSchool}`;
+    } else if (streamType === "absorbed") {
+      const absorbedEvent = event as AbsorbedProcessorEvent;
+      const shieldCasterName = context.players[absorbedEvent.caster]?.name
+        ?? context.units?.[absorbedEvent.caster]?.name
+        ?? absorbedEvent.caster;
+      rawEvent.caster = absorbedEvent.attacker;
+      rawEvent.casterName = context.players[absorbedEvent.attacker]?.name
+        ?? context.units?.[absorbedEvent.attacker]?.name
+        ?? absorbedEvent.attacker;
+      rawEvent.spellId = absorbedEvent.absorbSpellId ?? undefined;
+      rawEvent.extra = `${absorbedEvent.damageSpellName ?? "Melee"} absorbed by ${absorbedEvent.absorbSpellName ?? "shield"}`;
+      rawEvent.details = [
+        { label: "Shield caster", value: shieldCasterName || "Unknown" },
+        { label: "Shield caster GUID", value: absorbedEvent.caster || "—" },
+        { label: "Damage spell", value: absorbedEvent.damageSpellName ?? "Melee" },
+        { label: "Absorb school", value: String(absorbedEvent.absorbSchool) },
+      ];
+      if (absorbedEvent.estimated) rawEvent.flags?.push("ESTIMATED");
     } else if (streamType === "extra_attack") {
       const extraEvent = event as ExtraAttackProcessorEvent;
+      rawEvent.spellId = extraEvent.spellId ?? undefined;
       rawEvent.extra = `extra attacks=${extraEvent.amount}`;
     } else if (streamType === "dispel") {
       const dispelEvent = event as DispelProcessorEvent;
@@ -472,11 +598,18 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
         `consume=${consumeEvent.consumeId}`,
         `evidence=${consumeEvent.evidenceId}`,
       ];
-      if (consumeEvent.itemId) details.push(`item=${consumeEvent.itemId}`);
+      if (consumeEvent.itemId) {
+        details.push(`item=${consumeEvent.itemId}`);
+        rawEvent.flags?.push("ITEM");
+      }
       if (consumeEvent.candidateItemIdsCount > 0) details.push(`candidates=${consumeEvent.candidateItemIds.slice(0, consumeEvent.candidateItemIdsCount).join("|")}`);
       if (consumeEvent.resourceType) details.push(`resource=${consumeEvent.resourceType}`);
-      if (consumeEvent.isProjection) details.push("projection");
-      rawEvent.extra = details.join(" ");
+      if (consumeEvent.confidence === 3) rawEvent.flags?.push("AMBIGUOUS");
+      if (consumeEvent.isProjection) {
+        details.push("projection");
+        rawEvent.flags?.push("PROJECTED");
+      }
+      rawEvent.extra = details.join(" · ");
       rawEvent.spellId = consumeEvent.spell.id || undefined;
     } else if (streamType === "unit_classification") {
       const ucEvent = event as UnitClassificationProcessorEvent;
@@ -487,6 +620,7 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
         rawEvent.casterName = context.players[ucEvent.controller]?.name
           ?? context.units?.[ucEvent.controller]?.name
           ?? ucEvent.controller;
+        rawEvent.flags?.push("POSSESSED");
       }
       const affiliationNames = ["Unknown", "Friendly", "Hostile", "Neutral"];
       const unitTypeNames = ["Unknown", "Player", "Creature", "Object", "Vehicle"];

@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { useSpell } from "@/api/queries";
 import { useDatasetId } from "@/hooks/useDatasetId";
+import { SpellTooltip } from "@/pages/WoWDB/SpellTooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../Tooltip/tooltip";
 import { SpellIconWithTooltip } from "../SpellIconWithTooltip";
 
 interface SpellIdTooltipProps {
@@ -10,6 +12,8 @@ interface SpellIdTooltipProps {
   name: string;
   /** Icon size in pixels. Defaults to 16. */
   size?: number;
+  /** Fetch spell data only after the tooltip is opened and render a text-only trigger. Defaults to false. */
+  loadOnHover?: boolean;
   /** Additional class name for the wrapper */
   className?: string;
 }
@@ -25,14 +29,16 @@ export function SpellIdTooltip({
   spellId, 
   name, 
   size = 16,
+  loadOnHover = false,
   className,
 }: SpellIdTooltipProps) {
   const ref = useRef<HTMLSpanElement>(null);
   const [isVisible, setIsVisible] = useState(false);
+  const [tooltipRequested, setTooltipRequested] = useState(false);
   
   // Use IntersectionObserver to detect when element becomes visible
   useEffect(() => {
-    if (!ref.current || spellId == null) return;
+    if (loadOnHover || !ref.current || spellId == null) return;
     
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -47,14 +53,14 @@ export function SpellIdTooltip({
     
     observer.observe(ref.current);
     return () => observer.disconnect();
-  }, [spellId]);
+  }, [loadOnHover, spellId]);
   
   // Only fetch when visible and we have a spell ID
   const datasetId = useDatasetId();
   const { data: spell } = useSpell(
     spellId?.toString() ?? "",
     datasetId,
-    { enabled: isVisible && spellId != null },
+    { enabled: spellId != null && (loadOnHover ? tooltipRequested : isVisible) },
   );
 
   // No spell ID - render plain text
@@ -62,12 +68,31 @@ export function SpellIdTooltip({
     return <span className={className}>{name}</span>;
   }
 
+  if (loadOnHover) {
+    return (
+      <Tooltip onOpenChange={(open) => open && setTooltipRequested(true)}>
+        <TooltipTrigger asChild>
+          <span ref={ref} className={className}>{name}</span>
+        </TooltipTrigger>
+        <TooltipContent
+          side="right"
+          align="start"
+          sideOffset={8}
+          className="z-[10000] border-0 bg-transparent p-0"
+          hideArrow
+        >
+          {spell ? <SpellTooltip spell={spell} /> : <span className="rounded bg-popover px-2 py-1 text-xs text-popover-foreground">Loading…</span>}
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
+
   return (
     <span ref={ref} className={className}>
       {spell ? (
         <SpellIconWithTooltip 
           spell={spell} 
-          size={size} 
+          size={size}
           showTooltip
         >
           {name}

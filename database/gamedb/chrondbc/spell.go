@@ -256,6 +256,8 @@ func (s Spell) SpellDamageType() SpellDamageType {
 	var base SpellDamageType
 
 	switch s.ID {
+	case 68: // V+ Editor Test Spell
+		return SpellDamageNoEngageCombat
 	case 36205: // V+ Shared Fate
 		return SpellDamageNoEngageCombat
 	case 46079: // Detect Archmage Evanor (Detect Quest Invis)

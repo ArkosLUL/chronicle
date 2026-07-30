@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { ConsumeProcessorEvent, ProcessorContext } from "../processorTypes";
-import { consumableDisplayName, consumablesProcessor } from "./consumables.processor";
+import { consumableDisplayName, consumablesProcessor, consumablesTotalProcessor } from "./consumables.processor";
+import { aggregateConsumablesTotal, filterConsumablesTotal, fuzzyConsumableMatch } from "./consumablesTotal";
 
 function createContext(overrides?: Partial<ProcessorContext>): ProcessorContext {
   return {
@@ -194,5 +195,130 @@ describe("consumablesProcessor", () => {
 
     const unknown = process([consumeEvent({})]).uses.get("use-1")!;
     expect(consumableDisplayName(unknown)).toBe("Unknown Consumable");
+  });
+
+  it("exposes the same aggregation under the totals panel ID", () => {
+    expect(consumablesTotalProcessor.id).toBe("consumables_total");
+    expect(consumablesTotalProcessor.streams).toEqual(["consume"]);
+    expect(consumablesTotalProcessor.processEvent).toBe(consumablesProcessor.processEvent);
+  });
+
+  it("groups physical uses into per-player item counts", () => {
+    const state = process([
+      consumeEvent({ consumeId: "flask-1", evidenceId: "flask-1", player: "p1", itemId: 13510, spell: { id: 17626, name: "Flask of the Titans" } }),
+      consumeEvent({ consumeId: "flask-2", evidenceId: "flask-2", player: "p1", itemId: 13510, spell: { id: 17626, name: "Flask of the Titans" } }),
+      consumeEvent({ consumeId: "pot-1", evidenceId: "pot-1", player: "p1", itemId: 13444, spell: { id: 17531, name: "Major Mana Potion" } }),
+      consumeEvent({ consumeId: "flask-3", evidenceId: "flask-3", player: "p2", itemId: 13510, spell: { id: 17626, name: "Flask of the Titans" } }),
+    ]);
+
+    expect(aggregateConsumablesTotal(state.uses.values())).toMatchObject([
+      {
+        playerId: "p1",
+        total: 3,
+        consumes: [
+          { key: "item:13510", count: 2, itemId: 13510, candidateItemIds: [] },
+          { key: "item:13444", count: 1, itemId: 13444, candidateItemIds: [] },
+        ],
+      },
+      {
+        playerId: "p2",
+        total: 1,
+        consumes: [
+          { key: "item:13510", count: 1, itemId: 13510, candidateItemIds: [] },
+        ],
+      },
+    ]);
+  });
+
+  it("sorts possible item groups after definite items regardless of count", () => {
+    const state = process([
+      consumeEvent({ consumeId: "known", evidenceId: "known", itemId: 13444 }),
+      consumeEvent({ consumeId: "possible-1", evidenceId: "possible-1", candidateItemIds: [1, 2], candidateItemIdsCount: 2 }),
+      consumeEvent({ consumeId: "possible-2", evidenceId: "possible-2", candidateItemIds: [1, 2], candidateItemIdsCount: 2 }),
+    ]);
+
+    const consumes = aggregateConsumablesTotal(state.uses.values())[0].consumes;
+    expect(consumes.map((consume) => consume.key)).toEqual(["item:13444", "candidates:1,2"]);
+    expect(consumes[1].count).toBe(2);
+  });
+
+  it("groups a single candidate with the known item and keeps ambiguous candidates separate", () => {
+    const state = process([
+      consumeEvent({ consumeId: "item-1", evidenceId: "item-1", candidateItemIds: [13444], candidateItemIdsCount: 1 }),
+      consumeEvent({ consumeId: "item-2", evidenceId: "item-2", itemId: 13444 }),
+      consumeEvent({
+        consumeId: "item-3",
+        evidenceId: "item-3",
+        candidateItemIds: [2, 1],
+        candidateItemIdsCount: 2,
+        spell: { id: 17626, name: "Flask of the Titans" },
+        kind: 3,
+        confidence: 3,
+      }),
+    ]);
+
+    expect(aggregateConsumablesTotal(state.uses.values())[0].consumes).toMatchObject([
+      { key: "item:13444", count: 2, itemId: 13444, candidateItemIds: [] },
+      {
+        key: "candidates:1,2",
+        count: 1,
+        itemId: null,
+        candidateItemIds: [1, 2],
+        sources: [
+          {
+            consumeId: "item-3",
+            spellId: 17626,
+            spellName: "Flask of the Titans",
+            kinds: [3],
+            bestConfidence: 3,
+          },
+        ],
+      },
+    ]);
+  });
+
+  it("fuzzy matches case-insensitively and allows non-contiguous letters", () => {
+    expect(fuzzyConsumableMatch("fOtT", ["Flask of the Titans"])).toBe(true);
+    expect(fuzzyConsumableMatch("mana", ["Major Mana Potion"])).toBe(true);
+    expect(fuzzyConsumableMatch("rage", ["Major Mana Potion"])).toBe(false);
+  });
+
+  it("filters definite and possible consumes by item names and effect names", () => {
+    const state = process([
+      consumeEvent({
+        consumeId: "flask",
+        evidenceId: "flask",
+        player: "p1",
+        itemId: 13510,
+        spell: { id: 17626, name: "Flask of the Titans" },
+      }),
+      consumeEvent({
+        consumeId: "food",
+        evidenceId: "food",
+        player: "p1",
+        candidateItemIds: [13724, 20224, 20225],
+        candidateItemIdsCount: 3,
+        spell: { id: 25695, name: "Food" },
+        kind: 7,
+        confidence: 3,
+      }),
+    ]);
+    const rows = aggregateConsumablesTotal(state.uses.values());
+    const itemNames = new Map([
+      [13510, "Flask of the Titans"],
+      [13724, "Enriched Manna Biscuit"],
+      [20224, "Defiler's Enriched Ration"],
+      [20225, "Highlander's Enriched Ration"],
+    ]);
+
+    expect(filterConsumablesTotal(rows, "manna", itemNames)[0].consumes.map((consume) => consume.key))
+      .toEqual(["candidates:13724,20224,20225"]);
+    expect(filterConsumablesTotal(rows, "FOOD", itemNames)[0].consumes.map((consume) => consume.key))
+      .toEqual(["candidates:13724,20224,20225"]);
+    expect(filterConsumablesTotal(rows, "titan", itemNames)[0]).toMatchObject({
+      total: 1,
+      consumes: [{ key: "item:13510" }],
+    });
+    expect(filterConsumablesTotal(rows, "missing", itemNames)).toEqual([]);
   });
 });

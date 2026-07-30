@@ -282,6 +282,52 @@ function getEncounter(
   return encounter;
 }
 
+/**
+ * Walk backwards through a player's cast list and backfill a zero-duration
+ * start for the given spell.  Only the most recent matching start is patched.
+ * If a same-spell start with a non-zero duration is found first, we stop
+ * (it was already filled).  If a same-spell start is found that was already
+ * superseded by a later same-spell start (re-cast), we stop at the later one.
+ */
+function backfillStartDuration(
+  casts: HealerCastEntry[],
+  spellId: number | null,
+  completionMilli: number,
+): void {
+  for (let i = casts.length - 1; i >= 0; i--) {
+    const prev = casts[i];
+    if (prev.kind !== "start" || prev.spellId !== spellId) continue;
+    if (prev.durationMilli === 0) {
+      prev.durationMilli = completionMilli - prev.timestampMilli;
+    }
+    break;
+  }
+}
+
+/**
+ * Check whether a "complete" or "fail" entry already exists for a given start.
+ * Used to decide whether a synthetic completion needs to be inserted.
+ */
+function hasTerminal(casts: readonly HealerCastEntry[], start: HealerCastEntry): boolean {
+  for (let i = casts.length - 1; i >= 0; i--) {
+    const c = casts[i];
+    if (c.timestampMilli < start.timestampMilli) break;
+    if ((c.kind === "complete" || c.kind === "fail") && c.spellId === start.spellId) return true;
+  }
+  return false;
+}
+
+/**
+ * Find the most recent start entry for a spell.
+ */
+function findLastStart(casts: readonly HealerCastEntry[], spellId: number | null): HealerCastEntry | null {
+  for (let i = casts.length - 1; i >= 0; i--) {
+    const c = casts[i];
+    if (c.kind === "start" && c.spellId === spellId) return c;
+  }
+  return null;
+}
+
 export const healerCastsProcessor: PanelProcessor<HealerCastsResult, HealerCastEvent> = {
   id: "healer_casts",
   streams: ["spell_start", "spell_go", "spell_fail", "heal"] as StreamType[],
@@ -311,6 +357,35 @@ export const healerCastsProcessor: PanelProcessor<HealerCastsResult, HealerCastE
     }
 
     if (event.type === "heal") {
+      // Backfill a zero-duration start for this spell from the heal timestamp.
+      // This covers cases where no spell_go event exists (e.g. some WotLK logs).
+      backfillStartDuration(casts, event.spellId, timestampMilli);
+
+      // When the start has no target (WotLK SPELL_CAST_START omits it) and no
+      // completion event exists, infer both from the first heal that lands:
+      // 1. Set the target on the start so the UI can show who was healed.
+      // 2. Synthesize a "complete" entry so castImpact picks up the heals.
+      const matchedStart = findLastStart(casts, event.spellId);
+      if (matchedStart) {
+        if (!matchedStart.targetId) {
+          matchedStart.targetId = event.target;
+        }
+        if (!hasTerminal(casts, matchedStart)) {
+          casts.push({
+            timestampMilli,
+            eventIndex: event.index,
+            spellId: event.spellId,
+            spellName: event.sourceName || "Healing",
+            targetId: event.target,
+            durationMilli: 0,
+            kind: "complete",
+            amount: 0,
+            overheal: 0,
+            absorbed: 0,
+          });
+        }
+      }
+
       casts.push({
         timestampMilli,
         eventIndex: event.index,
@@ -326,6 +401,20 @@ export const healerCastsProcessor: PanelProcessor<HealerCastsResult, HealerCastE
       return;
     }
 
+    const kind = event.type === "spell_start"
+      ? "start"
+      : event.type === "spell_go"
+        ? "complete"
+        : "fail";
+
+    // When a cast completes or fails, backfill the duration on a matching
+    // zero-duration start.  WotLK logs don't include cast time in
+    // SPELL_CAST_START, so the only way to know the actual (talented/hasted)
+    // cast duration is by measuring start→go or start→fail.
+    if (kind !== "start") {
+      backfillStartDuration(casts, event.spell.id, timestampMilli);
+    }
+
     casts.push({
       timestampMilli,
       eventIndex: event.index,
@@ -335,11 +424,7 @@ export const healerCastsProcessor: PanelProcessor<HealerCastsResult, HealerCastE
       durationMilli: event.type === "spell_start"
         ? Math.max(event.castTimeMilli, event.channelTimeMilli, 0)
         : 0,
-      kind: event.type === "spell_start"
-        ? "start"
-        : event.type === "spell_go"
-          ? "complete"
-          : "fail",
+      kind,
       amount: 0,
       overheal: 0,
       absorbed: 0,

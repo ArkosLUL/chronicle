@@ -144,7 +144,7 @@ func BlackwingLairSpeedrunRequirements(flavor database.WoWFlavor) []rankings.Spe
 
 	if flavor.Has(database.FlavorOctoWoW, database.FlavorTurtle, database.FlavorNightmareOfUrsol) {
 		bwl = append(bwl, []rankings.SpeedrunRequirement{
-			{Name: "Flameweaver Koegler", EntryIDs: []uint32{49017}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+			// {Name: "Flameweaver Koegler", EntryIDs: []uint32{49017}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
 			{Name: "Ezzel Darkbrewer", EntryIDs: []uint32{65148}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
 		}...)
 	}

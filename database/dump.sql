@@ -790,6 +790,27 @@ CREATE TABLE instance_loot (
     quantity integer DEFAULT 1 NOT NULL
 );
 
+CREATE TABLE instance_overview_metrics (
+    instance_id uuid NOT NULL,
+    requirements_complete boolean,
+    player_deaths integer NOT NULL,
+    wipe_count integer NOT NULL,
+    top_incoming_damage_abilities jsonb DEFAULT '[]'::jsonb NOT NULL,
+    encounter_span_duration_ms bigint NOT NULL,
+    total_combat_duration_ms bigint NOT NULL,
+    total_boss_duration_ms bigint NOT NULL,
+    metrics_version integer DEFAULT 1 NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT instance_overview_metrics_boss_duration_nonnegative CHECK ((total_boss_duration_ms >= 0)),
+    CONSTRAINT instance_overview_metrics_boss_within_combat CHECK ((total_boss_duration_ms <= total_combat_duration_ms)),
+    CONSTRAINT instance_overview_metrics_combat_duration_nonnegative CHECK ((total_combat_duration_ms >= 0)),
+    CONSTRAINT instance_overview_metrics_combat_within_total CHECK ((total_combat_duration_ms <= encounter_span_duration_ms)),
+    CONSTRAINT instance_overview_metrics_encounter_span_nonnegative CHECK ((encounter_span_duration_ms >= 0)),
+    CONSTRAINT instance_overview_metrics_player_deaths_nonnegative CHECK ((player_deaths >= 0)),
+    CONSTRAINT instance_overview_metrics_wipe_count_nonnegative CHECK ((wipe_count >= 0))
+);
+
 CREATE TABLE leaderboard_version_requirements (
     instance_name text NOT NULL,
     min_parser_version text DEFAULT ''::text NOT NULL,
@@ -1713,6 +1734,9 @@ ALTER TABLE ONLY guilds
 ALTER TABLE ONLY instance_loot
     ADD CONSTRAINT instance_loot_pkey PRIMARY KEY (id);
 
+ALTER TABLE ONLY instance_overview_metrics
+    ADD CONSTRAINT instance_overview_metrics_pkey PRIMARY KEY (instance_id);
+
 ALTER TABLE ONLY instance_speedruns
     ADD CONSTRAINT instance_speedruns_pkey PRIMARY KEY (instance_id);
 
@@ -2004,6 +2028,8 @@ CREATE UNIQUE INDEX idx_wow_server_realms_name_unique ON wow_server_realms USING
 
 CREATE UNIQUE INDEX idx_wow_servers_name_unique ON wow_servers USING btree (lower(name));
 
+CREATE INDEX instance_speedruns_cohort_lookup_idx ON instance_speedruns USING btree (instance_name, start_time);
+
 CREATE UNIQUE INDEX log_instance_youtube_timestamped_instance_id_idx ON log_instance_youtube_timestamped USING btree (log_instance_id) WHERE (log_instance_id IS NOT NULL);
 
 CREATE UNIQUE INDEX log_instance_youtube_timestamped_slug_idx ON log_instance_youtube_timestamped USING btree (instance_slug) WHERE (instance_slug IS NOT NULL);
@@ -2181,6 +2207,9 @@ ALTER TABLE ONLY guilds
 
 ALTER TABLE ONLY instance_loot
     ADD CONSTRAINT instance_loot_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES log_instances(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
+
+ALTER TABLE ONLY instance_overview_metrics
+    ADD CONSTRAINT instance_overview_metrics_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES log_instances(id) ON DELETE CASCADE;
 
 ALTER TABLE ONLY instance_speedruns
     ADD CONSTRAINT instance_speedruns_guild_id_fkey FOREIGN KEY (guild_id) REFERENCES guilds(id);

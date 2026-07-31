@@ -3542,6 +3542,98 @@ func (q *sqlQuerier) GetInstanceLoot(ctx context.Context, arg GetInstanceLootPar
 	return items, nil
 }
 
+const getInstanceOverviewMetrics = `-- name: GetInstanceOverviewMetrics :one
+SELECT instance_id, requirements_complete, player_deaths, wipe_count, top_incoming_damage_abilities, encounter_span_duration_ms, total_combat_duration_ms, total_boss_duration_ms, metrics_version, created_at, updated_at
+FROM instance_overview_metrics
+WHERE instance_id = $1
+  AND metrics_version = $2
+`
+
+type GetInstanceOverviewMetricsParams struct {
+	InstanceID     uuid.UUID `db:"instance_id" json:"instance_id"`
+	MetricsVersion int32     `db:"metrics_version" json:"metrics_version"`
+}
+
+func (q *sqlQuerier) GetInstanceOverviewMetrics(ctx context.Context, arg GetInstanceOverviewMetricsParams) (InstanceOverviewMetric, error) {
+	row := q.db.QueryRow(ctx, getInstanceOverviewMetrics, arg.InstanceID, arg.MetricsVersion)
+	var i InstanceOverviewMetric
+	err := row.Scan(
+		&i.InstanceID,
+		&i.RequirementsComplete,
+		&i.PlayerDeaths,
+		&i.WipeCount,
+		&i.TopIncomingDamageAbilities,
+		&i.EncounterSpanDurationMs,
+		&i.TotalCombatDurationMs,
+		&i.TotalBossDurationMs,
+		&i.MetricsVersion,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const upsertInstanceOverviewMetrics = `-- name: UpsertInstanceOverviewMetrics :exec
+INSERT INTO instance_overview_metrics (
+    instance_id,
+    requirements_complete,
+    player_deaths,
+    wipe_count,
+    top_incoming_damage_abilities,
+    encounter_span_duration_ms,
+    total_combat_duration_ms,
+    total_boss_duration_ms,
+    metrics_version
+) VALUES (
+    $1,
+    $2,
+    $3,
+    $4,
+    $5,
+    $6,
+    $7,
+    $8,
+    $9
+)
+ON CONFLICT (instance_id) DO UPDATE SET
+    requirements_complete = EXCLUDED.requirements_complete,
+    player_deaths = EXCLUDED.player_deaths,
+    wipe_count = EXCLUDED.wipe_count,
+    top_incoming_damage_abilities = EXCLUDED.top_incoming_damage_abilities,
+    encounter_span_duration_ms = EXCLUDED.encounter_span_duration_ms,
+    total_combat_duration_ms = EXCLUDED.total_combat_duration_ms,
+    total_boss_duration_ms = EXCLUDED.total_boss_duration_ms,
+    metrics_version = EXCLUDED.metrics_version,
+    updated_at = now()
+`
+
+type UpsertInstanceOverviewMetricsParams struct {
+	InstanceID                 uuid.UUID                       `db:"instance_id" json:"instance_id"`
+	RequirementsComplete       pgtype.Bool                     `db:"requirements_complete" json:"requirements_complete"`
+	PlayerDeaths               int32                           `db:"player_deaths" json:"player_deaths"`
+	WipeCount                  int32                           `db:"wipe_count" json:"wipe_count"`
+	TopIncomingDamageAbilities []OverviewIncomingDamageAbility `db:"top_incoming_damage_abilities" json:"top_incoming_damage_abilities"`
+	EncounterSpanDurationMs    int64                           `db:"encounter_span_duration_ms" json:"encounter_span_duration_ms"`
+	TotalCombatDurationMs      int64                           `db:"total_combat_duration_ms" json:"total_combat_duration_ms"`
+	TotalBossDurationMs        int64                           `db:"total_boss_duration_ms" json:"total_boss_duration_ms"`
+	MetricsVersion             int32                           `db:"metrics_version" json:"metrics_version"`
+}
+
+func (q *sqlQuerier) UpsertInstanceOverviewMetrics(ctx context.Context, arg UpsertInstanceOverviewMetricsParams) error {
+	_, err := q.db.Exec(ctx, upsertInstanceOverviewMetrics,
+		arg.InstanceID,
+		arg.RequirementsComplete,
+		arg.PlayerDeaths,
+		arg.WipeCount,
+		arg.TopIncomingDamageAbilities,
+		arg.EncounterSpanDurationMs,
+		arg.TotalCombatDurationMs,
+		arg.TotalBossDurationMs,
+		arg.MetricsVersion,
+	)
+	return err
+}
+
 const clearDuplicateGroupID = `-- name: ClearDuplicateGroupID :exec
 UPDATE log_instances SET duplicate_group_id = NULL WHERE id = $1
 `
@@ -8590,6 +8682,43 @@ func (q *sqlQuerier) SiteStats(ctx context.Context) (SiteStatsRow, error) {
 	return i, err
 }
 
+const getInstanceEncounterKillTimes = `-- name: GetInstanceEncounterKillTimes :many
+SELECT
+    lie.name AS encounter_name,
+    (EXTRACT(EPOCH FROM (lie.end_time - lie.start_time)) * 1000)::bigint AS duration_ms
+FROM log_instance_encounters lie
+WHERE lie.instance_id = $1
+  AND lie.boss = true
+  AND lie.kill_type = 'clean'
+  AND lie.end_time > lie.start_time
+ORDER BY lie.start_time
+`
+
+type GetInstanceEncounterKillTimesRow struct {
+	EncounterName string `db:"encounter_name" json:"encounter_name"`
+	DurationMs    int64  `db:"duration_ms" json:"duration_ms"`
+}
+
+func (q *sqlQuerier) GetInstanceEncounterKillTimes(ctx context.Context, instanceID uuid.UUID) ([]GetInstanceEncounterKillTimesRow, error) {
+	rows, err := q.db.Query(ctx, getInstanceEncounterKillTimes, instanceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetInstanceEncounterKillTimesRow
+	for rows.Next() {
+		var i GetInstanceEncounterKillTimesRow
+		if err := rows.Scan(&i.EncounterName, &i.DurationMs); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getInstanceSpeedrun = `-- name: GetInstanceSpeedrun :one
 SELECT sr.instance_id, sr.instance_name, sr.realm_id, sr.guild_id, sr.qualified, sr.start_time, sr.completion_time, sr.duration_ms, sr.proof, sr.created_at, sr.addon_version, sr.parser_version_num, sr.addon_version_num, li.capabilities
 FROM instance_speedruns sr
@@ -8750,6 +8879,157 @@ func (q *sqlQuerier) InsertInstanceSpeedrun(ctx context.Context, arg InsertInsta
 		arg.AddonVersionNum,
 	)
 	return err
+}
+
+const instanceSpeedrunCohort = `-- name: InstanceSpeedrunCohort :many
+WITH anchor AS (
+    SELECT
+        li.id,
+        li.name,
+        li.difficulty_name,
+        li.max_players,
+        li.start_time,
+        li.guild_id,
+        wsr.server_id
+    FROM log_instances li
+    JOIN wow_server_realms wsr ON wsr.id = li.realm_id
+    WHERE li.id = $1
+),
+deduped AS (
+    SELECT DISTINCT ON (COALESCE(li.duplicate_group_id, li.id))
+        sr.instance_id,
+        li.hashed_slug,
+        sr.start_time,
+        sr.completion_time,
+        sr.duration_ms,
+        sr.qualified,
+        sr.proof,
+        sr.guild_id,
+        COALESCE(g.name, '')::text AS guild_name,
+        iom.requirements_complete,
+        iom.player_deaths,
+        iom.wipe_count,
+        iom.top_incoming_damage_abilities,
+        iom.encounter_span_duration_ms,
+        iom.total_combat_duration_ms,
+        iom.total_boss_duration_ms,
+        iom.metrics_version,
+        COALESCE((
+            SELECT jsonb_agg(jsonb_build_object(
+                'encounter_name', lie.name,
+                'duration_ms', (EXTRACT(EPOCH FROM (lie.end_time - lie.start_time)) * 1000)::bigint
+            ) ORDER BY lie.start_time)
+            FROM log_instance_encounters lie
+            WHERE lie.instance_id = sr.instance_id
+              AND lie.boss = true
+              AND lie.kill_type = 'clean'
+              AND lie.end_time > lie.start_time
+        ), '[]'::jsonb)::text AS encounter_kill_times_json
+    FROM anchor a
+    JOIN instance_speedruns sr ON sr.instance_name = a.name
+    JOIN log_instances li ON li.id = sr.instance_id
+    JOIN wow_server_realms wsr ON wsr.id = sr.realm_id
+    LEFT JOIN guilds g ON g.id = sr.guild_id
+    LEFT JOIN instance_overview_metrics iom
+      ON iom.instance_id = sr.instance_id
+     AND iom.metrics_version = $2
+    LEFT JOIN leaderboard_version_requirements lvr ON lvr.instance_name = sr.instance_name
+    WHERE li.difficulty_name = a.difficulty_name
+      AND li.max_players = a.max_players
+      AND sr.start_time >= a.start_time - make_interval(days => $3::int)
+      AND sr.start_time <= a.start_time
+      AND sr.parser_version_num >= COALESCE(lvr.min_parser_version_num, 0)
+      AND sr.addon_version_num >= COALESCE(lvr.min_addon_version_num, 0)
+      AND CASE
+          WHEN $4 :: text = 'guild' THEN a.guild_id IS NOT NULL AND sr.guild_id = a.guild_id
+          ELSE wsr.server_id = a.server_id
+      END
+    ORDER BY
+        COALESCE(li.duplicate_group_id, li.id),
+        sr.qualified DESC,
+        (sr.duration_ms > 0) DESC,
+        sr.duration_ms ASC,
+        sr.start_time DESC
+)
+SELECT instance_id, hashed_slug, start_time, completion_time, duration_ms, qualified, proof, guild_id, guild_name, requirements_complete, player_deaths, wipe_count, top_incoming_damage_abilities, encounter_span_duration_ms, total_combat_duration_ms, total_boss_duration_ms, metrics_version, encounter_kill_times_json
+FROM deduped
+ORDER BY start_time DESC
+`
+
+type InstanceSpeedrunCohortParams struct {
+	InstanceID     uuid.UUID `db:"instance_id" json:"instance_id"`
+	MetricsVersion int32     `db:"metrics_version" json:"metrics_version"`
+	LookbackDays   int32     `db:"lookback_days" json:"lookback_days"`
+	Scope          string    `db:"scope" json:"scope"`
+}
+
+type InstanceSpeedrunCohortRow struct {
+	InstanceID                 uuid.UUID          `db:"instance_id" json:"instance_id"`
+	HashedSlug                 pgtype.Text        `db:"hashed_slug" json:"hashed_slug"`
+	StartTime                  pgtype.Timestamptz `db:"start_time" json:"start_time"`
+	CompletionTime             pgtype.Timestamptz `db:"completion_time" json:"completion_time"`
+	DurationMs                 int64              `db:"duration_ms" json:"duration_ms"`
+	Qualified                  bool               `db:"qualified" json:"qualified"`
+	Proof                      []byte             `db:"proof" json:"proof"`
+	GuildID                    uuid.NullUUID      `db:"guild_id" json:"guild_id"`
+	GuildName                  string             `db:"guild_name" json:"guild_name"`
+	RequirementsComplete       pgtype.Bool        `db:"requirements_complete" json:"requirements_complete"`
+	PlayerDeaths               pgtype.Int4        `db:"player_deaths" json:"player_deaths"`
+	WipeCount                  pgtype.Int4        `db:"wipe_count" json:"wipe_count"`
+	TopIncomingDamageAbilities []byte             `db:"top_incoming_damage_abilities" json:"top_incoming_damage_abilities"`
+	EncounterSpanDurationMs    pgtype.Int8        `db:"encounter_span_duration_ms" json:"encounter_span_duration_ms"`
+	TotalCombatDurationMs      pgtype.Int8        `db:"total_combat_duration_ms" json:"total_combat_duration_ms"`
+	TotalBossDurationMs        pgtype.Int8        `db:"total_boss_duration_ms" json:"total_boss_duration_ms"`
+	MetricsVersion             pgtype.Int4        `db:"metrics_version" json:"metrics_version"`
+	EncounterKillTimesJson     string             `db:"encounter_kill_times_json" json:"encounter_kill_times_json"`
+}
+
+// Returns rankings-backed runs comparable to an anchor instance. Cohorts match
+// instance name, difficulty, and declared maximum raid size, use a historical
+// window ending at the anchor start time, and stay within the anchor's server
+// or guild. Duplicate uploads are collapsed without reducing to one run per guild.
+func (q *sqlQuerier) InstanceSpeedrunCohort(ctx context.Context, arg InstanceSpeedrunCohortParams) ([]InstanceSpeedrunCohortRow, error) {
+	rows, err := q.db.Query(ctx, instanceSpeedrunCohort,
+		arg.InstanceID,
+		arg.MetricsVersion,
+		arg.LookbackDays,
+		arg.Scope,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []InstanceSpeedrunCohortRow
+	for rows.Next() {
+		var i InstanceSpeedrunCohortRow
+		if err := rows.Scan(
+			&i.InstanceID,
+			&i.HashedSlug,
+			&i.StartTime,
+			&i.CompletionTime,
+			&i.DurationMs,
+			&i.Qualified,
+			&i.Proof,
+			&i.GuildID,
+			&i.GuildName,
+			&i.RequirementsComplete,
+			&i.PlayerDeaths,
+			&i.WipeCount,
+			&i.TopIncomingDamageAbilities,
+			&i.EncounterSpanDurationMs,
+			&i.TotalCombatDurationMs,
+			&i.TotalBossDurationMs,
+			&i.MetricsVersion,
+			&i.EncounterKillTimesJson,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const speedrunDifficulties = `-- name: SpeedrunDifficulties :many

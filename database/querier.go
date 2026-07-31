@@ -118,7 +118,9 @@ type sqlcQuerier interface {
 	// Guild Settings
 	GetGuildSettings(ctx context.Context, guildID uuid.UUID) (GuildSetting, error)
 	GetInstanceEncounterCharacterFights(ctx context.Context, instanceID uuid.UUID) ([]LogInstanceEncounterHostile, error)
+	GetInstanceEncounterKillTimes(ctx context.Context, instanceID uuid.UUID) ([]GetInstanceEncounterKillTimesRow, error)
 	GetInstanceLoot(ctx context.Context, arg GetInstanceLootParams) ([]GetInstanceLootRow, error)
+	GetInstanceOverviewMetrics(ctx context.Context, arg GetInstanceOverviewMetricsParams) (InstanceOverviewMetric, error)
 	GetInstanceSpeedrun(ctx context.Context, instanceID uuid.UUID) (GetInstanceSpeedrunRow, error)
 	GetInstanceYoutubeData(ctx context.Context, arg GetInstanceYoutubeDataParams) (LogInstanceYoutubeTimestamped, error)
 	GetInstancesByLogGroupID(ctx context.Context, logGroupID uuid.UUID) ([]LogInstancesGuild, error)
@@ -295,6 +297,11 @@ type sqlcQuerier interface {
 	InstanceEvent(ctx context.Context, arg InstanceEventParams) (LogInstanceEvent, error)
 	InstancePlayerGUIDsByInstanceID(ctx context.Context, instanceID uuid.UUID) ([]guid.GUID, error)
 	InstancePlayersByInstanceID(ctx context.Context, instanceID uuid.UUID) ([]LogInstancePlayer, error)
+	// Returns rankings-backed runs comparable to an anchor instance. Cohorts match
+	// instance name, difficulty, and declared maximum raid size, use a historical
+	// window ending at the anchor start time, and stay within the anchor's server
+	// or guild. Duplicate uploads are collapsed without reducing to one run per guild.
+	InstanceSpeedrunCohort(ctx context.Context, arg InstanceSpeedrunCohortParams) ([]InstanceSpeedrunCohortRow, error)
 	InstanceUnitsByInstanceID(ctx context.Context, instanceID uuid.UUID) ([]LogInstanceUnit, error)
 	IsLayoutTrackedByUser(ctx context.Context, arg IsLayoutTrackedByUserParams) (bool, error)
 	ListAffectedAuraDurationCandidates(ctx context.Context, datasetID uuid.UUID) ([]ListAffectedAuraDurationCandidatesRow, error)
@@ -522,6 +529,7 @@ type sqlcQuerier interface {
 	UpsertGuild(ctx context.Context, arg UpsertGuildParams) (Guild, error)
 	UpsertGuildPage(ctx context.Context, arg UpsertGuildPageParams) (GuildPage, error)
 	UpsertGuildSettings(ctx context.Context, arg UpsertGuildSettingsParams) (GuildSetting, error)
+	UpsertInstanceOverviewMetrics(ctx context.Context, arg UpsertInstanceOverviewMetricsParams) error
 	UpsertLeaderboardVersionRequirements(ctx context.Context, arg UpsertLeaderboardVersionRequirementsParams) (LeaderboardVersionRequirement, error)
 	UpsertPendingModificationRequest(ctx context.Context, arg UpsertPendingModificationRequestParams) (ApplicationModificationRequest, error)
 	UpsertPlayers(ctx context.Context, arg []UpsertPlayersParams) *UpsertPlayersBatchResults

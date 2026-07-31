@@ -253,6 +253,103 @@ func SpeedrunResult(sr database.GetInstanceSpeedrunRow) *chroniclesdk.SpeedrunRe
 	return result
 }
 
+func InstanceOverviewMetrics(row database.InstanceOverviewMetric) chroniclesdk.InstanceOverviewMetrics {
+	var requirementsComplete *bool
+	if row.RequirementsComplete.Valid {
+		requirementsComplete = &row.RequirementsComplete.Bool
+	}
+	abilities := make([]chroniclesdk.OverviewIncomingDamageAbility, 0, len(row.TopIncomingDamageAbilities))
+	for _, ability := range row.TopIncomingDamageAbilities {
+		abilities = append(abilities, chroniclesdk.OverviewIncomingDamageAbility{
+			SpellID:         ability.SpellID,
+			Name:            ability.Name,
+			Damage:          ability.Damage,
+			Hits:            ability.Hits,
+			EnvironmentType: ability.EnvironmentType,
+		})
+	}
+	return chroniclesdk.InstanceOverviewMetrics{
+		RequirementsComplete:       requirementsComplete,
+		PlayerDeaths:               row.PlayerDeaths,
+		WipeCount:                  row.WipeCount,
+		TopIncomingDamageAbilities: abilities,
+		EncounterSpanDurationMs:    row.EncounterSpanDurationMs,
+		TotalCombatDurationMs:      row.TotalCombatDurationMs,
+		TotalBossDurationMs:        row.TotalBossDurationMs,
+		MetricsVersion:             row.MetricsVersion,
+	}
+}
+
+func EncounterKillTimes(rows []database.GetInstanceEncounterKillTimesRow) []chroniclesdk.EncounterKillTime {
+	killTimes := make([]chroniclesdk.EncounterKillTime, 0, len(rows))
+	for _, row := range rows {
+		killTimes = append(killTimes, chroniclesdk.EncounterKillTime{
+			EncounterName: row.EncounterName,
+			DurationMs:    row.DurationMs,
+		})
+	}
+	return killTimes
+}
+
+func SpeedrunCohortRun(row database.InstanceSpeedrunCohortRow) chroniclesdk.SpeedrunCohortRun {
+	var payload chroniclesdk.SpeedrunProofPayload
+	if err := json.Unmarshal(row.Proof, &payload); err != nil || payload.Proof == nil {
+		_ = json.Unmarshal(row.Proof, &payload.Proof)
+	}
+
+	satisfied := 0
+	for _, proof := range payload.Proof {
+		if proof.Satisfied {
+			satisfied++
+		}
+	}
+
+	var encounterKillTimes []chroniclesdk.EncounterKillTime
+	_ = json.Unmarshal([]byte(row.EncounterKillTimesJson), &encounterKillTimes)
+
+	run := chroniclesdk.SpeedrunCohortRun{
+		InstanceID:            row.InstanceID,
+		Slug:                  row.HashedSlug.String,
+		StartTime:             row.StartTime.Time,
+		RequirementsComplete:  len(payload.Proof) > 0 && satisfied == len(payload.Proof),
+		Qualified:             row.Qualified,
+		RequirementsSatisfied: satisfied,
+		RequirementsTotal:     len(payload.Proof),
+		GuildName:             row.GuildName,
+		EncounterKillTimes:    encounterKillTimes,
+	}
+	if row.GuildID.Valid {
+		run.GuildID = &row.GuildID.UUID
+	}
+	if row.DurationMs > 0 {
+		duration := row.DurationMs
+		run.DurationMs = &duration
+	}
+	if !row.CompletionTime.Time.IsZero() {
+		completion := row.CompletionTime.Time
+		run.CompletionTime = &completion
+	}
+	if row.MetricsVersion.Valid {
+		var abilities []chroniclesdk.OverviewIncomingDamageAbility
+		_ = json.Unmarshal(row.TopIncomingDamageAbilities, &abilities)
+		var requirementsComplete *bool
+		if row.RequirementsComplete.Valid {
+			requirementsComplete = &row.RequirementsComplete.Bool
+		}
+		run.Overview = &chroniclesdk.InstanceOverviewMetrics{
+			RequirementsComplete:       requirementsComplete,
+			PlayerDeaths:               row.PlayerDeaths.Int32,
+			WipeCount:                  row.WipeCount.Int32,
+			TopIncomingDamageAbilities: abilities,
+			EncounterSpanDurationMs:    row.EncounterSpanDurationMs.Int64,
+			TotalCombatDurationMs:      row.TotalCombatDurationMs.Int64,
+			TotalBossDurationMs:        row.TotalBossDurationMs.Int64,
+			MetricsVersion:             row.MetricsVersion.Int32,
+		}
+	}
+	return run
+}
+
 // SpeedrunLeaderboardEntry converts a database leaderboard row to an SDK entry.
 func SpeedrunLeaderboardEntry(row database.SpeedrunLeaderboardRow) chroniclesdk.SpeedrunLeaderboardEntry {
 	entry := chroniclesdk.SpeedrunLeaderboardEntry{

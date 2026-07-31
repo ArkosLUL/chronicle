@@ -400,6 +400,34 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 				return fmt.Errorf("insert instance: %w", err)
 			}
 
+			topIncomingDamageAbilities := make([]database.OverviewIncomingDamageAbility, 0, len(finalized.Overview.TopIncomingDamageAbilities))
+			for _, ability := range finalized.Overview.TopIncomingDamageAbilities {
+				topIncomingDamageAbilities = append(topIncomingDamageAbilities, database.OverviewIncomingDamageAbility{
+					SpellID:         ability.SpellID,
+					Name:            ability.Name,
+					Damage:          ability.Damage,
+					Hits:            ability.Hits,
+					EnvironmentType: ability.EnvironmentType,
+				})
+			}
+			requirementsComplete := pgtype.Bool{}
+			if finalized.Overview.RequirementsComplete != nil {
+				requirementsComplete = pgtype.Bool{Bool: *finalized.Overview.RequirementsComplete, Valid: true}
+			}
+			if err := tx.UpsertInstanceOverviewMetrics(ctx, database.UpsertInstanceOverviewMetricsParams{
+				InstanceID:                 dbinstance.ID,
+				RequirementsComplete:       requirementsComplete,
+				PlayerDeaths:               finalized.Overview.PlayerDeaths,
+				WipeCount:                  finalized.Overview.WipeCount,
+				TopIncomingDamageAbilities: topIncomingDamageAbilities,
+				EncounterSpanDurationMs:    finalized.Overview.EncounterSpanDuration.Milliseconds(),
+				TotalCombatDurationMs:      finalized.Overview.TotalCombatDuration.Milliseconds(),
+				TotalBossDurationMs:        finalized.Overview.TotalBossDuration.Milliseconds(),
+				MetricsVersion:             finalized.Overview.MetricsVersion,
+			}); err != nil {
+				return fmt.Errorf("upsert instance overview metrics: %w", err)
+			}
+
 			// Reattach of shared_views and youtube rows is handled by
 			// the reattach_by_slug trigger on log_instances INSERT.
 

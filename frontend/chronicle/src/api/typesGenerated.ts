@@ -706,6 +706,12 @@ export interface DuplicateInstance {
 export type Duration = number;
 
 // From chroniclesdk/log.go
+export interface EncounterKillTime {
+    readonly encounter_name: string;
+    readonly duration_ms: number;
+}
+
+// From chroniclesdk/log.go
 export type EndState = "reset" | "slain" | "timeout";
 
 export const EndStates: EndState[] = ["reset", "slain", "timeout"];
@@ -974,6 +980,18 @@ export interface InstanceLoot {
     readonly quantity: number;
     readonly quality: number;
     readonly icon: string;
+}
+
+// From chroniclesdk/log.go
+export interface InstanceOverviewMetrics {
+    readonly requirements_complete: boolean | null;
+    readonly player_deaths: number;
+    readonly wipe_count: number;
+    readonly top_incoming_damage_abilities: readonly OverviewIncomingDamageAbility[];
+    readonly encounter_span_duration_ms: number;
+    readonly total_combat_duration_ms: number;
+    readonly total_boss_duration_ms: number;
+    readonly metrics_version: number;
 }
 
 // From chroniclesdk/rankings.go
@@ -1504,6 +1522,15 @@ export interface ModificationRequest {
  */
 export interface ModifyApplicationAdminRequest {
     readonly user_id: string;
+}
+
+// From chroniclesdk/log.go
+export interface OverviewIncomingDamageAbility {
+    readonly spell_id?: number;
+    readonly name: string;
+    readonly damage: number;
+    readonly hits: number;
+    readonly environment_type?: string;
 }
 
 // From chroniclesdk/tenant.go
@@ -2233,6 +2260,54 @@ export interface SocketBonus {
 }
 
 // From chroniclesdk/log.go
+export interface SpeedrunCohortDefinition {
+    readonly scope: SpeedrunCohortScope;
+    readonly label: string;
+    readonly instance_name: string;
+    readonly difficulty_name: string;
+    readonly max_players: number;
+    readonly lookback_days: number;
+    readonly window_start: string;
+    readonly window_end: string;
+    readonly eligible_runs: number;
+    readonly runs_with_overview_metrics: number;
+    readonly overview_metrics_version: number;
+    readonly guild_id?: string;
+}
+
+// From chroniclesdk/log.go
+/**
+ * SpeedrunCohortResponse contains lightweight rankings-backed observations
+ * comparable to one anchor instance. It never includes full instance data.
+ */
+export interface SpeedrunCohortResponse {
+    readonly cohort: SpeedrunCohortDefinition;
+    readonly runs: readonly SpeedrunCohortRun[];
+}
+
+// From chroniclesdk/log.go
+export interface SpeedrunCohortRun {
+    readonly instance_id: string;
+    readonly slug: string;
+    readonly start_time: string;
+    readonly completion_time?: string;
+    readonly duration_ms?: number;
+    readonly requirements_complete: boolean;
+    readonly qualified: boolean;
+    readonly requirements_satisfied: number;
+    readonly requirements_total: number;
+    readonly guild_id?: string;
+    readonly guild_name?: string;
+    readonly overview?: InstanceOverviewMetrics;
+    readonly encounter_kill_times: readonly EncounterKillTime[];
+}
+
+// From chroniclesdk/log.go
+export type SpeedrunCohortScope = "guild" | "server";
+
+export const SpeedrunCohortScopes: SpeedrunCohortScope[] = ["guild", "server"];
+
+// From chroniclesdk/log.go
 /**
  * SpeedrunDataSourceStatus reports whether the instance has a valid data source
  * (server-side capability or addon version) required for speedrun eligibility.
@@ -2369,6 +2444,7 @@ export interface SpeedrunResult {
     readonly level_range?: SpeedrunLevelRangeResult;
     readonly data_source?: SpeedrunDataSourceStatus;
     readonly dps_rankings?: DpsRankingsStatus;
+    readonly encounter_kill_times: readonly EncounterKillTime[];
 }
 
 // From chroniclesdk/log.go
@@ -2862,9 +2938,9 @@ export type WoWEnvironmentType = "drowning" | "fall" | "fatigue" | "fire" | "lav
 export const WoWEnvironmentTypes: WoWEnvironmentType[] = ["drowning", "fall", "fatigue", "fire", "lava", "slime"];
 
 // From chroniclesdk/constants.go
-export type WoWEventType = "absorbed" | "aura" | "aura_cast" | "cast" | "combatant_info" | "companion_stats" | "damage" | "dispel" | "extra_attack" | "heal" | "interrupt" | "resource_change" | "ressurection" | "slain" | "spell_fail" | "spell_go" | "spell_start" | "unit_classification";
+export type WoWEventType = "absorbed" | "aura" | "aura_cast" | "cast" | "combatant_info" | "companion_stats" | "consume" | "damage" | "dispel" | "extra_attack" | "heal" | "interrupt" | "resource_change" | "ressurection" | "slain" | "spell_fail" | "spell_go" | "spell_start" | "unit_classification";
 
-export const WoWEventTypes: WoWEventType[] = ["absorbed", "aura", "aura_cast", "cast", "combatant_info", "companion_stats", "damage", "dispel", "extra_attack", "heal", "interrupt", "resource_change", "ressurection", "slain", "spell_fail", "spell_go", "spell_start", "unit_classification"];
+export const WoWEventTypes: WoWEventType[] = ["absorbed", "aura", "aura_cast", "cast", "combatant_info", "companion_stats", "consume", "damage", "dispel", "extra_attack", "heal", "interrupt", "resource_change", "ressurection", "slain", "spell_fail", "spell_go", "spell_start", "unit_classification"];
 
 // From types/constants.go
 export type WoWHeroClasses = "DEATHKNIGHT" | "DRUID" | "HUNTER" | "MAGE" | "PALADIN" | "PRIEST" | "ROGUE" | "SHAMAN" | "UNKNOWN" | "WARLOCK" | "WARRIOR";

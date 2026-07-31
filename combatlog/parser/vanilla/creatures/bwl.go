@@ -48,6 +48,20 @@ func NewBroodlordLashlayer(id guid.GUID, all *characters.Characters) (characters
 	)(id, all)
 }
 
+func NewBlackwingMarksman(flavor database.WoWFlavor) func(id guid.GUID, all *characters.Characters) (characters.Character, bool) {
+	return func(id guid.GUID, all *characters.Characters) (characters.Character, bool) {
+		if entry, ok := id.GetEntry(); !ok || entry != 50142 {
+			return nil, false
+		}
+
+		base := characters.NewCommonCharacter(id, all)
+		if flavor.Has(database.FlavorNightmareOfUrsol) {
+			base.WithTimeoutAsDeath()
+		}
+		return base, true
+	}
+}
+
 func NewRazorgore(flavor database.WoWFlavor) func(id guid.GUID, all *characters.Characters) (characters.Character, bool) {
 	eggMechanic := flavor.Has(database.FlavorVanillaPlus)
 	return func(id guid.GUID, all *characters.Characters) (characters.Character, bool) {

@@ -42,6 +42,7 @@ func VanillaCharacterFactories(flavor database.WoWFlavor) []characters.Character
 		// Blackwing Lair
 		NewBroodlordLashlayer,
 		NewRazorgore(flavor),
+		NewBlackwingMarksman(flavor),
 		NewShadowflameSpark,
 		NewNefarian,
 		NewVaelChained,

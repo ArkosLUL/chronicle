@@ -132,6 +132,9 @@ func (c *razorgore) killEggAds(m messages.Message) {
 		12416, // Blackwing Legionnaire
 		12420, // Blackwing Mage
 		12422, // Death Talon Dragonspawn
+
+		50142, // Blackwing Marksman
+		14456, // Blackwing Guardian
 	} {
 		for _, add := range c.all.ByEntry[entry] {
 			if canDie, ok := add.(characters.CanDie); ok {

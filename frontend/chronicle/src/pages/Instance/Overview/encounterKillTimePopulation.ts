@@ -53,9 +53,40 @@ export function summarizeEncounterKillTimes(
   }));
 }
 
+export interface EncounterKillTimeComparisonRow {
+  encounterName: string;
+  primarySummary: EncounterKillTimeSummary | null;
+  comparisonSummary: EncounterKillTimeSummary;
+  percentile: number | null;
+}
+
+/** Builds rows from the comparison population so bosses missing from the primary raid remain visible. */
+export function buildEncounterKillTimeComparisonRows(
+  primarySummaries: ReadonlyMap<string, EncounterKillTimeSummary>,
+  comparisonSummaries: ReadonlyMap<string, EncounterKillTimeSummary>,
+): EncounterKillTimeComparisonRow[] {
+  return [...comparisonSummaries].map(([encounterName, comparisonSummary]) => {
+    const primarySummary = primarySummaries.get(encounterName) ?? null;
+    return {
+      encounterName,
+      primarySummary,
+      comparisonSummary,
+      percentile: primarySummary
+        ? killTimePercentile(primarySummary.median, comparisonSummary.values)
+        : null,
+    };
+  });
+}
+
 /** Returns an inclusive 0-100 percentile where faster kill times score higher. */
 export function killTimePercentile(durationMs: number, sortedValues: readonly number[]): number | null {
   if (sortedValues.length < 5) return null;
   const atLeastAsSlow = sortedValues.filter((value) => value >= durationMs).length;
   return Math.round((atLeastAsSlow / sortedValues.length) * 100);
+}
+
+export function averageKillTimePercentile(percentiles: readonly (number | null)[]): number | null {
+  const available = percentiles.filter((percentile): percentile is number => percentile !== null);
+  if (available.length === 0) return null;
+  return Math.round(available.reduce((sum, percentile) => sum + percentile, 0) / available.length);
 }

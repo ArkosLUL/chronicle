@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { SpeedrunCohortRun } from "@/api/typesGenerated";
-import { killTimePercentile, summarizeEncounterKillTimes } from "./encounterKillTimePopulation";
+import {
+  averageKillTimePercentile,
+  buildEncounterKillTimeComparisonRows,
+  killTimePercentile,
+  summarizeEncounterKillTimes,
+} from "./encounterKillTimePopulation";
 
 function run(killTimes: Array<[string, number]>): SpeedrunCohortRun {
   return {
@@ -47,6 +52,23 @@ describe("summarizeEncounterKillTimes", () => {
   });
 });
 
+describe("buildEncounterKillTimeComparisonRows", () => {
+  it("keeps comparison bosses that are missing from the primary raid", () => {
+    const primary = summarizeEncounterKillTimes([run([["Lucifron", 100_000]])]);
+    const comparison = summarizeEncounterKillTimes([
+      run([["Lucifron", 120_000], ["Magmadar", 180_000]]),
+    ]);
+
+    const rows = buildEncounterKillTimeComparisonRows(primary, comparison);
+
+    expect(rows).toHaveLength(2);
+    expect(rows.find((row) => row.encounterName === "Magmadar")).toMatchObject({
+      primarySummary: null,
+      percentile: null,
+    });
+  });
+});
+
 describe("killTimePercentile", () => {
   it("scores faster times higher", () => {
     const population = [100_000, 200_000, 300_000, 400_000, 500_000];
@@ -58,5 +80,15 @@ describe("killTimePercentile", () => {
   it("returns null until the comparison population has five samples", () => {
     expect(killTimePercentile(100_000, [])).toBeNull();
     expect(killTimePercentile(100_000, [100_000, 200_000, 300_000, 400_000])).toBeNull();
+  });
+});
+
+describe("averageKillTimePercentile", () => {
+  it("rounds the arithmetic mean of available encounter parses", () => {
+    expect(averageKillTimePercentile([100, 75, null, 40])).toBe(72);
+  });
+
+  it("returns null without available encounter parses", () => {
+    expect(averageKillTimePercentile([null, null])).toBeNull();
   });
 });

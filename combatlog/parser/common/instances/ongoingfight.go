@@ -18,9 +18,19 @@ type ongoingFight struct {
 
 	Start *period.Moment
 	End   *period.Moment
+
+	// Floor, when set, is the earliest this fight is allowed to start. A server
+	// that reports its own encounter boundaries sets it so combat already in
+	// progress — trash still swinging when the boss engages — cannot drag the
+	// start back before the boundary.
+	Floor *period.Moment
 }
 
 func (f *ongoingFight) Begin(mom *period.Moment) {
+	if f.Floor != nil && mom.Timestamp.Date().Before(f.Floor.Timestamp.Date()) {
+		mom = f.Floor
+	}
+
 	if f.Start == nil {
 		f.Start = mom
 		return

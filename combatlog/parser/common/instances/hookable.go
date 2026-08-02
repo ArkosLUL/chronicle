@@ -84,6 +84,17 @@ type Hookable struct {
 	finalizing      bool
 	finalized       bool
 
+	// fightFloor is the most recent authoritative encounter boundary. Set only
+	// for logs whose source reports boundaries itself; nil means fights are
+	// bounded purely by inferred combat activity.
+	fightFloor *period.Moment
+
+	// pendingClose holds a closing boundary that has not been acted on yet, and
+	// the timestamp at which it stops waiting. See encounterEndGrace.
+	pendingClose   *messages.EncounterBoundary
+	pendingCloseAt time.Time
+	lastMessage    messages.Message
+
 	// finalized references
 	g            *armory.Tracker
 	p            *participants.Tracker
@@ -356,6 +367,10 @@ func (h *Hookable) process(m messages.Message) (finalError error) {
 		return fmt.Errorf("processing unit message: %w", err)
 	}
 
+	if err := h.settlePendingClose(m); err != nil {
+		return fmt.Errorf("closing fight at encounter end: %w", err)
+	}
+
 	switch msg := m.(type) {
 	case *messages.Versions:
 		h.SetVersions(msg.Versions, msg.Player)
@@ -366,6 +381,12 @@ func (h *Hookable) process(m messages.Message) (finalError error) {
 			}
 		}
 		h.SetRealm(&msg.Info)
+	case *messages.EncounterBoundary:
+		// Cut here before the message reaches activity tracking, so whatever is
+		// still in combat lands in the next fight rather than extending this one.
+		if err := h.applyEncounterBoundary(msg); err != nil {
+			return fmt.Errorf("applying encounter boundary: %w", err)
+		}
 	default:
 	}
 
@@ -377,6 +398,7 @@ func (h *Hookable) process(m messages.Message) (finalError error) {
 	}
 
 	h.lastProcessedAt = m.Date()
+	h.lastMessage = m
 
 	if actChange {
 		// Only need to update the fight detection if there is a change in character activity.
@@ -433,6 +455,7 @@ func (h *Hookable) FightDetectionHandler(m messages.Message) (func() error, erro
 			PlayerDeaths:   nil,
 			Start:          nil,
 			End:            nil,
+			Floor:          h.fightFloor,
 		}
 	}
 
@@ -496,6 +519,125 @@ func (h *Hookable) FightDetectionHandler(m messages.Message) (func() error, erro
 	return nil, nil
 }
 
+// encounterEndGrace is how long a closing boundary waits for the kill to finish
+// landing in the log.
+//
+// AzerothCore reports the end of an encounter when it grants kill credit, which
+// precedes the boss's UNIT_DIED by a few tens of milliseconds. Cutting on the
+// boundary itself put the death in the following fight, so the boss encounter
+// recorded no kill at all.
+const encounterEndGrace = 500 * time.Millisecond
+
+// applyEncounterBoundary handles an authoritative encounter boundary.
+//
+// Both edges of a boss encounter are cut: the opening one so trash that was
+// already being fought becomes its own fight, and the closing one so trash
+// pulled during the fight, or adds left alive afterwards, do not extend it. The
+// opening cut is immediate; the closing cut waits out encounterEndGrace.
+func (h *Hookable) applyEncounterBoundary(msg *messages.EncounterBoundary) error {
+	if !msg.Start {
+		h.pendingClose = msg
+		h.pendingCloseAt = msg.Date().Add(encounterEndGrace)
+		return nil
+	}
+
+	// An encounter starting while a close is still pending means the grace never
+	// elapsed; cut at the boundary that was waiting rather than dropping it.
+	if h.pendingClose != nil {
+		if err := h.cutFight(h.pendingClose, nil); err != nil {
+			return err
+		}
+	}
+
+	return h.cutFight(msg, nil)
+}
+
+// settlePendingClose applies a deferred closing boundary once the grace has
+// elapsed, ending the fight at the last message that arrived within it.
+func (h *Hookable) settlePendingClose(m messages.Message) error {
+	if h.pendingClose == nil || !m.Date().After(h.pendingCloseAt) {
+		return nil
+	}
+	return h.cutFight(h.pendingClose, h.lastMessage)
+}
+
+// cutFight closes the fight in progress at an authoritative boundary and records
+// that boundary as the floor for the next fight. When endAt is set the fight
+// ends there instead of on the boundary itself, which keeps events that trail
+// the boundary — a boss dying just after kill credit — inside the fight.
+func (h *Hookable) cutFight(boundary *messages.EncounterBoundary, endAt messages.Message) error {
+	h.pendingClose = nil
+
+	at := &period.Moment{
+		Timestamp: boundary,
+		Reason:    "server-reported encounter boundary",
+	}
+
+	end := at
+	if endAt != nil && endAt.Date().After(boundary.Date()) {
+		end = &period.Moment{
+			Timestamp: endAt,
+			Reason:    "last event after server-reported encounter end",
+		}
+	}
+
+	if h.currentFight.active() {
+		for _, hook := range h.hooks {
+			hook.FightEnded(h.currentFight.EncounterID, boundary)
+		}
+		h.currentFight.End = end
+		if err := h.finalizeFight(); err != nil {
+			return fmt.Errorf("closing fight at boundary: %w", err)
+		}
+	} else {
+		// Nothing to close, but drop the empty shell so the next fight picks up
+		// the new floor.
+		h.currentFight = nil
+	}
+
+	h.fightFloor = end
+	return nil
+}
+
+// periodsWithin selects the periods overlapping [start, end], truncated to it.
+//
+// period.PeriodsDuring keeps only periods wholly inside the window and rejects
+// one that is still open. That holds for a fight bounded by inferred combat
+// activity — the window is derived from the periods themselves, so they are
+// contained by construction and all closed by the time it ends. A fight cut at
+// an authoritative boundary has neither property: a hostile can still be
+// swinging at the cut, and trash engaged before the boss can carry on after it.
+// Dropping those left the hostile in the fight with no activity at all.
+//
+// Periods from earlier fights do not overlap the window and are still excluded.
+func periodsWithin(periods []period.Period, start, end time.Time, openEnd *period.Moment) []period.Period {
+	// Same tolerance PeriodsDuring applies.
+	start = start.Add(-1 * time.Millisecond)
+	end = end.Add(1 * time.Millisecond)
+
+	var result []period.Period
+	for _, p := range periods {
+		if p.Start == nil {
+			continue
+		}
+
+		clipped := p
+		if clipped.End == nil {
+			if openEnd == nil {
+				continue
+			}
+			clipped.End = openEnd
+		}
+
+		if clipped.Start.Timestamp.Date().After(end) || clipped.End.Timestamp.Date().Before(start) {
+			continue
+		}
+
+		result = append(result, clipped)
+	}
+	return result
+}
+
 func (h *Hookable) finalizeFight() error {
 	fight := encounter.Fight{
 		Hostiles:     map[guid.GUID]encounter.CharacterFight{},
@@ -511,10 +653,7 @@ func (h *Hookable) finalizeFight() error {
 			return fmt.Errorf("could not find character for hostile %s", id)
 		}
 
-		during, err := period.PeriodsDuring(char.Periods(), fight.Start, fight.End)
-		if err != nil {
-			return fmt.Errorf("getting periods during fight for character %s: %w", id, err)
-		}
+		during := periodsWithin(char.Periods(), fight.Start, fight.End, h.currentFight.End)
 
 		fight.Hostiles[id] = encounter.CharacterFight{
 			ID:       id,
@@ -880,7 +1019,12 @@ func (e *encounterName) IsBossFight() bool {
 
 func (e *encounterName) applyState(ch encounter.CharacterFight, id identifier.Identity, f encounter.Fight) {
 	entry, hasEntry := ch.ID.GetEntry()
-	lastPeriod := ch.Activity[len(ch.Activity)-1]
+
+	var lastPeriod period.Period
+	if len(ch.Activity) > 0 {
+		lastPeriod = ch.Activity[len(ch.Activity)-1]
+	}
+
 	if id.Boss {
 		e.encounterType = types.EncounterTypeBOSS
 		e.bossDeadState[entry] = false

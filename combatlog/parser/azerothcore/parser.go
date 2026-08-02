@@ -47,8 +47,8 @@ func New(ctx context.Context, logger *slog.Logger, r io.Reader, wowDB gamedb.Gam
 	inner.WithEventHook("CHRONICLE_UNIT_INFO", p.parseUnitInfo)
 	inner.WithEventHook("CHRONICLE_UNIT_EVADE", p.parseUnitEvade)
 	inner.WithEventHook("CHRONICLE_UNIT_COMBAT", p.parseUnitCombat)
-	inner.WithEventHook("CHRONICLE_ENCOUNTER_START", p.parseEncounterNoop)
-	inner.WithEventHook("CHRONICLE_ENCOUNTER_END", p.parseEncounterNoop)
+	inner.WithEventHook("CHRONICLE_ENCOUNTER_START", p.parseEncounterStart)
+	inner.WithEventHook("CHRONICLE_ENCOUNTER_END", p.parseEncounterEnd)
 	inner.WithEventHook("CHRONICLE_ENCOUNTER_CREDIT", p.parseEncounterCredit)
 	inner.WithEventHook("CHRONICLE_SPELL_TARGET_RESULT", p.parseChronicleNoop)
 	inner.WithEventHook("CHRONICLE_LOOT_ITEM", p.parseChronicleNoop)
@@ -417,10 +417,52 @@ func (p *Parser) parseEncounterCredit(ts time.Time, m *wotlk.Matched, _ string) 
 	}, nil
 }
 
-// parseEncounterNoop consumes encounter bookkeeping events without producing any
-// messages.
-func (p *Parser) parseEncounterNoop(_ time.Time, _ *wotlk.Matched, _ string) ([]messages.Message, error) {
-	return nil, nil
+// parseEncounterStart converts a CHRONICLE_ENCOUNTER_START line into an
+// authoritative opening fight boundary.
+//
+// Fields: encounterIndex, mapId, instanceId
+func (p *Parser) parseEncounterStart(ts time.Time, m *wotlk.Matched, _ string) ([]messages.Message, error) {
+	index := m.Uint32()
+	_ = m.Uint32() // mapId
+	_ = m.Uint32() // instanceId
+
+	if m.Error() != nil {
+		p.logger.Warn("failed to parse CHRONICLE_ENCOUNTER_START", "error", m.Error())
+		return nil, nil
+	}
+
+	return []messages.Message{
+		&messages.EncounterBoundary{
+			MessageBase:    messages.Base(ts),
+			Start:          true,
+			EncounterIndex: index,
+		},
+	}, nil
+}
+
+// parseEncounterEnd converts a CHRONICLE_ENCOUNTER_END line into an
+// authoritative closing fight boundary.
+//
+// Fields: encounterIndex, mapId, instanceId, success
+func (p *Parser) parseEncounterEnd(ts time.Time, m *wotlk.Matched, _ string) ([]messages.Message, error) {
+	index := m.Uint32()
+	_ = m.Uint32() // mapId
+	_ = m.Uint32() // instanceId
+	success := m.Uint32()
+
+	if m.Error() != nil {
+		p.logger.Warn("failed to parse CHRONICLE_ENCOUNTER_END", "error", m.Error())
+		return nil, nil
+	}
+
+	return []messages.Message{
+		&messages.EncounterBoundary{
+			MessageBase:    messages.Base(ts),
+			Start:          false,
+			EncounterIndex: index,
+			Success:        success != 0,
+		},
+	}, nil
 }
 
 // parseChronicleNoop explicitly accepts Chronicle extension events that are

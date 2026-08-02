@@ -2,13 +2,20 @@ package cli
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/coder/serpent"
 )
 
 // DefaultClientPath returns the default WoW client directory for a server.
 // Returns empty string if unknown (caller should require --dbc).
+//
+// The paths below are upstream's own machine. WOW_CLIENT_PATH overrides them so
+// a local checkout doesn't have to edit this file.
 func DefaultClientPath(server string) string {
+	if p := os.Getenv("WOW_CLIENT_PATH"); p != "" {
+		return p
+	}
 	switch server {
 	case "faebright":
 		return "/home/steven/Games/Faebright"
@@ -21,7 +28,7 @@ func DefaultClientPath(server string) string {
 	case "kronos":
 		return "/home/steven/Games/kronos-wow/drive_c/Program Files (x86)/Kronos"
 	case "azerothcore":
-		return "/home/steven/Games/Warmane"
+		return `A:\WOW\world of warcraft 3.3.5a hd`
 	case "ascension":
 		return "/home/steven/Games/ascension-wow/drive_c/Program Files/Ascension Launcher/resources/ascension-live"
 	case "vanillaplus":

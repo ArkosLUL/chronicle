@@ -30,6 +30,9 @@ services:
       CHRONICLE_JSON_LOGS: ${CHRONICLE_JSON_LOGS:-true}
       CHRONICLE_PROMETHEUS_ENABLED: ${CHRONICLE_PROMETHEUS_ENABLED:-false}
       CHRONICLE_PPROF_ENABLED: ${CHRONICLE_PPROF_ENABLED:-false}
+      CHRONICLE_CLIENT_UPLOADS_DISABLED: ${CHRONICLE_CLIENT_UPLOADS_DISABLED:-false}
+      CHRONICLE_LOG_PARSING_WORKERS: ${CHRONICLE_LOG_PARSING_WORKERS:-1}
+      CHRONICLE_EMIT_PARSE_LOGS: ${CHRONICLE_EMIT_PARSE_LOGS:-false}
       CHRONICLE_DISCORD_CLIENT_ID: ${CHRONICLE_DISCORD_CLIENT_ID:-}
       CHRONICLE_DISCORD_CLIENT_SECRET: ${CHRONICLE_DISCORD_CLIENT_SECRET:-}
       CHRONICLE_DISCORD_BOT_TOKEN: ${CHRONICLE_DISCORD_BOT_TOKEN:-}
@@ -47,6 +50,10 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: ${POSTGRES_DB:-chronicle}
+    # Published so `chronicle import-world` can be run from the host — the CLI
+    # is not shipped in the app image.
+    ports:
+      - "5433:5432"
     volumes:
       - chronicle-postgres-data:/var/lib/postgresql/data
       - ./scripts/development/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh:ro

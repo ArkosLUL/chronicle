@@ -773,6 +773,24 @@ type EncounterCredit struct {
 func (e EncounterCredit) Affects() []guid.GUID { return []guid.GUID{e.UnitGUID} }
 func (*EncounterCredit) isMessage()            {}
 
+// EncounterBoundary is an authoritative fight boundary reported by the server
+// itself, rather than one inferred from combat activity. Servers that run the
+// encounter scripts know exactly when a boss engages and disengages, which
+// combat-activity inference cannot recover once trash overlaps the pull.
+type EncounterBoundary struct {
+	MessageBase
+	// Start distinguishes the opening boundary from the closing one.
+	Start bool
+	// EncounterIndex is the server's own index for the encounter within the
+	// instance. Kept for correlation; boundaries are matched by order.
+	EncounterIndex uint32
+	// Success is only meaningful on a closing boundary.
+	Success bool
+}
+
+func (EncounterBoundary) Affects() []guid.GUID { return nil }
+func (*EncounterBoundary) isMessage()          {}
+
 // Absorbed records which absorb aura soaked how much of an
 // incoming damage event. Fires once per absorb aura per hit.
 type Absorbed struct {

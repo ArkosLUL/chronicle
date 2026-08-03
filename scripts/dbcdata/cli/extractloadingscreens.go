@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -138,11 +139,11 @@ func extractBLPToWebP(readFile func(string) ([]byte, error), blpPath, outDir str
 		return false
 	}
 
-	const prefix = `Interface\Glues\LoadingScreens\`
-	name := strings.TrimPrefix(blpPath, prefix)
-	if name == blpPath {
-		// Unexpected path format; use the full basename.
-		name = filepath.Base(blpPath)
+	// MPQ paths use Windows separators, and filepath.Base won't split those on Linux.
+	normalized := strings.ReplaceAll(blpPath, `\`, "/")
+	name := strings.TrimPrefix(normalized, `Interface/Glues/LoadingScreens/`)
+	if name == normalized {
+		name = path.Base(normalized)
 	}
 	name = strings.TrimSuffix(strings.ToLower(name), ".blp") + ".webp"
 	outPath := filepath.Join(outDir, name)

@@ -2,10 +2,15 @@ package cli
 
 import (
 	"fmt"
+	"image"
+	"image/draw"
 	"io"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/Gophercraft/core/format/dbc/dbdefs"
+	"github.com/HugoSmits86/nativewebp"
 
 	"github.com/Emyrk/chronicle/database/gamedb/dbcdb"
 
@@ -103,27 +108,23 @@ func extractTalentBackgrounds(wc *dbcdb.WoWClient, outDir string, stdout io.Writ
 		}
 
 		// Try quadrant layout (vanilla client standard).
-		quadrants := []string{"-TopLeft", "-TopRight", "-BottomLeft", "-BottomRight"}
-		foundAny := false
 		for _, dir := range []string{`Interface\TalentFrame\`, `Interface\TALENTFRAME\`} {
-			for _, q := range quadrants {
-				qPath := dir + baseName + q + `.blp`
-				if extractBLPToWebP(readFile, qPath, outDir, stdout) {
-					extracted++
-					foundAny = true
-				}
+			img := stitchTalentBackground(readFile, dir, baseName)
+			if img == nil {
+				continue
 			}
-			if foundAny {
-				break // found in this case variant, skip the other
+			if err := writeWebP(img, outDir, baseName); err != nil {
+				_, _ = fmt.Fprintf(stdout, "SKIP (write): %v\n", err)
+				skipped++
+				return true
 			}
+			_, _ = fmt.Fprintf(stdout, "OK (quadrants)\n")
+			extracted++
+			return true
 		}
 
-		if foundAny {
-			_, _ = fmt.Fprintf(stdout, "OK (quadrants)\n")
-		} else {
-			_, _ = fmt.Fprintf(stdout, "SKIP (not found)\n")
-			skipped++
-		}
+		_, _ = fmt.Fprintf(stdout, "SKIP (not found)\n")
+		skipped++
 		return true
 	})
 	if err != nil {
@@ -133,4 +134,67 @@ func extractTalentBackgrounds(wc *dbcdb.WoWClient, outDir string, stdout io.Writ
 	_, _ = fmt.Fprintf(stdout, "Extracted %d talent background files (%d skipped) to %s\n",
 		extracted, skipped, outDir)
 	return nil
+}
+
+// stitchTalentBackground composites the four quadrant tiles into one image.
+// The tiles are unevenly sized (typically 256x256, 64x256, 256x128, 64x128),
+// so the canvas comes from the tiles rather than a fixed size. Returns nil when
+// the top-left tile is missing, which is how a wrong path prefix shows up.
+func stitchTalentBackground(readFile func(string) ([]byte, error), dir, baseName string) image.Image {
+	load := func(quadrant string) image.Image {
+		data, err := readFile(dir + baseName + quadrant + `.blp`)
+		if err != nil {
+			return nil
+		}
+		img, err := decodeBLP2(data)
+		if err != nil {
+			return nil
+		}
+		return img
+	}
+
+	topLeft := load("-TopLeft")
+	if topLeft == nil {
+		return nil
+	}
+	topRight := load("-TopRight")
+	bottomLeft := load("-BottomLeft")
+	bottomRight := load("-BottomRight")
+
+	width, height := topLeft.Bounds().Dx(), topLeft.Bounds().Dy()
+	if topRight != nil {
+		width += topRight.Bounds().Dx()
+	}
+	if bottomLeft != nil {
+		height += bottomLeft.Bounds().Dy()
+	}
+
+	canvas := image.NewNRGBA(image.Rect(0, 0, width, height))
+	place(canvas, topLeft, 0, 0)
+	place(canvas, topRight, topLeft.Bounds().Dx(), 0)
+	place(canvas, bottomLeft, 0, topLeft.Bounds().Dy())
+	place(canvas, bottomRight, topLeft.Bounds().Dx(), topLeft.Bounds().Dy())
+	return canvas
+}
+
+func place(dst *image.NRGBA, src image.Image, x, y int) {
+	if src == nil {
+		return
+	}
+	r := src.Bounds()
+	draw.Draw(dst, image.Rect(x, y, x+r.Dx(), y+r.Dy()), src, r.Min, draw.Src)
+}
+
+func writeWebP(img image.Image, outDir, baseName string) error {
+	outPath := filepath.Join(outDir, strings.ToLower(baseName)+".webp")
+	out, err := os.Create(outPath)
+	if err != nil {
+		return err
+	}
+	if err := nativewebp.Encode(out, img, nil); err != nil {
+		_ = out.Close()
+		_ = os.Remove(outPath)
+		return err
+	}
+	return out.Close()
 }

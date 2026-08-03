@@ -83,12 +83,23 @@ var OnyxiaFactory = &instances.CommonFactory{
 	ZoneNames: []string{"onyxia's lair", "奥妮克希亚的巢穴"},
 	MapIDs:    []uint32{249},
 	Hostiles:  instances.OnyxiaHostiles,
-	FlavoredRankings: func(database.WoWFlavor) *rankings.Rankings {
+	FlavoredRankings: func(fl database.WoWFlavor) *rankings.Rankings {
+		trash := []rankings.SpeedrunRequirement{
+			{Name: "Onyxian Warder", EntryIDs: []uint32{12129}, Count: 3, Category: rankings.SpeedrunCategoryTrash},
+		}
+		if fl.Has(database.FlavorNightmareOfUrsol) {
+			// TODO: Should figure this out.
+			trash = []rankings.SpeedrunRequirement{
+				//{Name: "Onyxian Warder", EntryIDs: []uint32{12129}, Count: 3, Category: rankings.SpeedrunCategoryTrash},
+				//{Name: "Onyxian Inciter/Onyxian Flamespawn", EntryIDs: []uint32{49016}, Count: 2, Category: rankings.SpeedrunCategoryTrash},
+			}
+		}
+
 		return &rankings.Rankings{
 			Speedrun: &rankings.SpeedrunRules{
-				Requirements: []rankings.SpeedrunRequirement{
+				Requirements: append([]rankings.SpeedrunRequirement{
 					{Name: "Onyxia", EntryIDs: []uint32{10184}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
-				},
+				}, trash...),
 			},
 		}
 	},

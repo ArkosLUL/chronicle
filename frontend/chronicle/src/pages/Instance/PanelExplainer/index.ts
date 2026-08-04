@@ -1,2 +1,9 @@
 export { PanelExplainerView, type PanelExplainerViewProps } from "./PanelExplainerView";
-export type { PanelExplainer, ExplainerStep, PanelExplainerViewProps as ExplainerViewProps } from "./types";
+export type {
+  Lesson,
+  LessonGroup,
+  LessonSet,
+  LessonState,
+  LessonVideo,
+  PanelExplainer,
+} from "./types";

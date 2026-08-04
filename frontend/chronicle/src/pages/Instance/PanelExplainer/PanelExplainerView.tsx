@@ -1,24 +1,28 @@
 /**
- * PanelExplainerView - Full-page explainer mode for a single panel.
+ * PanelExplainerView — full-page learning mode for a single panel.
  *
- * When the user clicks the ? button on a panel, this view takes over:
- * - Other panels fade away
- * - The selected panel is centered and enlarged
- * - Breakout panels are forced open
- * - Explanation text and walkthrough steps are shown below
+ * Panels with a LessonSet get the full shell: lesson sidebar (capability-aware
+ * states), a lesson area (video where authored), and the live panel below so
+ * users can immediately try what they watched. Panels with only summary/tips
+ * get the simple fallback layout.
  *
- * Mobile: This view is not shown on mobile - tooltips are used instead.
+ * Mobile: this view is not shown on mobile — tooltips are used instead.
  */
 
-import { useState, useEffect, useCallback, useRef } from "react";
-import { createPortal } from "react-dom";
-import { ArrowLeft, BookOpen, Lightbulb, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, BookOpen, FlaskConical, Lightbulb, X } from "lucide-react";
+import { useCallback, useMemo, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card/Card";
+import { EventsPanel } from "../EventsPanels";
 import { PANELS, type EventsPanelType } from "../EventsPanels/EventsPanel";
 import { getExplainer } from "../EventsPanels/explainers";
-import { EventsPanel } from "../EventsPanels";
 import type { PanelContext } from "../EventsPanels/types";
+import { usePanelAggregation } from "../EventsPanels/usePanelAggregation";
+import { ExplainerTopBar } from "./ExplainerTopBar";
+import { LessonPlayer } from "./LessonPlayer";
+import { LessonSidebar, type LessonSelection } from "./LessonSidebar";
+import type { Lesson, LessonSet, PanelExplainer } from "./types";
 
 export interface PanelExplainerViewProps {
   /** The panel type being explained */
@@ -29,6 +33,8 @@ export interface PanelExplainerViewProps {
   durationMs: number;
   /** Callback to exit explainer mode */
   onExit: () => void;
+  /** Storybook/testing only: start in this data mode. */
+  initialMode?: "live" | "example";
 }
 
 export function PanelExplainerView({
@@ -36,404 +42,353 @@ export function PanelExplainerView({
   context,
   durationMs,
   onExit,
+  initialMode,
 }: PanelExplainerViewProps) {
-  const panel = PANELS[panelType];
   const explainer = getExplainer(panelType);
-  const [currentStep, setCurrentStep] = useState(0);
-  const [walkthroughStarted, setWalkthroughStarted] = useState(false);
-  const [showCompletion, setShowCompletion] = useState(false);
 
   if (!explainer) {
-    // Shouldn't happen, but fallback gracefully
+    // Shouldn't happen (the ? button is gated by hasExplainer), but fall back gracefully.
     return (
       <div className="p-6">
         <Button variant="ghost" onClick={onExit}>
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back
         </Button>
-        <p className="mt-4 text-muted-foreground">
-          No explainer available for this panel.
-        </p>
+        <p className="mt-4 text-muted-foreground">No explainer available for this panel.</p>
       </div>
     );
   }
 
-  const hasWalkthrough = explainer.walkthrough && explainer.walkthrough.length > 0;
-  const currentWalkthroughStep = explainer.walkthrough?.[currentStep];
-  const isLastStep = currentStep >= (explainer.walkthrough?.length ?? 0) - 1;
+  if (explainer.lessonSet) {
+    return (
+      <LessonShell
+        panelType={panelType}
+        explainer={explainer}
+        lessonSet={explainer.lessonSet}
+        context={context}
+        durationMs={durationMs}
+        onExit={onExit}
+        initialMode={initialMode}
+      />
+    );
+  }
 
-  const handleNextStep = () => {
-    if (isLastStep) {
-      setShowCompletion(true);
-      // Auto-dismiss after 2 seconds
-      setTimeout(() => {
-        setShowCompletion(false);
-        setWalkthroughStarted(false);
-        setCurrentStep(0);
-      }, 2000);
-    } else {
-      setCurrentStep((s) => s + 1);
-    }
-  };
+  return (
+    <FallbackExplainer
+      panelType={panelType}
+      explainer={explainer}
+      context={context}
+      durationMs={durationMs}
+      onExit={onExit}
+    />
+  );
+}
 
-  const handleStartWalkthrough = () => {
-    setWalkthroughStarted(true);
-    setCurrentStep(0);
-  };
+const NO_EXTRAS = {};
+function useNoLiveExtras(): Record<string, never> {
+  return NO_EXTRAS;
+}
 
-  const handleExitWalkthrough = useCallback(() => {
-    setShowCompletion(false);
-    setWalkthroughStarted(false);
-    setCurrentStep(0);
-  }, []);
+/** Full learning shell for panels with authored lessons. */
+function LessonShell<TResult, TCaps>({
+  panelType,
+  explainer,
+  lessonSet,
+  context,
+  durationMs,
+  onExit,
+  initialMode,
+}: {
+  panelType: EventsPanelType;
+  explainer: PanelExplainer<TResult, TCaps>;
+  lessonSet: LessonSet<TResult, TCaps>;
+  context: PanelContext;
+  durationMs: number;
+  onExit: () => void;
+  initialMode?: "live" | "example";
+}) {
+  const panel = PANELS[panelType];
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [mode, setMode] = useState<"live" | "example">(initialMode ?? "live");
 
-  // Escape key to exit walkthrough
-  useEffect(() => {
-    if (!walkthroughStarted) return;
-    
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        handleExitWalkthrough();
-      }
-    };
-    
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [walkthroughStarted, handleExitWalkthrough]);
+  // Live aggregation feeds both capabilities and the embedded panel.
+  const aggregation = usePanelAggregation<TResult>({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    panel: panel as any,
+    context,
+    panelIndex: 0,
+  });
+
+  // Live-query capability extras (e.g. parse availability). The hook is
+  // stable per mount — the shell remounts when panelType changes.
+  const useLiveExtras = lessonSet.useLiveCapabilityExtras ?? useNoLiveExtras;
+  const liveExtras = useLiveExtras(context);
+
+  const caps = useMemo(
+    () => ({
+      ...lessonSet.deriveCapabilities(aggregation.result ?? null, durationMs, context.instance),
+      ...liveExtras,
+    }),
+    [lessonSet, aggregation.result, durationMs, context.instance, liveExtras],
+  );
+
+  const lessonParam = searchParams.get("lesson");
+  const selectedLesson: Lesson<TCaps> | null = useMemo(
+    () => lessonSet.lessons.find((l) => l.id === lessonParam) ?? null,
+    [lessonSet, lessonParam],
+  );
+
+  const selectLesson = useCallback(
+    (selection: LessonSelection | null) => {
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          if (selection) next.set("lesson", selection.lessonId);
+          else next.delete("lesson");
+          return next;
+        },
+        { replace: true },
+      );
+      if (selection) setMode(selection.mode);
+    },
+    [setSearchParams],
+  );
+
+  // Example-forced lessons (exampleOnly, or the live data can't teach them)
+  // always render in example mode — derived, so deep links work without effects.
+  const exampleForced =
+    !!selectedLesson &&
+    (selectedLesson.exampleOnly || selectedLesson.deriveState(caps) === "example-required");
+  const effectiveMode = exampleForced ? "example" : mode;
+
+  const returnToLive = useCallback(() => {
+    // Leaving example mode on an example-forced lesson also closes the lesson.
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete("lesson");
+        return next;
+      },
+      { replace: true },
+    );
+    setMode("live");
+  }, [setSearchParams]);
+
+  return (
+    <div className="flex h-screen flex-col overflow-hidden bg-background text-foreground">
+      <ExplainerTopBar
+        panelLabel={panel?.label ?? panelType}
+        panelIcon={panel?.icon}
+        instanceName={context.instance?.name}
+        encounterCount={context.selectedEncounterIds.length}
+        onExit={onExit}
+      />
+      <div className="flex min-h-0 flex-1">
+        <LessonSidebar
+          panelLabel={panel?.label ?? panelType}
+          lessons={lessonSet.lessons}
+          caps={caps}
+          selectedLessonId={selectedLesson?.id ?? null}
+          onSelect={selectLesson}
+        />
+        <div className="flex min-w-0 flex-1 flex-col gap-3.5 overflow-y-auto px-5 pb-6 pt-5">
+          {effectiveMode === "example" && (
+            <ExampleModeBanner onReturn={returnToLive} />
+          )}
+
+          {selectedLesson ? (
+            <LessonHeaderCard
+              lesson={selectedLesson}
+              mode={effectiveMode}
+              onClose={() => selectLesson(null)}
+            />
+          ) : (
+            <IntroCard summary={explainer.summary} />
+          )}
+
+          <div className="mt-1 flex flex-shrink-0 items-center gap-3">
+            <span className="text-[13px] font-semibold">Try it yourself</span>
+            <span className="font-mono text-[10px] tracking-[0.08em] text-muted-foreground">
+              {effectiveMode === "example" ? "EXAMPLE DATA" : "LIVE DATA"}
+            </span>
+            <div className="h-px flex-1 bg-border" />
+          </div>
+
+          <div className="h-[560px] flex-shrink-0">
+            {effectiveMode === "example" ? (
+              lessonSet.renderExample()
+            ) : (
+              <div className="h-full rounded-lg border border-border bg-card p-2">
+                {/* The REAL panel, exactly as it renders on the instance page. */}
+                <EventsPanel
+                  panelType={panelType}
+                  onPanelTypeChange={() => {}}
+                  durationMs={durationMs}
+                  context={context}
+                  panelIndex={0}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ExampleModeBanner({ onReturn }: { onReturn: () => void }) {
+  return (
+    <div className="flex flex-shrink-0 items-start gap-3 rounded-lg border border-class-rogue/40 bg-class-rogue/10 px-3.5 py-3">
+      <span className="mt-px flex flex-shrink-0 items-center gap-1.5 rounded-full bg-class-rogue px-2 py-0.5 font-mono text-[9.5px] tracking-[0.08em] text-background">
+        <FlaskConical className="h-3 w-3" />
+        EXAMPLE DATA
+      </span>
+      <p className="min-w-0 flex-1 text-[12.5px] leading-normal text-pretty">
+        Showing a sample raid built to demonstrate this feature. Your encounter selection,
+        filters, and panel configuration have not changed.
+      </p>
+      <button
+        type="button"
+        onClick={onReturn}
+        className="flex-shrink-0 rounded-sm border border-border bg-secondary px-2.5 py-1 text-[11.5px] font-medium text-secondary-foreground hover:bg-accent hover:text-accent-foreground"
+      >
+        Return to your data
+      </button>
+    </div>
+  );
+}
+
+function LessonHeaderCard<TCaps>({
+  lesson,
+  mode,
+  onClose,
+}: {
+  lesson: Lesson<TCaps>;
+  mode: "live" | "example";
+  onClose: () => void;
+}) {
+  return (
+    <div className="flex flex-shrink-0 flex-col gap-1.5 rounded-lg border border-border bg-popover px-4 py-3">
+      <div className="flex items-center gap-2.5">
+        <span className="text-[13px] font-semibold">{lesson.title}</span>
+        <span className="ml-auto font-mono text-[10.5px] text-muted-foreground">
+          {mode === "example" ? "example data" : "your data"}
+        </span>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close lesson"
+          className="px-1 text-muted-foreground hover:text-foreground"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
+      </div>
+      {lesson.video && <LessonPlayer video={lesson.video} lessonId={lesson.id} />}
+      {lesson.bullets ? (
+        <ul className="max-w-[78ch] list-disc space-y-0.5 pl-5 text-[12.5px] leading-relaxed text-pretty">
+          {lesson.bullets.map((bullet) => (
+            <li key={bullet}>{bullet}</li>
+          ))}
+        </ul>
+      ) : (
+        <p className="max-w-[78ch] text-[12.5px] leading-relaxed text-pretty">
+          {lesson.instruction}
+        </p>
+      )}
+      {lesson.learnMore && (
+        <Link
+          to={lesson.learnMore.href}
+          className="flex w-fit items-center gap-1.5 text-[12px] font-medium text-primary hover:text-foreground"
+        >
+          <BookOpen className="h-3.5 w-3.5" />
+          {lesson.learnMore.label}
+          <ArrowRight className="h-3 w-3" />
+        </Link>
+      )}
+    </div>
+  );
+}
+
+function IntroCard({ summary }: { summary: string }) {
+  return (
+    <div className="flex flex-shrink-0 items-start gap-3 rounded-lg border border-border bg-card px-4 py-3.5">
+      <BookOpen className="mt-px h-[15px] w-[15px] flex-shrink-0 text-muted-foreground" />
+      <div>
+        <p className="mb-1 text-[12.5px]">{summary}</p>
+        <p className="text-[11.5px] text-muted-foreground">
+          Pick a lesson on the left to walk through it here. The panel stays live the whole
+          time.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/** Simple summary/tips layout for panels without a lesson set. */
+function FallbackExplainer({
+  panelType,
+  explainer,
+  context,
+  durationMs,
+  onExit,
+}: {
+  panelType: EventsPanelType;
+  explainer: PanelExplainer;
+  context: PanelContext;
+  durationMs: number;
+  onExit: () => void;
+}) {
+  const panel = PANELS[panelType];
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Button variant="ghost" onClick={onExit} className="gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            Exit Explainer
-          </Button>
-          <h1 className="text-lg font-semibold flex items-center gap-2">
-            {panel.icon}
-            <span>{panel.label}</span>
-          </h1>
-          <div className="w-[140px]" /> {/* Spacer for centering */}
-        </div>
-      </div>
+      <ExplainerTopBar
+        panelLabel={panel?.label ?? panelType}
+        panelIcon={panel?.icon}
+        instanceName={context.instance?.name}
+        encounterCount={context.selectedEncounterIds.length}
+        onExit={onExit}
+      />
 
-      <div className="max-w-5xl mx-auto px-6 py-8 space-y-8">
-        {/* Summary Card */}
+      <div className="mx-auto flex max-w-4xl flex-col gap-4 p-6">
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center justify-between text-base">
-              <span className="flex items-center gap-2">
-                <BookOpen className="h-4 w-4 text-muted-foreground" />
-                What this panel shows
-              </span>
-              {hasWalkthrough && (
-                walkthroughStarted ? (
-                  <Button size="sm" variant="outline" onClick={handleExitWalkthrough}>
-                    Cancel Walkthrough
-                  </Button>
-                ) : (
-                  <Button size="sm" onClick={handleStartWalkthrough}>
-                    Start Walkthrough
-                  </Button>
-                )
-              )}
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <BookOpen className="h-4 w-4" />
+              What this panel shows
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-muted-foreground">{explainer.summary}</p>
+            <p className="text-sm text-muted-foreground">{explainer.summary}</p>
           </CardContent>
         </Card>
 
-        {/* Live Panel */}
-        <div className="relative h-[500px]">
-          {/* Highlight overlay for walkthrough */}
-          {walkthroughStarted && !showCompletion && currentWalkthroughStep?.highlightSelector && (
-            <ExplainerHighlight 
-              selector={currentWalkthroughStep.highlightSelector} 
-              onExit={handleExitWalkthrough}
-              onTargetClick={currentWalkthroughStep.waitFor === "click" ? handleNextStep : undefined}
-              onTargetHover={currentWalkthroughStep.waitFor === "hover" ? handleNextStep : undefined}
-              instruction={currentWalkthroughStep.instruction}
-              stepNumber={currentStep + 1}
-              totalSteps={explainer.walkthrough?.length ?? 0}
-              waitFor={currentWalkthroughStep.waitFor}
-            />
-          )}
-          
-          {/* Completion overlay */}
-          {showCompletion && createPortal(
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-              <div 
-                className="text-center animate-in fade-in zoom-in duration-300"
-              >
-                <div className="text-6xl mb-4">🎉</div>
-                <h2 className="text-3xl font-bold text-white mb-2">You're all set!</h2>
-                <p className="text-xl text-white/80">Best of luck with your logs!</p>
-                <p className="text-sm text-white/40 mt-4">Press <kbd className="px-1.5 py-0.5 rounded bg-white/10 font-mono text-xs">Esc</kbd> to close</p>
-              </div>
-            </div>,
-            document.body
-          )}
-
+        <div className="h-[500px] rounded-lg border border-border bg-card p-2">
           <EventsPanel
             panelType={panelType}
-            onPanelTypeChange={() => {}} // Read-only in explainer mode
+            onPanelTypeChange={() => {}}
             durationMs={durationMs}
             context={context}
             panelIndex={0}
           />
         </div>
 
-
-
-        {/* Tips Card */}
         <Card>
-          <CardHeader className="pb-2">
+          <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
-              <Lightbulb className="h-4 w-4 text-amber-500" />
+              <Lightbulb className="h-4 w-4" />
               Tips
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ul className="space-y-2">
-              {explainer.tips.map((tip, idx) => (
-                <li key={idx} className="flex items-start gap-2 text-muted-foreground">
-                  <span className="text-primary">•</span>
-                  <span>{tip}</span>
-                </li>
+            <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+              {explainer.tips.map((tip) => (
+                <li key={tip}>{tip}</li>
               ))}
             </ul>
           </CardContent>
         </Card>
       </div>
     </div>
-  );
-}
-
-/**
- * Spotlight overlay that darkens the page and highlights the target element.
- * Uses box-shadow technique to create a "cutout" effect around the target.
- */
-function ExplainerHighlight({ 
-  selector, 
-  onExit,
-  onTargetClick,
-  onTargetHover,
-  instruction,
-  stepNumber,
-  totalSteps,
-  waitFor,
-}: { 
-  selector: string; 
-  onExit: () => void;
-  onTargetClick?: () => void;
-  onTargetHover?: () => void;
-  instruction?: string;
-  stepNumber?: number;
-  totalSteps?: number;
-  waitFor?: "click" | "hover" | "manual";
-}) {
-  const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
-  const hasScrolledRef = useRef(false);
-  const hoverTimeoutRef = useRef<number | null>(null);
-
-  // Reset scroll flag when selector changes
-  useEffect(() => {
-    hasScrolledRef.current = false;
-  }, [selector]);
-
-  // Listen for clicks on the target element
-  useEffect(() => {
-    if (!onTargetClick) return;
-    
-    let el: Element | null = null;
-    let retryInterval: number | null = null;
-    
-    const handleClick = () => {
-      onTargetClick();
-    };
-    
-    const attachListener = () => {
-      el = document.querySelector(selector);
-      if (el) {
-        if (retryInterval) {
-          clearInterval(retryInterval);
-          retryInterval = null;
-        }
-        el.addEventListener("click", handleClick);
-      }
-    };
-    
-    // Try immediately, then retry every 100ms
-    attachListener();
-    if (!el) {
-      retryInterval = window.setInterval(attachListener, 100);
-    }
-    
-    return () => {
-      if (retryInterval) clearInterval(retryInterval);
-      if (el) {
-        el.removeEventListener("click", handleClick);
-      }
-    };
-  }, [selector, onTargetClick]);
-
-  // Listen for hover on the target element (with 1 second delay)
-  useEffect(() => {
-    if (!onTargetHover) return;
-    
-    let el: Element | null = null;
-    let retryInterval: number | null = null;
-    
-    const handleMouseEnter = () => {
-      hoverTimeoutRef.current = window.setTimeout(() => {
-        onTargetHover();
-      }, 500);
-    };
-    
-    const handleMouseLeave = () => {
-      if (hoverTimeoutRef.current) {
-        clearTimeout(hoverTimeoutRef.current);
-        hoverTimeoutRef.current = null;
-      }
-    };
-    
-    const attachListener = () => {
-      el = document.querySelector(selector);
-      if (el) {
-        if (retryInterval) {
-          clearInterval(retryInterval);
-          retryInterval = null;
-        }
-        el.addEventListener("mouseenter", handleMouseEnter);
-        el.addEventListener("mouseleave", handleMouseLeave);
-      }
-    };
-    
-    // Try immediately, then retry every 100ms
-    attachListener();
-    if (!el) {
-      retryInterval = window.setInterval(attachListener, 100);
-    }
-    
-    return () => {
-      if (retryInterval) clearInterval(retryInterval);
-      if (el) {
-        el.removeEventListener("mouseenter", handleMouseEnter);
-        el.removeEventListener("mouseleave", handleMouseLeave);
-      }
-      if (hoverTimeoutRef.current) {
-        clearTimeout(hoverTimeoutRef.current);
-      }
-    };
-  }, [selector, onTargetHover]);
-
-  const updateRect = useCallback(() => {
-    const el = document.querySelector(selector);
-    if (el) {
-      // Scroll element into view on first find
-      if (!hasScrolledRef.current) {
-        el.scrollIntoView({ behavior: "smooth", block: "center" });
-        hasScrolledRef.current = true;
-        // Wait for scroll to finish before measuring
-        setTimeout(() => {
-          setTargetRect(el.getBoundingClientRect());
-        }, 300);
-      } else {
-        setTargetRect(el.getBoundingClientRect());
-      }
-    } else {
-      setTargetRect(null);
-    }
-  }, [selector]);
-
-  useEffect(() => {
-    // Initial update with retries - element may not exist yet if panel is still rendering
-    updateRect();
-    const retryTimeout1 = setTimeout(updateRect, 50);
-    const retryTimeout2 = setTimeout(updateRect, 150);
-    const retryTimeout3 = setTimeout(updateRect, 500);
-    
-    // Update on scroll/resize since getBoundingClientRect is viewport-relative
-    window.addEventListener("scroll", updateRect, true);
-    window.addEventListener("resize", updateRect);
-    
-    return () => {
-      clearTimeout(retryTimeout1);
-      clearTimeout(retryTimeout2);
-      clearTimeout(retryTimeout3);
-      window.removeEventListener("scroll", updateRect, true);
-      window.removeEventListener("resize", updateRect);
-    };
-  }, [updateRect]);
-
-  if (!targetRect) {
-    // Element not found - don't show anything
-    return null;
-  }
-
-  const padding = 6;
-
-  return createPortal(
-    <>
-      {/* Instruction banner at top */}
-      {instruction && (
-        <div className="fixed top-16 left-1/2 -translate-x-1/2 max-w-xl pointer-events-none" style={{ zIndex: 60 }}>
-          <div 
-            className="bg-primary/95 text-white px-8 py-5 rounded-xl text-center border border-blue-500/50"
-            style={{ boxShadow: "0 0 30px 5px rgba(59, 130, 246, 0.3)" }}
-          >
-            <p className="text-xl font-medium">{instruction}</p>
-            {stepNumber && totalSteps && (
-              <p className="text-sm text-blue-300 mt-2">
-                Step {stepNumber} of {totalSteps}
-              </p>
-            )}
-            {waitFor === "hover" && (
-              <p className="text-xs text-white/50 mt-3">
-                Hover on the highlighted area to continue
-              </p>
-            )}
-            {waitFor === "click" && (
-              <p className="text-xs text-white/50 mt-3">
-                Click the highlighted area to continue
-              </p>
-            )}
-          </div>
-        </div>
-      )}
-      {/* Spotlight cutout */}
-      <div
-        className="fixed z-50 pointer-events-none rounded-md"
-        style={{
-          left: targetRect.left - padding,
-          top: targetRect.top - padding,
-          width: targetRect.width + padding * 2,
-          height: targetRect.height + padding * 2,
-          boxShadow: "0 0 0 9999px rgba(0, 0, 0, 0.6), 0 0 0 2px #3b82f6",
-        }}
-      />
-      {/* Exit button in top-right */}
-      <button
-        onClick={onExit}
-        className="fixed top-4 right-4 z-50 flex items-center gap-3 px-4 py-3 rounded-lg bg-black/80 text-white hover:bg-black/90 transition-colors cursor-pointer animate-[glow-pulse_2s_ease-in-out_infinite]"
-        style={{
-          animationName: "glow-pulse",
-        }}
-      >
-      <style>{`
-        @keyframes glow-pulse {
-          0%, 100% { box-shadow: 0 0 20px 4px rgba(239, 68, 68, 0.6); }
-          50% { box-shadow: 0 0 30px 8px rgba(239, 68, 68, 0.8); }
-        }
-      `}</style>
-        <span className="text-base">
-          Press <kbd className="px-2 py-1 rounded bg-white/20 font-mono text-sm">Esc</kbd> to exit
-        </span>
-        <X className="h-5 w-5" />
-      </button>
-    </>,
-    document.body
   );
 }

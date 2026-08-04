@@ -1,66 +1,97 @@
 /**
- * Type definitions for Panel Explainer feature.
- * 
- * Each panel can optionally define an explainer that provides:
- * - Summary description of what the panel shows
- * - Tips for using the panel effectively
- * - Interactive walkthrough steps (optional)
+ * Type definitions for the Panel Explainer feature.
+ *
+ * Each panel can optionally define an explainer. Every explainer provides a
+ * summary and tips; panels with full learning content additionally provide a
+ * LessonSet — capability-aware lessons, each optionally backed by a Remotion
+ * video composition played in-app.
  */
 
-import type { ReactNode } from "react";
+import type { ComponentType, ReactNode } from "react";
+import type { PanelContext } from "../EventsPanels/types";
+import type { Instance } from "../InstancePage";
 
 /**
- * A single step in an interactive walkthrough.
+ * How a lesson renders in the sidebar, derived from the user's live data:
+ *
+ * - available:        the open log can teach this lesson ("IN YOUR DATA")
+ * - limited:          the live data is partial ("LIMITED")
+ * - example-required: live data can't demonstrate it ("EXAMPLE DATA")
  */
-export interface ExplainerStep {
-  /** Unique identifier for this step */
+export type LessonState = "available" | "limited" | "example-required";
+
+/** Sidebar grouping. "more" lessons sit behind the collapsible "More topics". */
+export type LessonGroup = "essentials" | "deeper" | "more";
+
+/**
+ * A lesson's video: a Remotion composition compiled into the app and played
+ * via @remotion/player. `load` MUST be a dynamic import — compositions import
+ * `remotion`, and nothing reachable from the instance page may pull remotion
+ * into its chunk.
+ */
+export interface LessonVideo {
+  load: () => Promise<{ default: ComponentType }>;
+  durationInFrames: number;
+  fps: number;
+  width: number;
+  height: number;
+}
+
+/** One teachable topic for a panel. TCaps is the panel's capability summary. */
+export interface Lesson<TCaps> {
+  /** Stable id — used for the ?lesson= deep-link param. */
   id: string;
-  
-  /** Instruction text shown to the user */
+  title: string;
+  group: LessonGroup;
+  /** Capability-aware one-liner shown under the title. */
+  description: (caps: TCaps) => string;
+  /** Sidebar state for the current live data. */
+  deriveState: (caps: TCaps) => LessonState;
+  /** "Try it now" guidance shown with the lesson (and under the video). */
   instruction: string;
-  
-  /** CSS selector to highlight (optional) */
-  highlightSelector?: string;
-  
-  /** What user action completes this step */
-  waitFor?: "click" | "hover" | "manual";
-  
-  /** Custom validation function (optional) */
-  validate?: () => boolean;
+  /** When present, shown as a bullet list instead of the instruction —
+   * typically recapping the video's points. */
+  bullets?: string[];
+  /** Optional in-app link for further reading (react-router path). */
+  learnMore?: { href: string; label: string };
+  /** Absent = text-only lesson (sidebar action reads "Read", not "Watch"). */
+  video?: LessonVideo;
+  /** Lesson only makes sense on curated example data (e.g. parse scores). */
+  exampleOnly?: boolean;
+}
+
+/** Full learning content for one panel type. */
+export interface LessonSet<TResult, TCaps> {
+  /**
+   * Pure derivation from the panel's live aggregation result. `instance` is
+   * nullable so the derivation stays total while data loads.
+   */
+  deriveCapabilities: (
+    result: TResult | null,
+    durationMs: number,
+    instance: Instance | null,
+  ) => TCaps;
+  lessons: Lesson<TCaps>[];
+  /**
+   * Optional hook for capabilities that need live queries (e.g. parse
+   * availability). Merged over deriveCapabilities' result. Must be a stable
+   * hook for the lifetime of the explainer mount.
+   */
+  useLiveCapabilityExtras?: (context: PanelContext) => Partial<TCaps>;
+  /** Renders the production panel content on deterministic fixture data. */
+  renderExample: () => ReactNode;
 }
 
 /**
- * Panel explainer configuration.
- * 
- * TState is optional custom state for complex walkthroughs.
+ * Panel explainer configuration. `lessonSet` absent means the panel renders
+ * the simple summary/tips fallback shell.
  */
-export interface PanelExplainer<TState = unknown> {
-  /** Short description of what this panel shows */
+export interface PanelExplainer<TResult = unknown, TCaps = unknown> {
+  /** Short description of what this panel shows. */
   summary: string;
-  
-  /** Tips for using this panel effectively */
+  /** Tips for using this panel effectively. */
   tips: string[];
-  
-  /** Number of breakout panels to force open (0, 1, or 2) */
-  breakoutsOpen: number;
-  
-  /** Optional interactive walkthrough steps */
-  walkthrough?: ExplainerStep[];
-  
-  /** Optional hook for custom explainer state */
-  useExplainerState?: () => TState;
-  
-  /** Optional custom content renderer */
-  renderCustomContent?: (state: TState) => ReactNode;
+  /** Full lesson content; only panels with authored lessons define this. */
+  lessonSet?: LessonSet<TResult, TCaps>;
 }
 
-/**
- * Props passed to the explainer view.
- */
-export interface PanelExplainerViewProps {
-  /** The panel type being explained */
-  panelType: string;
-  
-  /** Callback to exit explainer mode */
-  onExit: () => void;
-}

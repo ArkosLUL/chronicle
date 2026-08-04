@@ -2,6 +2,7 @@ import { useCallback } from 'react'
 import { ChevronDown, Filter, HelpCircle, Layers, MoreVertical, Swords, X } from 'lucide-react'
 import {
   AbilityBreakout,
+  BreakoutHoverProvider,
   type AbilityData,
   type BreakoutTab,
   type ExpandedViewMode,
@@ -76,6 +77,20 @@ const RANKED_ABILITIES: Record<string, Array<AbilityBreakdown & { subtitle?: str
   ],
 }
 
+/** An extra demo player (with abilities) appended to the standard roster. */
+export interface DemoExtraPlayer {
+  player: PlayerMetricChartData
+  abilities: AbilityBreakdown[]
+}
+
+/** Cross-breakout hover/selection state (drives the compare-abilities video). */
+export interface DemoBreakoutHover {
+  /** Hovered ability row, mirrored in every open breakout. */
+  rowId?: string | null
+  /** Selected ability names — footers aggregate exactly these rows. */
+  selected?: string[]
+}
+
 /**
  * Filter-lesson stage: the mock context menu, the mock filter editor (the
  * panel's flip side), then the chart narrowed to Auto Attack damage only.
@@ -101,13 +116,23 @@ export interface DemoFilterEditorState {
 }
 
 /** Mock of the PanelFilterEditor flip side — one ability-name chip input. */
-function DemoFilterEditor({ state }: { state?: DemoFilterEditorState }) {
+export function DemoFilterEditor({
+  state,
+  icon = <Swords className="h-4 w-4" />,
+  label = 'Damage Done',
+  chipLabel = 'Auto Attack',
+}: {
+  state?: DemoFilterEditorState
+  icon?: React.ReactNode
+  label?: string
+  chipLabel?: string
+}) {
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3 px-3 pb-2 pt-2" data-demo-filter-editor>
       <div className="flex items-center justify-between">
         <h4 className="flex items-center gap-1.5 text-sm font-semibold">
-          <Swords className="h-4 w-4" />
-          Damage Done
+          {icon}
+          {label}
         </h4>
         {/* Mirrors the editor's ghost Reset/Back buttons. */}
         <div className="flex items-center gap-2">
@@ -119,7 +144,7 @@ function DemoFilterEditor({ state }: { state?: DemoFilterEditorState }) {
       </div>
       <div className="flex items-center gap-2">
         <span className="shrink-0 text-xs text-muted-foreground">Title:</span>
-        <span className="flex-1 border-b border-zinc-700 px-1 py-0.5 text-sm">Damage Done</span>
+        <span className="flex-1 border-b border-zinc-700 px-1 py-0.5 text-sm">{label}</span>
       </div>
       <div className="flex items-center gap-2 rounded border border-zinc-700/60 bg-zinc-800/40 px-2 py-1.5">
         <span className="shrink-0 rounded bg-muted px-2 py-1 text-xs">Ability Name</span>
@@ -130,7 +155,7 @@ function DemoFilterEditor({ state }: { state?: DemoFilterEditorState }) {
         >
           {state?.chip && (
             <span className="inline-flex items-center gap-0.5 rounded bg-primary/20 px-1.5 py-0.5 text-xs font-medium text-primary">
-              Auto Attack
+              {chipLabel}
               <span className="ml-0.5 leading-none">×</span>
             </span>
           )}
@@ -222,6 +247,8 @@ export function PlayerMetricChartAbilityBreakdownDemo({
   showRanks = true,
   filterStage = 'idle',
   filterEditor,
+  extraPlayers,
+  breakoutHover,
 }: {
   /**
    * Controlled pinned breakouts: playerID → position (portal-container
@@ -248,12 +275,20 @@ export function PlayerMetricChartAbilityBreakdownDemo({
   filterStage?: DemoFilterStage
   /** Typing/chip state of the editor's ability-name input (editor stage only). */
   filterEditor?: DemoFilterEditorState
+  /** Extra roster entries (e.g. a second player of the same class to compare). */
+  extraPlayers?: DemoExtraPlayer[]
+  /** Controlled cross-breakout hover/selection (drives the compare video). */
+  breakoutHover?: DemoBreakoutHover
 }) {
   const pinnedKey = pinnedPlayers ? [...pinnedPlayers.keys()].sort().join(',') : 'unpinned'
+  const roster = extraPlayers ? [...players, ...extraPlayers.map((e) => e.player)] : players
+  const abilityMap: Record<string, AbilityBreakdown[]> = extraPlayers
+    ? { ...abilities, ...Object.fromEntries(extraPlayers.map((e) => [e.player.playerID, e.abilities])) }
+    : abilities
 
   const breakout = useCallback((playerID: string) => {
-    const playerAbilities = abilities[playerID] ?? []
-    const totalValue = players.find((player) => player.playerID === playerID)?.value ?? 0
+    const playerAbilities = abilityMap[playerID] ?? []
+    const totalValue = roster.find((player) => player.playerID === playerID)?.value ?? 0
     if (breakoutDetail) {
       const source = (showRanks && RANKED_ABILITIES[playerID]) || playerAbilities
       return (
@@ -276,10 +311,11 @@ export function PlayerMetricChartAbilityBreakdownDemo({
         durationMillis={durationMillis}
       />
     )
-  }, [breakoutDetail, showRanks])
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- roster/abilityMap derive from extraPlayers
+  }, [breakoutDetail, showRanks, extraPlayers])
 
   const filtered = filterStage === 'filtered'
-  const chartData = filtered ? FILTERED_PLAYERS : players
+  const chartData = filtered ? FILTERED_PLAYERS : roster
   const total = chartData.reduce((sum, p) => sum + p.value, 0)
   const displayTotal = perSecond
     ? `${(total / (durationMillis / 1000)).toFixed(1)}`
@@ -337,20 +373,28 @@ export function PlayerMetricChartAbilityBreakdownDemo({
               Ranks
             </div>
           </div>
-          <PlayerMetricChart
-            key={`${pinnedKey}${filtered ? '-filtered' : ''}`}
-            data={chartData}
-            type="damage"
-            duration_millis={durationMillis}
-            panelTitle="Damage Done"
-            breakout={breakout}
-            initialPinnedPositions={pinnedPlayers}
-            pinnedPositionsOverride={pinnedPlayers}
-            classIconBasePath={classIconBasePath}
-            perSecond={perSecond}
-            parsePills={parsePills}
-            className="min-h-0 flex-1"
-          />
+          {/* Shared across every pinned breakout, like the real EventsPanel. */}
+          <BreakoutHoverProvider
+            hover={
+              breakoutHover ? { rowId: breakoutHover.rowId ?? null, columnId: null } : undefined
+            }
+            selectedAbilities={breakoutHover ? new Set(breakoutHover.selected) : undefined}
+          >
+            <PlayerMetricChart
+              key={`${pinnedKey}${filtered ? '-filtered' : ''}`}
+              data={chartData}
+              type="damage"
+              duration_millis={durationMillis}
+              panelTitle="Damage Done"
+              breakout={breakout}
+              initialPinnedPositions={pinnedPlayers}
+              pinnedPositionsOverride={pinnedPlayers}
+              classIconBasePath={classIconBasePath}
+              perSecond={perSecond}
+              parsePills={parsePills}
+              className="min-h-0 flex-1"
+            />
+          </BreakoutHoverProvider>
         </>
       )}
       {/* The filter icon's context menu (Edit filters / Reset to default). */}

@@ -8,6 +8,14 @@ import ParseScoresVideo from "../../../frontend/chronicle/src/pages/Instance/Eve
 import BreakoutTourVideo from "../../../frontend/chronicle/src/pages/Instance/EventsPanels/DamageDone/explain/videos/BreakoutTour.video";
 import SpellRanksVideo from "../../../frontend/chronicle/src/pages/Instance/EventsPanels/DamageDone/explain/videos/SpellRanks.video";
 import FiltersVideo from "../../../frontend/chronicle/src/pages/Instance/EventsPanels/DamageDone/explain/videos/Filters.video";
+import CompareAbilitiesVideo from "../../../frontend/chronicle/src/pages/Instance/EventsPanels/DamageDone/explain/videos/CompareAbilities.video";
+import ReadHealingChartVideo from "../../../frontend/chronicle/src/pages/Instance/EventsPanels/HealingDone/explain/videos/ReadHealingChart.video";
+import HealingModesVideo from "../../../frontend/chronicle/src/pages/Instance/EventsPanels/HealingDone/explain/videos/HealingModes.video";
+import TotalVsHpsVideo from "../../../frontend/chronicle/src/pages/Instance/EventsPanels/HealingDone/explain/videos/TotalVsHps.video";
+import HealerBreakoutVideo from "../../../frontend/chronicle/src/pages/Instance/EventsPanels/HealingDone/explain/videos/HealerBreakout.video";
+import HealingRanksVideo from "../../../frontend/chronicle/src/pages/Instance/EventsPanels/HealingDone/explain/videos/HealingRanks.video";
+import CompareHealersVideo from "../../../frontend/chronicle/src/pages/Instance/EventsPanels/HealingDone/explain/videos/CompareHealers.video";
+import HealingFiltersVideo from "../../../frontend/chronicle/src/pages/Instance/EventsPanels/HealingDone/explain/videos/HealingFilters.video";
 
 /**
  * Studio registration for the in-app explainer lesson compositions.
@@ -18,6 +26,7 @@ import FiltersVideo from "../../../frontend/chronicle/src/pages/Instance/EventsP
  */
 export const RemotionRoot: React.FC = () => {
   return (
+    <>
     <Folder name="DamageDoneLessons">
       <Composition
         id="PinBreakout"
@@ -75,6 +84,24 @@ export const RemotionRoot: React.FC = () => {
         width={1280}
         height={720}
       />
+      <Composition
+        id="CompareAbilities"
+        component={CompareAbilitiesVideo}
+        durationInFrames={470}
+        fps={30}
+        width={1280}
+        height={720}
+      />
     </Folder>
+      <Folder name="HealingDoneLessons">
+        <Composition id="ReadHealingChart" component={ReadHealingChartVideo} durationInFrames={410} fps={30} width={1280} height={720} />
+        <Composition id="HealingModes" component={HealingModesVideo} durationInFrames={440} fps={30} width={1280} height={720} />
+        <Composition id="TotalVsHps" component={TotalVsHpsVideo} durationInFrames={320} fps={30} width={1280} height={720} />
+        <Composition id="HealerBreakout" component={HealerBreakoutVideo} durationInFrames={530} fps={30} width={1280} height={720} />
+        <Composition id="HealingRanks" component={HealingRanksVideo} durationInFrames={380} fps={30} width={1280} height={720} />
+        <Composition id="CompareHealers" component={CompareHealersVideo} durationInFrames={470} fps={30} width={1280} height={720} />
+        <Composition id="HealingFilters" component={HealingFiltersVideo} durationInFrames={500} fps={30} width={1280} height={720} />
+      </Folder>
+    </>
   );
 };

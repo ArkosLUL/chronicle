@@ -70,7 +70,7 @@ const parseScores: L = {
   description: (caps) =>
     caps.hasParses
       ? "Colored pills score each player against everyone else who fought this boss with the same spec."
-      : "No parse data for this selection yet — learn on the example raid.",
+      : "No parse data for this selection yet.",
   deriveState: (caps) => (caps.hasParses ? "available" : "example-required"),
   instruction:
     "The scale climbs grey, green, blue, purple, orange, then pink at 99 — gold is a perfect 100. Hover a pill for the cohort.",
@@ -122,7 +122,7 @@ const breakoutTour: L = {
   description: (caps) =>
     caps.hasDetailedStats && caps.hasTargetBreakout
       ? "More detail, min/avg/max, and the By Target tab inside a breakout."
-      : "Your selection is missing detailed hit stats — learn on the example raid.",
+      : "Your selection is missing detailed hit stats.",
   deriveState: (caps) =>
     caps.hasAbilityBreakout && caps.hasTargetBreakout && caps.hasDetailedStats
       ? "available"
@@ -147,12 +147,9 @@ const spellRanks: L = {
   id: "spell-ranks",
   title: "Split abilities by rank",
   group: "essentials",
-  description: (caps) =>
-    caps.hasSpellRanks
-      ? "Your log has spells cast at more than one rank to split out."
-      : "No multi-rank spells in this selection — learn on the example raid.",
-  deriveState: (caps) =>
-    caps.hasSpellRanks && caps.hasAbilityBreakout ? "available" : "example-required",
+  description: () => "Split each spell into the ranks it was cast at.",
+  // The Ranks toggle always works, downranking or not.
+  deriveState: () => "available",
   instruction:
     "Flip the 'Ranks' toggle above the chart — ability breakouts split each spell into the ranks it was cast at, so downranking shows up as separate rows.",
   bullets: [
@@ -172,7 +169,7 @@ const spellRanks: L = {
 const filters: L = {
   id: "filters",
   title: "Filter what a panel counts",
-  group: "essentials",
+  group: "advanced",
   description: () =>
     "Narrow any panel by ability, school, hit type, source, target, or time range.",
   deriveState: () => "available",
@@ -192,12 +189,41 @@ const filters: L = {
   },
 };
 
+const compareAbilities: L = {
+  id: "compare-abilities",
+  title: "Compare two players' abilities",
+  group: "advanced",
+  description: (caps) =>
+    caps.hasFocusTarget
+      ? "Shared hover and selection across breakouts — compare rotations head to head."
+      : "Needs at least two players with breakout data.",
+  deriveState: (caps) =>
+    caps.hasAbilityBreakout && caps.hasFocusTarget ? "available" : "example-required",
+  instruction:
+    "Pin two players of the same class, hover an ability to highlight it in every open breakout, and click rows to select them — each footer totals exactly the selected abilities.",
+  bullets: [
+    "Pin two players of the same class side by side",
+    "Hovering an ability row highlights it in every open breakout",
+    "Click rows to select — footers total exactly those abilities",
+  ],
+  video: {
+    load: () => import("./videos/CompareAbilities.video"),
+    durationInFrames: 470,
+    fps: 30,
+    width: 1280,
+    height: 720,
+  },
+};
+
 export const DAMAGE_DONE_LESSONS: L[] = [
+  // Essentials
   readChart,
   totalVsDps,
   parseScores,
   pinBreakout,
   breakoutTour,
   spellRanks,
+  // Advanced
+  compareAbilities,
   filters,
 ];

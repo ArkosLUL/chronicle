@@ -1,11 +1,11 @@
 /**
- * Lesson video: filter what a panel counts.
+ * Lesson video: filter what the healing panel counts.
  *
  * A scripted cursor clicks the header's filter icon, opens the filter menu,
  * flips to the filter editor, clicks the ability-name input, types
- * "Auto Attack", presses Enter (the name commits as a chip), then clicks
- * "Back" — the chart narrows to auto-attack damage and the icon turns green.
- * 500 frames @ 30fps, 1280x720 (50-frame intro + 450 of content).
+ * "Rejuvenation", presses Enter (the name commits as a chip), then clicks
+ * "Back" — the chart narrows to Rejuvenation healing and the icon turns
+ * green. 500 frames @ 30fps, 1280x720 (50-frame intro + 450 of content).
  */
 
 import { interpolate, Sequence, spring, useCurrentFrame, useVideoConfig } from "remotion";
@@ -13,37 +13,43 @@ import type {
   DemoFilterEditorState,
   DemoFilterStage,
 } from "@/components/ui/PlayerMetricChart/PlayerMetricChart.demo";
-import { PlayerMetricChartAbilityBreakdownDemo } from "@/components/ui/PlayerMetricChart/PlayerMetricChart.demo";
+import { PlayerMetricChartHealingDemo } from "@/components/ui/PlayerMetricChart/PlayerMetricChartHealing.demo";
 import { clamp, entranceEasing, INTRO_FRAMES } from "@/pages/Instance/PanelExplainer/videos/animation";
-import { Cursor, LessonIntro, StepCaption, VideoHeader, VideoStage } from "@/pages/Instance/PanelExplainer/videos/shared";
+import {
+  Cursor,
+  LessonIntro,
+  StepCaption,
+  VideoHeader,
+  VideoStage,
+} from "@/pages/Instance/PanelExplainer/videos/shared";
 
 // Measured cursor targets (stage coordinates).
-const FILTER_ICON = { x: 262, y: 152 };
+const FILTER_ICON = { x: 258, y: 152 };
 const EDIT_FILTERS_ROW = { x: 338, y: 178 };
 const INPUT_BOX = { x: 250, y: 239 };
 const BACK_BTN = { x: 653, y: 155 };
 
-const TYPED_NAME = "Auto Attack";
+const TYPED_NAME = "Rejuvenation";
 
-const MENU_FRAME = 90; // filter icon clicked → context menu
-const EDITOR_FRAME = 150; // "Edit filters" clicked → editor flips open
-const INPUT_FRAME = 195; // ability-name input clicked (caret appears)
-const TYPE_START = 205; // typing begins…
-const TYPE_END = 260; // …last character lands
-const ENTER_FRAME = 275; // Enter pressed → chip commits
-const APPLY_FRAME = 345; // "Back" clicked → filtered chart
+const MENU_FRAME = 90;
+const EDITOR_FRAME = 150;
+const INPUT_FRAME = 195;
+const TYPE_START = 205;
+const TYPE_END = 260;
+const ENTER_FRAME = 275;
+const APPLY_FRAME = 345;
 
-export default function FiltersVideo() {
+export default function HealingFiltersVideo() {
   return (
     <VideoStage>
       <Sequence from={INTRO_FRAMES - 10}>
         <Content />
       </Sequence>
       <LessonIntro
-        title="Filter what a panel counts"
+        title="Filter what the panel counts"
         bullets={[
           "The filter icon opens each panel's filters",
-          "Type an ability name and press Enter",
+          "Type a heal's name and press Enter",
           "Active filters turn the icon green",
         ]}
       />
@@ -65,7 +71,6 @@ function Content() {
           ? "menu"
           : "idle";
 
-  // The chip input: characters land one by one, then Enter commits the chip.
   const typedChars = Math.floor(
     interpolate(frame, [TYPE_START, TYPE_END], [0, TYPED_NAME.length], clamp),
   );
@@ -82,7 +87,6 @@ function Content() {
     ),
   };
 
-  // Cursor: filter icon → Edit filters → input box → Back button → drift clear.
   const cursorX = interpolate(
     frame,
     [26, 80, 100, 136, 160, 190, ENTER_FRAME + 25, ENTER_FRAME + 60, APPLY_FRAME + 20, APPLY_FRAME + 70],
@@ -106,13 +110,13 @@ function Content() {
 
   return (
     <>
-      <VideoHeader title="Filter what a panel counts" entrance={entrance} />
+      <VideoHeader title="Filter what the panel counts" entrance={entrance} />
 
       <main
         className="absolute left-[72px] top-[132px]"
         style={{ opacity: entrance, translate: `0 ${interpolate(entrance, [0, 1], [24, 0])}px` }}
       >
-        <PlayerMetricChartAbilityBreakdownDemo
+        <PlayerMetricChartHealingDemo
           filterStage={filterStage}
           filterEditor={filterEditor}
           classIconBasePath="/c/icons"
@@ -125,10 +129,10 @@ function Content() {
         step={step}
         text={
           step === 3
-            ? "Only Auto Attack damage remains — the green icon means filters are active"
+            ? "Only Rejuvenation healing remains — the green icon means filters are active"
             : step === 2
-              ? "Type an ability name and press Enter to add the filter"
-              : "Click the filter icon to open a panel's filter menu"
+              ? "Type a heal's name and press Enter to add the filter"
+              : "Click the filter icon to open the panel's filter menu"
         }
         opacity={captionOpacity}
       />

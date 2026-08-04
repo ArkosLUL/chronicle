@@ -710,7 +710,7 @@ export function AbilityTable({
           </tbody>
           {/* Footer row with totals */}
           <tfoot className="sticky bottom-0 bg-popover border-t border-border">
-            <tr className="font-medium">
+            <tr className="font-medium" data-lesson-target="compare-abilities">
               <td className="py-1.5 px-2 text-muted-foreground">
                 {hasSelection ? `Total (${selectedAbilities.size})` : 'Total'}
               </td>
@@ -1012,7 +1012,7 @@ export function AbilityBreakout({
   if (!hasTargets) {
     return (
       <div>
-        <div className="flex items-center border-b border-border">
+        <div className="flex items-center border-b border-border" data-lesson-target="breakout-tour">
           <span className={cn(tabClass, activeTabClass)}>By Ability</span>
           {totalDisplay}
         </div>
@@ -1034,7 +1034,7 @@ export function AbilityBreakout({
 
   return (
     <div>
-      <div className="flex items-center border-b border-border">
+      <div className="flex items-center border-b border-border" data-lesson-target="breakout-tour">
         <button
           className={cn(tabClass, activeTab === 'ability' ? activeTabClass : inactiveTabClass)}
           onClick={() => setActiveTab('ability')}

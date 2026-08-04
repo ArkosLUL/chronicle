@@ -48,7 +48,48 @@ export const LiveModeEmpty: Story = {};
 
 /** Fallback summary/tips shell for a panel without a lesson set. */
 export const FallbackPanel: Story = {
+  args: { panelType: "damage_taken" },
+};
+
+/** Healing Done lesson shell (live mode, no data in stories). */
+export const HealingDoneLessons: Story = {
   args: { panelType: "healing_done" },
+};
+
+/** Deep-linked healing lessons for probe verification. */
+export const HealingChartLesson: Story = {
+  args: { panelType: "healing_done" },
+  parameters: { routerEntries: ["/?lesson=read-chart"] },
+};
+
+export const HealingModesLesson: Story = {
+  args: { panelType: "healing_done" },
+  parameters: { routerEntries: ["/?lesson=healing-modes"] },
+};
+
+export const HealerBreakoutLesson: Story = {
+  args: { panelType: "healing_done" },
+  parameters: { routerEntries: ["/?lesson=breakout-tour"] },
+};
+
+export const TotalVsHpsLesson: Story = {
+  args: { panelType: "healing_done" },
+  parameters: { routerEntries: ["/?lesson=total-vs-dps"] },
+};
+
+export const HealingRanksLesson: Story = {
+  args: { panelType: "healing_done" },
+  parameters: { routerEntries: ["/?lesson=spell-ranks"] },
+};
+
+export const CompareHealersLesson: Story = {
+  args: { panelType: "healing_done" },
+  parameters: { routerEntries: ["/?lesson=compare-abilities"] },
+};
+
+export const HealingFiltersLesson: Story = {
+  args: { panelType: "healing_done" },
+  parameters: { routerEntries: ["/?lesson=filters"] },
 };
 
 /** Deep-linked video lesson — exercises the lazy Remotion player. */
@@ -69,4 +110,9 @@ export const SpellRanksLesson: Story = {
 /** Deep-linked filters lesson — menu, editor, and the filtered chart. */
 export const FiltersLesson: Story = {
   parameters: { routerEntries: ["/?lesson=filters"] },
+};
+
+/** Deep-linked compare lesson — shared hover/selection across two breakouts. */
+export const CompareAbilitiesLesson: Story = {
+  parameters: { routerEntries: ["/?lesson=compare-abilities"] },
 };

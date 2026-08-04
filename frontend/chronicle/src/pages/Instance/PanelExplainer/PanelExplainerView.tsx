@@ -10,7 +10,7 @@
  */
 
 import { ArrowLeft, ArrowRight, BookOpen, FlaskConical, Lightbulb, X } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card/Card";
@@ -111,6 +111,23 @@ function LessonShell<TResult, TCaps>({
   const [searchParams, setSearchParams] = useSearchParams();
   const [mode, setMode] = useState<"live" | "example">(initialMode ?? "live");
 
+  // Two-way hover linking between lesson rows and tagged panel regions:
+  // hovering a lesson boxes its [data-lesson-target] elements in the panel,
+  // and hovering a tagged element lights up its lesson in the sidebar.
+  const liveAreaRef = useRef<HTMLDivElement>(null);
+  const [hoveredLessonId, setHoveredLessonId] = useState<string | null>(null);
+  const [panelLessonId, setPanelLessonId] = useState<string | null>(null);
+
+  const handlePanelMouseOver = useCallback(
+    (e: React.MouseEvent) => {
+      const target = (e.target as Element).closest?.("[data-lesson-target]");
+      const id = target?.getAttribute("data-lesson-target") ?? null;
+      setPanelLessonId(id && lessonSet.lessons.some((l) => l.id === id) ? id : null);
+    },
+    [lessonSet],
+  );
+  const handlePanelMouseLeave = useCallback(() => setPanelLessonId(null), []);
+
   // Live aggregation feeds both capabilities and the embedded panel.
   const aggregation = usePanelAggregation<TResult>({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -154,12 +171,10 @@ function LessonShell<TResult, TCaps>({
     [setSearchParams],
   );
 
-  // Example-forced lessons (exampleOnly, or the live data can't teach them)
-  // always render in example mode — derived, so deep links work without effects.
-  const exampleForced =
-    !!selectedLesson &&
-    (selectedLesson.exampleOnly || selectedLesson.deriveState(caps) === "example-required");
-  const effectiveMode = exampleForced ? "example" : mode;
+  // Example mode is hidden from user flows for now (the example panel needs
+  // work) — lessons always render against live data. `initialMode: "example"`
+  // remains a storybook/testing escape hatch.
+  const effectiveMode = initialMode === "example" ? mode : "live";
 
   const returnToLive = useCallback(() => {
     // Leaving example mode on an example-forced lesson also closes the lesson.
@@ -190,6 +205,8 @@ function LessonShell<TResult, TCaps>({
           caps={caps}
           selectedLessonId={selectedLesson?.id ?? null}
           onSelect={selectLesson}
+          onHoverLesson={setHoveredLessonId}
+          highlightedLessonId={panelLessonId}
         />
         <div className="flex min-w-0 flex-1 flex-col gap-3.5 overflow-y-auto px-5 pb-6 pt-5">
           {effectiveMode === "example" && (
@@ -214,7 +231,12 @@ function LessonShell<TResult, TCaps>({
             <div className="h-px flex-1 bg-border" />
           </div>
 
-          <div className="h-[560px] flex-shrink-0">
+          <div
+            ref={liveAreaRef}
+            className="relative h-[560px] flex-shrink-0"
+            onMouseOver={handlePanelMouseOver}
+            onMouseLeave={handlePanelMouseLeave}
+          >
             {effectiveMode === "example" ? (
               lessonSet.renderExample()
             ) : (
@@ -229,9 +251,93 @@ function LessonShell<TResult, TCaps>({
                 />
               </div>
             )}
+            <LessonTargetOverlay containerRef={liveAreaRef} lessonId={hoveredLessonId} />
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Draws pulsing boxes over every [data-lesson-target="<lessonId>"] element in
+ * the live area while a lesson row is hovered. Rects are measured on hover
+ * entry (and window resize) relative to the container, so the overlay scrolls
+ * with the page for free.
+ */
+function LessonTargetOverlay({
+  containerRef,
+  lessonId,
+}: {
+  containerRef: React.RefObject<HTMLDivElement | null>;
+  lessonId: string | null;
+}) {
+  // Keyed by lesson id: a stale entry (different lesson, or hover ended)
+  // simply doesn't render, so the effect never needs to clear state.
+  const [measured, setMeasured] = useState<{
+    lessonId: string;
+    boxes: Array<{ left: number; top: number; width: number; height: number }>;
+  } | null>(null);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || !lessonId) return;
+    const measure = () => {
+      const cRect = container.getBoundingClientRect();
+      const els = container.querySelectorAll(`[data-lesson-target="${lessonId}"]`);
+      const boxes: Array<{ left: number; top: number; width: number; height: number }> = [];
+      for (const el of els) {
+        const r = el.getBoundingClientRect();
+        let left = r.left - 4;
+        let top = r.top - 4;
+        let right = r.right + 4;
+        let bottom = r.bottom + 4;
+        // Clip against every scroll/overflow ancestor so targets scrolled out
+        // of an inner viewport (e.g. chart rows) don't paint over the chrome.
+        for (let node = el.parentElement; node && node !== container; node = node.parentElement) {
+          const cs = getComputedStyle(node);
+          if (/(auto|scroll|hidden)/.test(cs.overflowX + cs.overflowY)) {
+            const nr = node.getBoundingClientRect();
+            left = Math.max(left, nr.left);
+            top = Math.max(top, nr.top);
+            right = Math.min(right, nr.right);
+            bottom = Math.min(bottom, nr.bottom);
+          }
+        }
+        // Fully (or nearly fully) hidden targets get no box at all.
+        if (right - left < 12 || bottom - top < 10) continue;
+        boxes.push({
+          left: left - cRect.left,
+          top: top - cRect.top,
+          width: right - left,
+          height: bottom - top,
+        });
+      }
+      setMeasured({ lessonId, boxes });
+    };
+    const raf = requestAnimationFrame(measure);
+    window.addEventListener("resize", measure);
+    // Capture-phase: inner scroll areas (the chart) re-measure too.
+    container.addEventListener("scroll", measure, true);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", measure);
+      container.removeEventListener("scroll", measure, true);
+    };
+  }, [containerRef, lessonId]);
+
+  const boxes = measured?.lessonId === lessonId ? measured.boxes : [];
+  if (boxes.length === 0) return null;
+
+  return (
+    <div className="pointer-events-none absolute inset-0 z-40 overflow-hidden">
+      {boxes.map((box, i) => (
+        <div
+          key={i}
+          className="absolute animate-pulse rounded-md border-2 border-primary bg-primary/10 shadow-[0_0_14px_-2px_var(--primary)]"
+          style={box}
+        />
+      ))}
     </div>
   );
 }

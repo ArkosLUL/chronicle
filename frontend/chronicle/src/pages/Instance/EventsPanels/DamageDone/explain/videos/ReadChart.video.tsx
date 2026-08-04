@@ -7,8 +7,8 @@
 import type { ReactNode } from "react";
 import { interpolate, Sequence, spring, useCurrentFrame, useVideoConfig } from "remotion";
 import { PlayerMetricChartAbilityBreakdownDemo } from "@/components/ui/PlayerMetricChart/PlayerMetricChart.demo";
-import { INTRO_FRAMES } from "./animation";
-import { LessonIntro, RegionHighlight, StepCaption, VideoHeader, VideoStage } from "./shared";
+import { INTRO_FRAMES } from "@/pages/Instance/PanelExplainer/videos/animation";
+import { LessonIntro, RegionHighlight, StepCaption, VideoHeader, VideoStage } from "@/pages/Instance/PanelExplainer/videos/shared";
 
 const YELLOW = "var(--color-class-rogue)";
 const BLUE = "var(--color-class-shaman)";

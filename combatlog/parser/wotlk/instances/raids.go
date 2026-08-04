@@ -210,19 +210,24 @@ func TrialOfTheCrusaderHostiles() map[uint32]instances.Identity {
 	})
 	instances.LoadBosses(hostile, map[uint32]string{
 		34780: "Lord Jaraxxus",
-		34796: "Gormok the Impaler",
-		34797: "Icehowl",
-		34799: "Dreadscale",
-		35144: "Acidmaw",
-		34496: "Eydis Darkbane",
-		34497: "Fjola Lightbane",
 		29120: "Anub'arak",
-		35469: "Gormok the Impaler",
-		35470: "Icehowl",
-		36065: "Fjola Lightbane",
-		36066: "Eydis Darkbane",
 		34564: "Anub'arak",
 		34660: "Anub'arak",
+	})
+	// The Beasts are three sequential phases of one encounter, not three bosses.
+	instances.LoadBossGroup(hostile, "Northrend Beasts", map[uint32]string{
+		34796: "Gormok the Impaler",
+		35469: "Gormok the Impaler",
+		34799: "Dreadscale",
+		35144: "Acidmaw",
+		34797: "Icehowl",
+		35470: "Icehowl",
+	})
+	instances.LoadBossGroup(hostile, "Twin Val'kyr", map[uint32]string{
+		34496: "Eydis Darkbane",
+		36066: "Eydis Darkbane",
+		34497: "Fjola Lightbane",
+		36065: "Fjola Lightbane",
 	})
 	return hostile
 }
@@ -480,20 +485,18 @@ func UlduarHostiles() map[uint32]instances.Identity {
 		34273: "XB-488 Disposalbot",
 		34274: "XB-488 Disposalbot",
 	})
+	instances.LoadAdds(hostile, map[uint32]string{
+		32892: "Thorim Event Bunny",
+		33054: "Thorim Trap Bunny",
+		33264: "Ironwork Cannon",
+		33378: "Thunder Orb",
+		33725: "Thorim Trap Bunny",
+	})
 	instances.LoadBosses(hostile, map[uint32]string{
 		32845: "Hodir",
 		32846: "Hodir",
-		32857: "Stormcaller Brundir",
 		32865: "Thorim",
-		32867: "Steelbreaker",
-		32892: "Thorim Event Bunny",
-		32906: "Freya",
-		32913: "Elder Ironbranch",
-		32914: "Elder Stonebark",
-		32915: "Elder Brightleaf",
-		32927: "Runemaster Molgeim",
 		32930: "Kologarn",
-		33054: "Thorim Trap Bunny",
 		33113: "Flame Leviathan",
 		33118: "Ignis the Furnace Master",
 		33134: "Sara",
@@ -501,32 +504,44 @@ func UlduarHostiles() map[uint32]instances.Identity {
 		33186: "Razorscale",
 		33190: "Ignis the Furnace Master",
 		33213: "Hodir",
-		33241: "Freya",
 		33242: "Thorim",
-		33244: "Mimiron",
-		33264: "Ironwork Cannon",
 		33271: "General Vezax",
 		33293: "XT-002 Deconstructor",
-		33350: "Mimiron",
-		33360: "Freya",
-		33378: "Thunder Orb",
-		33391: "Elder Brightleaf",
-		33392: "Elder Ironbranch",
-		33393: "Elder Stonebark",
-		33432: "Leviathan Mk II",
 		33449: "General Vezax",
 		33515: "Auriaya",
-		33692: "Runemaster Molgeim",
-		33693: "Steelbreaker",
-		33694: "Stormcaller Brundir",
 		33724: "Razorscale",
-		33725: "Thorim Trap Bunny",
 		33885: "XT-002 Deconstructor",
 		33909: "Kologarn",
 		34003: "Flame Leviathan",
-		34106: "Leviathan Mk II",
 		34175: "Auriaya",
 		34332: "Sara",
+	})
+	instances.LoadBossGroup(hostile, "Assembly of Iron", map[uint32]string{
+		32857: "Stormcaller Brundir",
+		33694: "Stormcaller Brundir",
+		32867: "Steelbreaker",
+		33693: "Steelbreaker",
+		32927: "Runemaster Molgeim",
+		33692: "Runemaster Molgeim",
+	})
+	// Elders only spawn as part of the Freya fight (hard mode).
+	instances.LoadBossGroup(hostile, "Freya", map[uint32]string{
+		32906: "Freya",
+		33241: "Freya",
+		33360: "Freya",
+		32913: "Elder Ironbranch",
+		33392: "Elder Ironbranch",
+		32914: "Elder Stonebark",
+		33393: "Elder Stonebark",
+		32915: "Elder Brightleaf",
+		33391: "Elder Brightleaf",
+	})
+	// Leviathan Mk II is Mimiron's first phase.
+	instances.LoadBossGroup(hostile, "Mimiron", map[uint32]string{
+		33244: "Mimiron",
+		33350: "Mimiron",
+		33432: "Leviathan Mk II",
+		34106: "Leviathan Mk II",
 	})
 	return hostile
 }

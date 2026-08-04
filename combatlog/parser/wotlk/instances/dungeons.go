@@ -176,6 +176,9 @@ func UtgardeKeepHostiles() map[uint32]instances.Identity {
 	instances.LoadBosses(hostile, map[uint32]string{
 		23953: "Prince Keleseth",
 		23954: "Ingvar the Plunderer",
+	})
+	// Skarvald and Dalronn are pulled and killed as one fight.
+	instances.LoadBossGroup(hostile, "Skarvald & Dalronn", map[uint32]string{
 		24200: "Skarvald the Constructor",
 		24201: "Dalronn the Controller",
 	})

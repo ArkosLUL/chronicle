@@ -21,6 +21,20 @@ func LoadBosses(src map[uint32]identifier.Identity, bosses map[uint32]string) {
 	}
 }
 
+// LoadBossGroup registers several boss units that all belong to a single
+// encounter, so a fight like Assembly of Iron produces one encounter instead of
+// one per unit. Units keep their own display names.
+func LoadBossGroup(src map[uint32]identifier.Identity, encounterName string, units map[uint32]string) {
+	for k, name := range units {
+		src[k] = identifier.Identity{
+			Affiliation:   types.AffiliationHostile,
+			Name:          name,
+			EncounterName: encounterName,
+			Boss:          true,
+		}
+	}
+}
+
 func FromMaps(m ...map[uint32]identifier.Identity) func() *identifier.Identifier {
 	merged := make(map[uint32]identifier.Identity)
 	for _, mm := range m {

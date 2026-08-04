@@ -8714,6 +8714,46 @@ func (q *sqlQuerier) SiteStats(ctx context.Context) (SiteStatsRow, error) {
 	return i, err
 }
 
+const getInstanceCleanEncounterKillTimes = `-- name: GetInstanceCleanEncounterKillTimes :many
+SELECT
+    lie.name AS encounter_name,
+    (EXTRACT(EPOCH FROM (lie.end_time - lie.start_time)) * 1000)::bigint AS duration_ms
+FROM log_instance_encounters lie
+WHERE lie.instance_id = $1
+  AND lie.boss = true
+  AND lie.kill_type = 'clean'
+  AND lie.end_time > lie.start_time
+ORDER BY lie.start_time
+`
+
+type GetInstanceCleanEncounterKillTimesRow struct {
+	EncounterName string `db:"encounter_name" json:"encounter_name"`
+	DurationMs    int64  `db:"duration_ms" json:"duration_ms"`
+}
+
+// Returns only clean boss kills for an instance, excluding partial kills.
+// Used by the time-parse handler so the primary instance is scored against
+// the clean-only snapshot cohort consistently.
+func (q *sqlQuerier) GetInstanceCleanEncounterKillTimes(ctx context.Context, instanceID uuid.UUID) ([]GetInstanceCleanEncounterKillTimesRow, error) {
+	rows, err := q.db.Query(ctx, getInstanceCleanEncounterKillTimes, instanceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetInstanceCleanEncounterKillTimesRow
+	for rows.Next() {
+		var i GetInstanceCleanEncounterKillTimesRow
+		if err := rows.Scan(&i.EncounterName, &i.DurationMs); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getInstanceEncounterKillTimes = `-- name: GetInstanceEncounterKillTimes :many
 SELECT
     lie.name AS encounter_name,
@@ -9788,6 +9828,711 @@ func (q *sqlQuerier) UpdateTenant(ctx context.Context, arg UpdateTenantParams) (
 		&i.AvailableFormats,
 		&i.ParseConfig,
 		&i.ExternalLinking,
+	)
+	return i, err
+}
+
+const batchInsertTimeParseSnapshotBossKillMembers = `-- name: BatchInsertTimeParseSnapshotBossKillMembers :exec
+WITH snapshot AS (
+    SELECT id, cutoff, window_start
+    FROM time_parse_snapshots WHERE id = $1
+),
+representative_instances AS (
+    SELECT DISTINCT ON (COALESCE(li.duplicate_group_id, li.id))
+        li.id,
+        COALESCE(li.duplicate_group_id, li.id) AS run_id
+    FROM log_instances li
+    ORDER BY COALESCE(li.duplicate_group_id, li.id),
+        (li.id = li.duplicate_group_id) DESC NULLS LAST,
+        li.start_time ASC,
+        li.id ASC
+),
+eligible AS (
+    SELECT DISTINCT ON (ri.run_id, lie.name)
+        lie.instance_id,
+        ri.run_id,
+        sr.instance_name,
+        lie.name AS encounter_name,
+        li.difficulty_name,
+        li.max_players,
+        (EXTRACT(EPOCH FROM (lie.end_time - lie.start_time)) * 1000)::bigint AS duration_ms,
+        lie.end_time AS killed_at
+    FROM log_instance_encounters lie
+    JOIN representative_instances ri ON ri.id = lie.instance_id
+    JOIN log_instances li ON li.id = lie.instance_id
+    JOIN instance_speedruns sr ON sr.instance_id = lie.instance_id
+    CROSS JOIN snapshot s
+    WHERE lie.boss = true
+      AND lie.kill_type = 'clean'
+      AND lie.end_time > lie.start_time
+      AND (EXTRACT(EPOCH FROM (lie.end_time - lie.start_time)) * 1000)::bigint > 0
+      AND sr.start_time < s.cutoff
+      AND (s.window_start IS NULL OR sr.start_time >= s.window_start)
+    ORDER BY ri.run_id, lie.name,
+             (EXTRACT(EPOCH FROM (lie.end_time - lie.start_time)) * 1000)::bigint ASC,
+             lie.end_time ASC
+)
+INSERT INTO time_parse_boss_kill_members (
+    snapshot_id, instance_id, run_id,
+    instance_name, encounter_name,
+    difficulty_name, max_players,
+    duration_ms, killed_at
+)
+SELECT
+    $1, e.instance_id, e.run_id,
+    e.instance_name, e.encounter_name,
+    e.difficulty_name, e.max_players,
+    e.duration_ms, e.killed_at
+FROM eligible e
+ON CONFLICT (snapshot_id, instance_id, encounter_name) DO NOTHING
+`
+
+// Populate boss-kill members from eligible encounter kill times.
+// Clean boss kills from cohort-eligible runs (partial or complete).
+// Duplicate groups collapsed per encounter to fastest.
+func (q *sqlQuerier) BatchInsertTimeParseSnapshotBossKillMembers(ctx context.Context, snapshotID uuid.UUID) error {
+	_, err := q.db.Exec(ctx, batchInsertTimeParseSnapshotBossKillMembers, snapshotID)
+	return err
+}
+
+const batchInsertTimeParseSnapshotClearTimeMembers = `-- name: BatchInsertTimeParseSnapshotClearTimeMembers :exec
+WITH snapshot AS (
+    SELECT id, cutoff, window_start
+    FROM time_parse_snapshots WHERE id = $1
+),
+representative_instances AS (
+    SELECT DISTINCT ON (COALESCE(li.duplicate_group_id, li.id))
+        li.id,
+        COALESCE(li.duplicate_group_id, li.id) AS run_id
+    FROM log_instances li
+    ORDER BY COALESCE(li.duplicate_group_id, li.id),
+        (li.id = li.duplicate_group_id) DESC NULLS LAST,
+        li.start_time ASC,
+        li.id ASC
+),
+eligible AS (
+    SELECT DISTINCT ON (ri.run_id)
+        sr.instance_id,
+        ri.run_id,
+        sr.instance_name,
+        li.difficulty_name,
+        li.max_players,
+        sr.duration_ms,
+        sr.start_time
+    FROM instance_speedruns sr
+    JOIN representative_instances ri ON ri.id = sr.instance_id
+    JOIN log_instances li ON li.id = sr.instance_id
+    CROSS JOIN snapshot s
+    WHERE sr.qualified = true
+      AND sr.duration_ms > 0
+      AND sr.start_time < s.cutoff
+      AND (s.window_start IS NULL OR sr.start_time >= s.window_start)
+    ORDER BY ri.run_id, sr.duration_ms ASC, sr.start_time ASC, sr.instance_id ASC
+)
+INSERT INTO time_parse_clear_time_members (
+    snapshot_id, instance_id, run_id,
+    instance_name, difficulty_name, max_players,
+    duration_ms, start_time
+)
+SELECT
+    $1, e.instance_id, e.run_id,
+    e.instance_name, e.difficulty_name, e.max_players,
+    e.duration_ms, e.start_time
+FROM eligible e
+ON CONFLICT (snapshot_id, instance_id) DO NOTHING
+`
+
+// Populate clear-time members from eligible instance speedruns.
+// Qualified complete runs only (duration_ms > 0). Duplicate groups collapsed
+// to one representative instance (deterministic: canonical instance first,
+// then earliest start, then smallest UUID).
+func (q *sqlQuerier) BatchInsertTimeParseSnapshotClearTimeMembers(ctx context.Context, snapshotID uuid.UUID) error {
+	_, err := q.db.Exec(ctx, batchInsertTimeParseSnapshotClearTimeMembers, snapshotID)
+	return err
+}
+
+const countTimeParseSnapshotBossKillMembers = `-- name: CountTimeParseSnapshotBossKillMembers :one
+SELECT COUNT(*) FROM time_parse_boss_kill_members WHERE snapshot_id = $1
+`
+
+func (q *sqlQuerier) CountTimeParseSnapshotBossKillMembers(ctx context.Context, snapshotID uuid.UUID) (int64, error) {
+	row := q.db.QueryRow(ctx, countTimeParseSnapshotBossKillMembers, snapshotID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const countTimeParseSnapshotClearTimeMembers = `-- name: CountTimeParseSnapshotClearTimeMembers :one
+SELECT COUNT(*) FROM time_parse_clear_time_members WHERE snapshot_id = $1
+`
+
+func (q *sqlQuerier) CountTimeParseSnapshotClearTimeMembers(ctx context.Context, snapshotID uuid.UUID) (int64, error) {
+	row := q.db.QueryRow(ctx, countTimeParseSnapshotClearTimeMembers, snapshotID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const deleteTimeParseSnapshot = `-- name: DeleteTimeParseSnapshot :exec
+DELETE FROM time_parse_snapshots WHERE id = $1
+`
+
+// Delete a time-parse snapshot by ID. Members are cascade-deleted.
+func (q *sqlQuerier) DeleteTimeParseSnapshot(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteTimeParseSnapshot, id)
+	return err
+}
+
+const deleteTimeParseSnapshots = `-- name: DeleteTimeParseSnapshots :exec
+DELETE FROM time_parse_snapshots WHERE id = ANY($1::uuid[])
+`
+
+// Bulk-delete time-parse snapshots by IDs. Members are cascade-deleted via FK.
+func (q *sqlQuerier) DeleteTimeParseSnapshots(ctx context.Context, ids []uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteTimeParseSnapshots, ids)
+	return err
+}
+
+const getLatestPublishedTimeParseSnapshot = `-- name: GetLatestPublishedTimeParseSnapshot :one
+SELECT id, tenant_id, cutoff, window_start, lookback_days, policy_version, query_version, status, created_at, published_at, source_row_count, source_watermark, source_fingerprint
+FROM time_parse_snapshots
+WHERE tenant_id = $1
+  AND lookback_days = $2
+  AND policy_version = $3
+  AND query_version = $4
+  AND status = 'published'
+ORDER BY published_at DESC
+LIMIT 1
+`
+
+type GetLatestPublishedTimeParseSnapshotParams struct {
+	TenantID      uuid.UUID `db:"tenant_id" json:"tenant_id"`
+	LookbackDays  int32     `db:"lookback_days" json:"lookback_days"`
+	PolicyVersion int16     `db:"policy_version" json:"policy_version"`
+	QueryVersion  int16     `db:"query_version" json:"query_version"`
+}
+
+// Most recently published time-parse snapshot for a tenant+lookback+versions.
+func (q *sqlQuerier) GetLatestPublishedTimeParseSnapshot(ctx context.Context, arg GetLatestPublishedTimeParseSnapshotParams) (TimeParseSnapshot, error) {
+	row := q.db.QueryRow(ctx, getLatestPublishedTimeParseSnapshot,
+		arg.TenantID,
+		arg.LookbackDays,
+		arg.PolicyVersion,
+		arg.QueryVersion,
+	)
+	var i TimeParseSnapshot
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.Cutoff,
+		&i.WindowStart,
+		&i.LookbackDays,
+		&i.PolicyVersion,
+		&i.QueryVersion,
+		&i.Status,
+		&i.CreatedAt,
+		&i.PublishedAt,
+		&i.SourceRowCount,
+		&i.SourceWatermark,
+		&i.SourceFingerprint,
+	)
+	return i, err
+}
+
+const getLatestPublishedTimeParseSnapshotBefore = `-- name: GetLatestPublishedTimeParseSnapshotBefore :one
+SELECT id, tenant_id, cutoff, window_start, lookback_days, policy_version, query_version, status, created_at, published_at, source_row_count, source_watermark, source_fingerprint
+FROM time_parse_snapshots
+WHERE tenant_id = $1
+  AND lookback_days = $2
+  AND policy_version = $3
+  AND query_version = $4
+  AND status = 'published'
+  AND cutoff <= $5
+ORDER BY cutoff DESC
+LIMIT 1
+`
+
+type GetLatestPublishedTimeParseSnapshotBeforeParams struct {
+	TenantID      uuid.UUID          `db:"tenant_id" json:"tenant_id"`
+	LookbackDays  int32              `db:"lookback_days" json:"lookback_days"`
+	PolicyVersion int16              `db:"policy_version" json:"policy_version"`
+	QueryVersion  int16              `db:"query_version" json:"query_version"`
+	Before        pgtype.Timestamptz `db:"before" json:"before"`
+}
+
+// Latest published time-parse snapshot whose cutoff <= given timestamp.
+// Used for canonical parse resolution (day-of-raid snapshot).
+func (q *sqlQuerier) GetLatestPublishedTimeParseSnapshotBefore(ctx context.Context, arg GetLatestPublishedTimeParseSnapshotBeforeParams) (TimeParseSnapshot, error) {
+	row := q.db.QueryRow(ctx, getLatestPublishedTimeParseSnapshotBefore,
+		arg.TenantID,
+		arg.LookbackDays,
+		arg.PolicyVersion,
+		arg.QueryVersion,
+		arg.Before,
+	)
+	var i TimeParseSnapshot
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.Cutoff,
+		&i.WindowStart,
+		&i.LookbackDays,
+		&i.PolicyVersion,
+		&i.QueryVersion,
+		&i.Status,
+		&i.CreatedAt,
+		&i.PublishedAt,
+		&i.SourceRowCount,
+		&i.SourceWatermark,
+		&i.SourceFingerprint,
+	)
+	return i, err
+}
+
+const getLatestPublishedTimeParseSnapshotForGuard = `-- name: GetLatestPublishedTimeParseSnapshotForGuard :one
+SELECT id, tenant_id, cutoff, window_start, lookback_days, policy_version, query_version, status, created_at, published_at, source_row_count, source_watermark, source_fingerprint
+FROM time_parse_snapshots
+WHERE tenant_id = $1
+  AND lookback_days = $2
+  AND policy_version = $3
+  AND query_version = $4
+  AND status = 'published'
+ORDER BY published_at DESC
+LIMIT 1
+`
+
+type GetLatestPublishedTimeParseSnapshotForGuardParams struct {
+	TenantID      uuid.UUID `db:"tenant_id" json:"tenant_id"`
+	LookbackDays  int32     `db:"lookback_days" json:"lookback_days"`
+	PolicyVersion int16     `db:"policy_version" json:"policy_version"`
+	QueryVersion  int16     `db:"query_version" json:"query_version"`
+}
+
+// Most recently published snapshot matching the full key dimensions (staleness guard).
+func (q *sqlQuerier) GetLatestPublishedTimeParseSnapshotForGuard(ctx context.Context, arg GetLatestPublishedTimeParseSnapshotForGuardParams) (TimeParseSnapshot, error) {
+	row := q.db.QueryRow(ctx, getLatestPublishedTimeParseSnapshotForGuard,
+		arg.TenantID,
+		arg.LookbackDays,
+		arg.PolicyVersion,
+		arg.QueryVersion,
+	)
+	var i TimeParseSnapshot
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.Cutoff,
+		&i.WindowStart,
+		&i.LookbackDays,
+		&i.PolicyVersion,
+		&i.QueryVersion,
+		&i.Status,
+		&i.CreatedAt,
+		&i.PublishedAt,
+		&i.SourceRowCount,
+		&i.SourceWatermark,
+		&i.SourceFingerprint,
+	)
+	return i, err
+}
+
+const getLogInstanceForTimeParse = `-- name: GetLogInstanceForTimeParse :one
+SELECT li.name AS instance_name, li.difficulty_name, li.max_players
+FROM log_instances li
+WHERE li.id = $1
+`
+
+type GetLogInstanceForTimeParseRow struct {
+	InstanceName   string `db:"instance_name" json:"instance_name"`
+	DifficultyName string `db:"difficulty_name" json:"difficulty_name"`
+	MaxPlayers     int32  `db:"max_players" json:"max_players"`
+}
+
+// Return the instance name, difficulty, and max_players for time-parse scoring.
+func (q *sqlQuerier) GetLogInstanceForTimeParse(ctx context.Context, id uuid.UUID) (GetLogInstanceForTimeParseRow, error) {
+	row := q.db.QueryRow(ctx, getLogInstanceForTimeParse, id)
+	var i GetLogInstanceForTimeParseRow
+	err := row.Scan(&i.InstanceName, &i.DifficultyName, &i.MaxPlayers)
+	return i, err
+}
+
+const getPublishedTimeParseSnapshotForCutoff = `-- name: GetPublishedTimeParseSnapshotForCutoff :one
+SELECT id, tenant_id, cutoff, window_start, lookback_days, policy_version, query_version, status, created_at, published_at, source_row_count, source_watermark, source_fingerprint
+FROM time_parse_snapshots
+WHERE tenant_id = $1
+  AND lookback_days = $2
+  AND policy_version = $3
+  AND query_version = $4
+  AND cutoff = $5
+  AND status = 'published'
+LIMIT 1
+`
+
+type GetPublishedTimeParseSnapshotForCutoffParams struct {
+	TenantID      uuid.UUID          `db:"tenant_id" json:"tenant_id"`
+	LookbackDays  int32              `db:"lookback_days" json:"lookback_days"`
+	PolicyVersion int16              `db:"policy_version" json:"policy_version"`
+	QueryVersion  int16              `db:"query_version" json:"query_version"`
+	Cutoff        pgtype.Timestamptz `db:"cutoff" json:"cutoff"`
+}
+
+// Check if a published time-parse snapshot exists for this exact cutoff+key.
+// Used by the idempotency guard.
+func (q *sqlQuerier) GetPublishedTimeParseSnapshotForCutoff(ctx context.Context, arg GetPublishedTimeParseSnapshotForCutoffParams) (TimeParseSnapshot, error) {
+	row := q.db.QueryRow(ctx, getPublishedTimeParseSnapshotForCutoff,
+		arg.TenantID,
+		arg.LookbackDays,
+		arg.PolicyVersion,
+		arg.QueryVersion,
+		arg.Cutoff,
+	)
+	var i TimeParseSnapshot
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.Cutoff,
+		&i.WindowStart,
+		&i.LookbackDays,
+		&i.PolicyVersion,
+		&i.QueryVersion,
+		&i.Status,
+		&i.CreatedAt,
+		&i.PublishedAt,
+		&i.SourceRowCount,
+		&i.SourceWatermark,
+		&i.SourceFingerprint,
+	)
+	return i, err
+}
+
+const getTimeParseSnapshotBossKillCohort = `-- name: GetTimeParseSnapshotBossKillCohort :many
+SELECT
+    tpbkm.duration_ms
+FROM time_parse_boss_kill_members tpbkm
+WHERE tpbkm.snapshot_id = $1
+  AND tpbkm.instance_name = $2
+  AND tpbkm.encounter_name = $3
+  AND tpbkm.difficulty_name = $4
+  AND tpbkm.max_players = $5
+`
+
+type GetTimeParseSnapshotBossKillCohortParams struct {
+	SnapshotID     uuid.UUID `db:"snapshot_id" json:"snapshot_id"`
+	InstanceName   string    `db:"instance_name" json:"instance_name"`
+	EncounterName  string    `db:"encounter_name" json:"encounter_name"`
+	DifficultyName string    `db:"difficulty_name" json:"difficulty_name"`
+	MaxPlayers     int16     `db:"max_players" json:"max_players"`
+}
+
+// All boss-kill durations for an (instance_name, encounter, difficulty, max_players) bucket.
+// Used to score a specific boss kill time against the population.
+func (q *sqlQuerier) GetTimeParseSnapshotBossKillCohort(ctx context.Context, arg GetTimeParseSnapshotBossKillCohortParams) ([]int64, error) {
+	rows, err := q.db.Query(ctx, getTimeParseSnapshotBossKillCohort,
+		arg.SnapshotID,
+		arg.InstanceName,
+		arg.EncounterName,
+		arg.DifficultyName,
+		arg.MaxPlayers,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var duration_ms int64
+		if err := rows.Scan(&duration_ms); err != nil {
+			return nil, err
+		}
+		items = append(items, duration_ms)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getTimeParseSnapshotClearTimeCohort = `-- name: GetTimeParseSnapshotClearTimeCohort :many
+SELECT
+    tpctm.duration_ms
+FROM time_parse_clear_time_members tpctm
+WHERE tpctm.snapshot_id = $1
+  AND tpctm.instance_name = $2
+  AND tpctm.difficulty_name = $3
+  AND tpctm.max_players = $4
+`
+
+type GetTimeParseSnapshotClearTimeCohortParams struct {
+	SnapshotID     uuid.UUID `db:"snapshot_id" json:"snapshot_id"`
+	InstanceName   string    `db:"instance_name" json:"instance_name"`
+	DifficultyName string    `db:"difficulty_name" json:"difficulty_name"`
+	MaxPlayers     int16     `db:"max_players" json:"max_players"`
+}
+
+// All clear-time durations for an (instance_name, difficulty, max_players) bucket.
+// Used to score a specific run's clear time against the population.
+func (q *sqlQuerier) GetTimeParseSnapshotClearTimeCohort(ctx context.Context, arg GetTimeParseSnapshotClearTimeCohortParams) ([]int64, error) {
+	rows, err := q.db.Query(ctx, getTimeParseSnapshotClearTimeCohort,
+		arg.SnapshotID,
+		arg.InstanceName,
+		arg.DifficultyName,
+		arg.MaxPlayers,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var duration_ms int64
+		if err := rows.Scan(&duration_ms); err != nil {
+			return nil, err
+		}
+		items = append(items, duration_ms)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getTimeParseSnapshotSourceStats = `-- name: GetTimeParseSnapshotSourceStats :one
+WITH clear_stats AS (
+    SELECT
+        COUNT(*)::bigint AS cnt,
+        MAX(sr.start_time)::timestamptz AS wm,
+        COALESCE(SUM(hashtextextended(
+            sr.instance_id::text || '|' ||
+            COALESCE(li.duplicate_group_id, li.id)::text || '|' ||
+            sr.qualified::text || '|' ||
+            sr.duration_ms::text || '|' ||
+            sr.instance_name || '|' ||
+            li.difficulty_name || '|' ||
+            li.max_players::text || '|' ||
+            sr.start_time::text,
+            0
+        )::numeric) % 4294967291, 0)::bigint AS fp
+    FROM instance_speedruns sr
+    JOIN log_instances li ON li.id = sr.instance_id
+    WHERE sr.qualified = true
+      AND sr.duration_ms > 0
+      AND sr.start_time < $1
+      AND ($2::timestamptz IS NULL OR sr.start_time >= $2)
+),
+boss_stats AS (
+    SELECT
+        COUNT(*)::bigint AS cnt,
+        MAX(lie.end_time)::timestamptz AS wm,
+        COALESCE(SUM(hashtextextended(
+            lie.instance_id::text || '|' ||
+            COALESCE(li.duplicate_group_id, li.id)::text || '|' ||
+            lie.name || '|' ||
+            lie.kill_type::text || '|' ||
+            lie.boss::text || '|' ||
+            lie.start_time::text || '|' ||
+            lie.end_time::text || '|' ||
+            sr.instance_name || '|' ||
+            li.difficulty_name || '|' ||
+            li.max_players::text,
+            1
+        )::numeric) % 4294967291, 0)::bigint AS fp
+    FROM log_instance_encounters lie
+    JOIN log_instances li ON li.id = lie.instance_id
+    JOIN instance_speedruns sr ON sr.instance_id = lie.instance_id
+    WHERE lie.boss = true
+      AND lie.kill_type = 'clean'
+      AND lie.end_time > lie.start_time
+      AND (EXTRACT(EPOCH FROM (lie.end_time - lie.start_time)) * 1000)::bigint > 0
+      AND sr.start_time < $1
+      AND ($2::timestamptz IS NULL OR sr.start_time >= $2)
+)
+SELECT
+    (COALESCE(c.cnt, 0) + COALESCE(b.cnt, 0))::bigint AS row_count,
+    GREATEST(c.wm, b.wm)::timestamptz AS watermark,
+    ((c.fp + b.fp) % 4294967291)::bigint AS fingerprint
+FROM clear_stats c, boss_stats b
+`
+
+type GetTimeParseSnapshotSourceStatsParams struct {
+	Cutoff      pgtype.Timestamptz `db:"cutoff" json:"cutoff"`
+	WindowStart pgtype.Timestamptz `db:"window_start" json:"window_start"`
+}
+
+type GetTimeParseSnapshotSourceStatsRow struct {
+	RowCount    int64              `db:"row_count" json:"row_count"`
+	Watermark   pgtype.Timestamptz `db:"watermark" json:"watermark"`
+	Fingerprint int64              `db:"fingerprint" json:"fingerprint"`
+}
+
+// Compute a combined source fingerprint covering both clear-time eligible
+// speedruns and boss-kill eligible encounters. Changes in either source
+// break the staleness guard so new boss encounters or reparses trigger
+// publication.
+// The fingerprint hashes every membership-affecting column via
+// hashtextextended (seed 0 for clears, seed 1 for bosses), sums via
+// numeric to avoid bigint overflow, then reduces modulo a large prime.
+// The two sub-fingerprints are added modulo the same prime so identical
+// content in both populations does not cancel out.
+// Empty populations produce fingerprint = 0 (COALESCE of empty SUM).
+// Compatible with PostgreSQL 13+ (no bit_xor aggregate required).
+// IMPORTANT: keep WHERE clauses in sync with the corresponding BatchInsert queries.
+func (q *sqlQuerier) GetTimeParseSnapshotSourceStats(ctx context.Context, arg GetTimeParseSnapshotSourceStatsParams) (GetTimeParseSnapshotSourceStatsRow, error) {
+	row := q.db.QueryRow(ctx, getTimeParseSnapshotSourceStats, arg.Cutoff, arg.WindowStart)
+	var i GetTimeParseSnapshotSourceStatsRow
+	err := row.Scan(&i.RowCount, &i.Watermark, &i.Fingerprint)
+	return i, err
+}
+
+const insertTimeParseSnapshot = `-- name: InsertTimeParseSnapshot :one
+INSERT INTO time_parse_snapshots (
+    tenant_id, cutoff, window_start, lookback_days,
+    policy_version, query_version, status,
+    source_row_count, source_watermark, source_fingerprint
+) VALUES (
+    $1, $2, $3, $4,
+    $5, $6, 'pending',
+    $7, $8, $9
+) RETURNING id, tenant_id, cutoff, window_start, lookback_days, policy_version, query_version, status, created_at, published_at, source_row_count, source_watermark, source_fingerprint
+`
+
+type InsertTimeParseSnapshotParams struct {
+	TenantID          uuid.UUID          `db:"tenant_id" json:"tenant_id"`
+	Cutoff            pgtype.Timestamptz `db:"cutoff" json:"cutoff"`
+	WindowStart       pgtype.Timestamptz `db:"window_start" json:"window_start"`
+	LookbackDays      int32              `db:"lookback_days" json:"lookback_days"`
+	PolicyVersion     int16              `db:"policy_version" json:"policy_version"`
+	QueryVersion      int16              `db:"query_version" json:"query_version"`
+	SourceRowCount    int64              `db:"source_row_count" json:"source_row_count"`
+	SourceWatermark   pgtype.Timestamptz `db:"source_watermark" json:"source_watermark"`
+	SourceFingerprint int64              `db:"source_fingerprint" json:"source_fingerprint"`
+}
+
+// Create a new pending time-parse snapshot for a tenant+lookback.
+func (q *sqlQuerier) InsertTimeParseSnapshot(ctx context.Context, arg InsertTimeParseSnapshotParams) (TimeParseSnapshot, error) {
+	row := q.db.QueryRow(ctx, insertTimeParseSnapshot,
+		arg.TenantID,
+		arg.Cutoff,
+		arg.WindowStart,
+		arg.LookbackDays,
+		arg.PolicyVersion,
+		arg.QueryVersion,
+		arg.SourceRowCount,
+		arg.SourceWatermark,
+		arg.SourceFingerprint,
+	)
+	var i TimeParseSnapshot
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.Cutoff,
+		&i.WindowStart,
+		&i.LookbackDays,
+		&i.PolicyVersion,
+		&i.QueryVersion,
+		&i.Status,
+		&i.CreatedAt,
+		&i.PublishedAt,
+		&i.SourceRowCount,
+		&i.SourceWatermark,
+		&i.SourceFingerprint,
+	)
+	return i, err
+}
+
+const listAllTimeParseSnapshots = `-- name: ListAllTimeParseSnapshots :many
+SELECT tps.id, tps.tenant_id, tps.cutoff, tps.window_start, tps.lookback_days, tps.policy_version, tps.query_version, tps.status, tps.created_at, tps.published_at, tps.source_row_count, tps.source_watermark, tps.source_fingerprint,
+       (SELECT COUNT(*) FROM time_parse_clear_time_members WHERE snapshot_id = tps.id) AS clear_member_count,
+       (SELECT COUNT(*) FROM time_parse_boss_kill_members WHERE snapshot_id = tps.id) AS boss_member_count,
+       t.name AS tenant_name
+FROM time_parse_snapshots tps
+LEFT JOIN tenants t ON t.id = tps.tenant_id
+ORDER BY tps.created_at DESC
+LIMIT 100
+`
+
+type ListAllTimeParseSnapshotsRow struct {
+	ID                uuid.UUID          `db:"id" json:"id"`
+	TenantID          uuid.UUID          `db:"tenant_id" json:"tenant_id"`
+	Cutoff            pgtype.Timestamptz `db:"cutoff" json:"cutoff"`
+	WindowStart       pgtype.Timestamptz `db:"window_start" json:"window_start"`
+	LookbackDays      int32              `db:"lookback_days" json:"lookback_days"`
+	PolicyVersion     int16              `db:"policy_version" json:"policy_version"`
+	QueryVersion      int16              `db:"query_version" json:"query_version"`
+	Status            string             `db:"status" json:"status"`
+	CreatedAt         pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	PublishedAt       pgtype.Timestamptz `db:"published_at" json:"published_at"`
+	SourceRowCount    int64              `db:"source_row_count" json:"source_row_count"`
+	SourceWatermark   pgtype.Timestamptz `db:"source_watermark" json:"source_watermark"`
+	SourceFingerprint int64              `db:"source_fingerprint" json:"source_fingerprint"`
+	ClearMemberCount  int64              `db:"clear_member_count" json:"clear_member_count"`
+	BossMemberCount   int64              `db:"boss_member_count" json:"boss_member_count"`
+	TenantName        pgtype.Text        `db:"tenant_name" json:"tenant_name"`
+}
+
+// Admin view: list all time-parse snapshots across tenants, most recent first.
+// LEFT JOINs tenants to surface the tenant name (NULL for root scope).
+// Includes separate clear-time and boss-kill member counts.
+func (q *sqlQuerier) ListAllTimeParseSnapshots(ctx context.Context) ([]ListAllTimeParseSnapshotsRow, error) {
+	rows, err := q.db.Query(ctx, listAllTimeParseSnapshots)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListAllTimeParseSnapshotsRow
+	for rows.Next() {
+		var i ListAllTimeParseSnapshotsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.Cutoff,
+			&i.WindowStart,
+			&i.LookbackDays,
+			&i.PolicyVersion,
+			&i.QueryVersion,
+			&i.Status,
+			&i.CreatedAt,
+			&i.PublishedAt,
+			&i.SourceRowCount,
+			&i.SourceWatermark,
+			&i.SourceFingerprint,
+			&i.ClearMemberCount,
+			&i.BossMemberCount,
+			&i.TenantName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const publishTimeParseSnapshot = `-- name: PublishTimeParseSnapshot :one
+UPDATE time_parse_snapshots
+SET status = 'published', published_at = now()
+WHERE id = $1 AND status IN ('pending', 'published')
+RETURNING id, tenant_id, cutoff, window_start, lookback_days, policy_version, query_version, status, created_at, published_at, source_row_count, source_watermark, source_fingerprint
+`
+
+// Transition a pending time-parse snapshot to published. Idempotent on already-published.
+func (q *sqlQuerier) PublishTimeParseSnapshot(ctx context.Context, id uuid.UUID) (TimeParseSnapshot, error) {
+	row := q.db.QueryRow(ctx, publishTimeParseSnapshot, id)
+	var i TimeParseSnapshot
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.Cutoff,
+		&i.WindowStart,
+		&i.LookbackDays,
+		&i.PolicyVersion,
+		&i.QueryVersion,
+		&i.Status,
+		&i.CreatedAt,
+		&i.PublishedAt,
+		&i.SourceRowCount,
+		&i.SourceWatermark,
+		&i.SourceFingerprint,
 	)
 	return i, err
 }

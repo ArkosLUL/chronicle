@@ -7,8 +7,11 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/Emyrk/chronicle/combatlog/parser/common/encounter"
+	commoninstances "github.com/Emyrk/chronicle/combatlog/parser/common/instances"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/parsectx"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/unitdb"
+	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 	"github.com/Emyrk/chronicle/database"
 )
@@ -109,4 +112,58 @@ func TestOnyxiaZoneName(t *testing.T) {
 			require.Equal(t, tt.want, instance.Name())
 		})
 	}
+}
+
+func TestOnyxiaHostilesFlavor(t *testing.T) {
+	t.Parallel()
+
+	standard := commoninstances.OnyxiaHostiles(database.WoWFlavor{database.FlavorWrath}).HostileEntries()
+	_, ok := standard[49018]
+	require.False(t, ok)
+
+	nightmare := commoninstances.OnyxiaHostiles(database.WoWFlavor{database.FlavorNightmareOfUrsol}).HostileEntries()
+	axelus, ok := nightmare[49018]
+	require.True(t, ok)
+	require.Equal(t, "Broodcommander Axelus", axelus.Name)
+}
+
+func TestOnyxiaDerivedName(t *testing.T) {
+	t.Parallel()
+
+	progressionFlavor := database.WoWFlavor{
+		database.FlavorWrath,
+		database.FlavorAzerothcore,
+		database.FlavorAzerothcoreProgression,
+	}
+
+	for _, tt := range []struct {
+		name  string
+		entry uint32
+		want  string
+	}{
+		{name: "classic boss", entry: 301000, want: "Onyxia Classic"},
+		{name: "classic whelp", entry: 301001, want: "Onyxia Classic"},
+		{name: "classic warder", entry: 301002, want: "Onyxia Classic"},
+		{name: "wrath boss", entry: 10184, want: "Onyxia's Lair"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			gid := creatureGUID(tt.entry)
+			resolver := onyxiaDerivedName(progressionFlavor)
+			got, ok := resolver.Name([]encounter.Fight{{
+				Hostiles: map[guid.GUID]encounter.CharacterFight{
+					gid: {ID: gid},
+				},
+			}})
+			require.True(t, ok)
+			require.Equal(t, tt.want, got)
+		})
+	}
+
+	require.Nil(t, onyxiaDerivedName(database.WoWFlavor{database.FlavorWrath, database.FlavorAzerothcore}))
+}
+
+func creatureGUID(entry uint32) guid.GUID {
+	return guid.GUID(0xF130000000000001 | uint64(entry)<<24)
 }

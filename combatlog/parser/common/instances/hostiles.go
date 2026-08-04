@@ -506,8 +506,23 @@ func OnyxiaHostiles(fl database.WoWFlavor) *identifier.Identifier {
 	})
 	LoadBosses(hostile, map[uint32]string{
 		10184: "Onyxia",
-		49018: "Broodcommander Axelus",
 	})
+
+	if fl.Has(database.FlavorNightmareOfUrsol) {
+		LoadBosses(hostile, map[uint32]string{
+			49018: "Broodcommander Axelus",
+		})
+	}
+
+	if fl.Has(database.FlavorAzerothcoreProgression) {
+		LoadAdds(hostile, map[uint32]string{
+			301001: "Onyxian Whelp",
+			301002: "Onyxian Warder",
+		})
+		LoadBosses(hostile, map[uint32]string{
+			301000: "Onyxia",
+		})
+	}
 
 	if fl.Has(database.FlavorEpoch) {
 		LoadAdds(hostile, map[uint32]string{

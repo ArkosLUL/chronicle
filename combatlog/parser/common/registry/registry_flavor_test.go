@@ -34,7 +34,8 @@ func TestProgressionOnyxiaHasSeparateSpeedrunRules(t *testing.T) {
 
 	classic := rules["Onyxia Classic"]
 	require.NotNil(t, classic)
-	require.Equal(t, []uint32{10184}, classic.Requirements[0].EntryIDs)
+	require.Equal(t, []uint32{301000}, classic.Requirements[0].EntryIDs)
+	require.Equal(t, []uint32{301002}, classic.Requirements[1].EntryIDs)
 	require.NotNil(t, classic.LevelRange)
 	require.Equal(t, int32(60), classic.LevelRange.MaxLevel)
 
@@ -54,7 +55,8 @@ func TestInstanceDetailsBossCount(t *testing.T) {
 		bossCount *int
 	}{
 		{name: "vanilla onyxia", flavor: database.WoWFlavor{database.FlavorVanilla}, instance: "Onyxia's Lair", bossCount: intPtr(1)},
-		{name: "turtle onyxia", flavor: database.WoWFlavor{database.FlavorTurtle}, instance: "Onyxia's Lair", bossCount: intPtr(2)},
+		{name: "turtle onyxia", flavor: database.WoWFlavor{database.FlavorTurtle}, instance: "Onyxia's Lair", bossCount: intPtr(1)},
+		{name: "nightmare of ursol onyxia", flavor: database.WoWFlavor{database.FlavorNightmareOfUrsol}, instance: "Onyxia's Lair", bossCount: intPtr(2)},
 		{name: "epoch onyxia", flavor: database.WoWFlavor{database.FlavorEpoch}, instance: "Onyxia's Lair", bossCount: intPtr(3)},
 		{name: "naxxramas groups multi-unit encounters", flavor: database.WoWFlavor{database.FlavorVanilla}, instance: "Naxxramas", bossCount: intPtr(15)},
 		{name: "gruul groups council members", flavor: database.WoWFlavor{database.FlavorTBC}, instance: "Gruul's Lair", bossCount: intPtr(2)},

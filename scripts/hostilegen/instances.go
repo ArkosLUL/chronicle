@@ -102,3 +102,51 @@ var AllInstances = []InstanceMeta{
 	{649, "Trial of the Crusader", "TrialOfTheCrusader", []string{"trial of the crusader", "trial of the grand crusader"}, "wotlk", "raid"},
 	{724, "Ruby Sanctum", "RubySanctum", []string{"the ruby sanctum", "ruby sanctum"}, "wotlk", "raid"},
 }
+
+// ExtraBosses and ExtraAdds list creatures that belong to an instance but have
+// no row in creature.sql, because the instance script summons them at runtime.
+// The spawn-driven filter can't see them, so whole encounters went missing:
+// Ulduar had no Yogg-Saron, no Algalon and only phase 1 of Mimiron.
+//
+// Classification here is explicit rather than inferred. AzerothCore names every
+// script under a boss directory boss_*, and most of these are rank 3, so both
+// isBoss heuristics would promote tentacles and trash bots to bosses.
+//
+// Difficulty variants come along automatically, so only list base entries.
+var ExtraBosses = map[uint32][]uint32{
+	// Ulduar
+	603: {
+		32871, // Algalon the Observer
+		33288, // Yogg-Saron
+		33651, // VX-001 (Mimiron phase 2)
+		33670, // Aerial Command Unit (Mimiron phase 3)
+	},
+}
+
+var ExtraAdds = map[uint32][]uint32{
+	// Ulduar
+	603: {
+		32933, // Left Arm (Kologarn)
+		32934, // Right Arm (Kologarn)
+		32953, // Black Hole (Algalon)
+		32955, // Collapsing Star (Algalon)
+		33052, // Living Constellation (Algalon)
+		33136, // Guardian of Yogg-Saron
+		33196, // Sif (Thorim)
+		33280, // Voice of Yogg-Saron
+		33292, // Ominous Cloud (Yogg-Saron)
+		33836, // Bomb Bot (Mimiron)
+		33855, // Junk Bot (Mimiron)
+		33882, // Death Orb (Yogg-Saron)
+		33890, // Brain of Yogg-Saron, despawns instead of dying
+		33943, // Influence Tentacle (Yogg-Saron)
+		33966, // Crusher Tentacle (Yogg-Saron)
+		33983, // Constrictor Tentacle (Yogg-Saron)
+		33985, // Corruptor Tentacle (Yogg-Saron)
+		33988, // Immortal Guardian (Yogg-Saron)
+		34057, // Assault Bot (Mimiron)
+		34147, // Emergency Fire Bot (Mimiron)
+		34149, // Frost Bomb (Mimiron)
+		34361, // Frost Bomb 25-man, not linked to 34149 by difficultyEntry
+	},
+}

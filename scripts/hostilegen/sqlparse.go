@@ -137,6 +137,9 @@ func parseCreatureSpawns(data []byte) map[uint32]map[uint32]bool {
 
 // parseInstanceEncounters parses instance_encounters.sql into a set of
 // creature entry IDs that are boss encounters (creditType=0 only).
+//
+// creditType=1 rows credit a spell rather than a creature, so there's no entry
+// to pick up. Those bosses have to go in ExtraBosses by hand. Algalon is one.
 func parseInstanceEncounters(data []byte) map[uint32]bool {
 	rows := parseAllRows(data)
 	result := make(map[uint32]bool, len(rows))

@@ -492,6 +492,59 @@ func UlduarHostiles() map[uint32]instances.Identity {
 		33378: "Thunder Orb",
 		33725: "Thorim Trap Bunny",
 	})
+	// Summoned by the instance scripts, so they have no creature.sql spawn rows
+	// and hostilegen cannot see them.
+	instances.LoadAdds(hostile, map[uint32]string{
+		// Kologarn. Arms die and respawn during the fight, so they stay adds.
+		32933: "Left Arm",
+		32934: "Right Arm",
+		33910: "Left Arm",
+		33911: "Right Arm",
+
+		// Thorim
+		33196: "Sif",
+		33234: "Sif",
+
+		// Mimiron
+		33836: "Bomb Bot",
+		33855: "Junk Bot",
+		34057: "Assault Bot",
+		34114: "Junk Bot",
+		34115: "Assault Bot",
+		34147: "Emergency Fire Bot",
+		34148: "Emergency Fire Bot",
+		34149: "Frost Bomb",
+		34218: "Bomb Bot",
+		34361: "Frost Bomb",
+
+		// Algalon
+		32953: "Black Hole",
+		32955: "Collapsing Star",
+		33052: "Living Constellation",
+		33116: "Living Constellation",
+		34215: "Collapsing Star",
+		34296: "Black Hole",
+
+		// Yogg-Saron. The brain despawns when Yogg dies instead of dying, so it
+		// can't be a boss unit.
+		33136: "Guardian of Yogg-Saron",
+		33280: "Voice of Yogg-Saron",
+		33292: "Ominous Cloud",
+		33882: "Death Orb",
+		33890: "Brain of Yogg-Saron",
+		33943: "Influence Tentacle",
+		33954: "Brain of Yogg-Saron",
+		33959: "Influence Tentacle",
+		33966: "Crusher Tentacle",
+		33967: "Crusher Tentacle",
+		33968: "Guardian of Yogg-Saron",
+		33983: "Constrictor Tentacle",
+		33984: "Constrictor Tentacle",
+		33985: "Corruptor Tentacle",
+		33986: "Corruptor Tentacle",
+		33988: "Immortal Guardian",
+		33989: "Immortal Guardian",
+	})
 	instances.LoadBosses(hostile, map[uint32]string{
 		32845: "Hodir",
 		32846: "Hodir",
@@ -499,7 +552,6 @@ func UlduarHostiles() map[uint32]instances.Identity {
 		32930: "Kologarn",
 		33113: "Flame Leviathan",
 		33118: "Ignis the Furnace Master",
-		33134: "Sara",
 		33147: "Thorim",
 		33186: "Razorscale",
 		33190: "Ignis the Furnace Master",
@@ -514,7 +566,13 @@ func UlduarHostiles() map[uint32]instances.Identity {
 		33909: "Kologarn",
 		34003: "Flame Leviathan",
 		34175: "Auriaya",
-		34332: "Sara",
+	})
+	// note: Algalon never dies. AzerothCore zeroes his damage at 2% health, turns
+	// him friendly and despawns him, so a win can't be detected from a death and
+	// still lands as a reset or wipe.
+	instances.LoadBosses(hostile, map[uint32]string{
+		32871: "Algalon the Observer",
+		33070: "Algalon the Observer",
 	})
 	instances.LoadBossGroup(hostile, "Assembly of Iron", map[uint32]string{
 		32857: "Stormcaller Brundir",
@@ -536,12 +594,30 @@ func UlduarHostiles() map[uint32]instances.Identity {
 		32915: "Elder Brightleaf",
 		33391: "Elder Brightleaf",
 	})
-	// Leviathan Mk II is Mimiron's first phase.
+	// Mimiron's three machines are phases 1-3 of the same fight, then all three
+	// come back together for phase 4.
+	//
+	// note: none of these units ever die. AzerothCore zeroes their damage at low
+	// health and despawns them, so a Mimiron win can't be detected from a death
+	// and still lands as a reset or wipe.
 	instances.LoadBossGroup(hostile, "Mimiron", map[uint32]string{
 		33244: "Mimiron",
 		33350: "Mimiron",
 		33432: "Leviathan Mk II",
+		33651: "VX-001",
+		33670: "Aerial Command Unit",
 		34106: "Leviathan Mk II",
+		34108: "VX-001",
+		34109: "Aerial Command Unit",
+	})
+	// Sara is Yogg-Saron's phase 1 form. She stays alive and hidden through the
+	// later phases and dies with him, so she belongs in the group rather than
+	// owning her own encounter.
+	instances.LoadBossGroup(hostile, "Yogg-Saron", map[uint32]string{
+		33134: "Sara",
+		33288: "Yogg-Saron",
+		33955: "Yogg-Saron",
+		34332: "Sara",
 	})
 	return hostile
 }

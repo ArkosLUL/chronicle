@@ -35,16 +35,38 @@ func filterInstance(
 		return nil
 	}
 
+	extraBosses := ExtraBosses[mapID]
+	extraAdds := ExtraAdds[mapID]
+
+	seed := make(map[uint32]bool, len(spawned)+len(extraBosses)+len(extraAdds))
+	for entry := range spawned {
+		seed[entry] = true
+	}
+	// forced holds entry → isBoss for the script-summoned extras, so they skip
+	// the heuristics.
+	forced := make(map[uint32]bool, len(extraBosses)+len(extraAdds))
+	for _, entry := range extraBosses {
+		seed[entry] = true
+		forced[entry] = true
+	}
+	for _, entry := range extraAdds {
+		seed[entry] = true
+		forced[entry] = false
+	}
+
 	// Expand the set to include difficulty variants of spawned creatures.
 	// diffBase maps a variant entry → base entry so we can use the base name.
-	allEntries := make(map[uint32]bool, len(spawned)*2)
+	allEntries := make(map[uint32]bool, len(seed)*2)
 	diffBase := make(map[uint32]uint32)
-	for entry := range spawned {
+	for entry := range seed {
 		allEntries[entry] = true
 		if tmpl := templates[entry]; tmpl != nil {
 			for _, de := range tmpl.DifficultyEntries() {
 				allEntries[de] = true
 				diffBase[de] = entry
+				if isBossEntry, ok := forced[entry]; ok {
+					forced[de] = isBossEntry
+				}
 			}
 		}
 	}
@@ -65,6 +87,15 @@ func filterInstance(
 			if baseTmpl := templates[baseEntry]; baseTmpl != nil {
 				name = baseTmpl.Name
 			}
+		}
+
+		if isBossEntry, ok := forced[entry]; ok {
+			if isBossEntry {
+				bosses[entry] = name
+			} else {
+				adds[entry] = name
+			}
+			continue
 		}
 
 		if isBoss(tmpl, encounterBosses) {

@@ -15,6 +15,7 @@ import (
 	"github.com/Emyrk/chronicle/api/chroniclesdk"
 	"github.com/Emyrk/chronicle/api/db2sdk"
 	"github.com/Emyrk/chronicle/chronicle/riverqueue"
+	"github.com/Emyrk/chronicle/chronicle/riverqueue/parseargs"
 	"github.com/Emyrk/chronicle/combatlog/parseoptions"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/characters/period"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/creatures"
@@ -47,9 +48,12 @@ import (
 )
 
 const (
-	KindLogParse                 = "log-parse"
+	KindLogParse                = "log-parse"
 	MinimumCombatTimeForRankings = 3
 )
+
+// parseScoreArgs is imported from the shared parseargs package, eliminating
+// the previous circular mirror that had divergent InsertOpts/UniqueOpts.
 
 type OutputLogParse struct {
 	InstanceFailures map[string]string
@@ -600,6 +604,23 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 		}
 
 		metrics.encountersParsed.Add(float64(len(finalized.Encounters)))
+	}
+
+	// Enqueue parse score computation for each successfully parsed instance.
+	// Fire-and-forget: scoring failure doesn't fail the parse, but log errors.
+	if w.parent.queue != nil {
+		for _, inst := range jobOut.Instances {
+			_, enqErr := w.parent.queue.Insert(ctx, parseargs.ArgsComputeParseScores{
+				InstanceID: inst.ID,
+				TenantID:   job.Args.TenantID,
+			}, nil)
+			if enqErr != nil {
+				w.parent.logger.Error("failed to enqueue parse score computation",
+					slog.String("instance_id", inst.ID.String()),
+					slog.Any("error", enqErr),
+				)
+			}
+		}
 	}
 
 	// Finalize parse-wide state (aura tracker, etc.) after all instances.

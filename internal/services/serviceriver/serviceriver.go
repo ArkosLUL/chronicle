@@ -147,6 +147,12 @@ func (s *Service) Start(ctx context.Context) error {
 	rank.TimeParseSnapshotDispatchWorker.Queue = q
 	riverqueue.AddWorker(q, rank.TimeParseSnapshotDispatchWorker)
 	riverqueue.AddWorker(q, rank.TimeParseSnapshotTenantWorker)
+	rank.ComputeParseScoresWorker.Queue = q
+	riverqueue.AddWorker(q, rank.ComputeParseScoresWorker)
+	rank.RepairDispatchWorker.Queue = q
+	riverqueue.AddWorker(q, rank.RepairDispatchWorker)
+	rank.RepairParseScoresWorker.Queue = q
+	riverqueue.AddWorker(q, rank.RepairParseScoresWorker)
 	q.AddQueue(riverqueue.QueueRankings, river.QueueConfig{
 		MaxWorkers: 1,
 	})
@@ -175,6 +181,16 @@ func (s *Service) Start(ctx context.Context) error {
 				return servicerankings.ArgsPublishTimeParseSnapshots{}, nil
 			},
 			&river.PeriodicJobOpts{RunOnStart: true},
+		),
+	)
+	// Daily bounded repair fan-out for root and every parse-enabled tenant.
+	q.AddPeriodicJob(
+		river.NewPeriodicJob(
+			river.PeriodicInterval(24*time.Hour),
+			func() (river.JobArgs, *river.InsertOpts) {
+				return servicerankings.ArgsDispatchParseScoreRepairs{}, nil
+			},
+			&river.PeriodicJobOpts{RunOnStart: false},
 		),
 	)
 

@@ -11,6 +11,45 @@ WHERE NOT EXISTS (
     WHERE wit.entry = $7 AND wit.quality <= 1
 );
 
+-- name: GetCharacterLoot :many
+-- Loot received by one character, newest first. Duplicate uploads of the
+-- same raid night are collapsed by (run, item, nth drop): each uploader's
+-- clock differs, so drops are matched by their order within the upload
+-- rather than by timestamp. Two genuine drops of the same item in one
+-- night survive as drop 1 and drop 2.
+WITH ranked AS (
+  SELECT
+    il.instance_id, il.received_ts, il.item_id, il.item_name, il.loot_suffix, il.quantity,
+    li.name AS instance_name,
+    li.hashed_slug AS instance_slug,
+    COALESCE(li.duplicate_group_id, il.instance_id) AS run_key,
+    ROW_NUMBER() OVER (
+      PARTITION BY il.instance_id, il.item_id
+      ORDER BY il.received_ts
+    ) AS drop_idx
+  FROM instance_loot il
+  JOIN log_instances li ON li.id = il.instance_id
+  WHERE il.realm_id = @realm_id
+    AND il.received_guid = @received_guid
+),
+deduped AS (
+  SELECT DISTINCT ON (run_key, item_id, drop_idx)
+    instance_id, received_ts, item_id, item_name, loot_suffix, quantity,
+    instance_name, instance_slug
+  FROM ranked
+  ORDER BY run_key, item_id, drop_idx, received_ts
+)
+SELECT
+  d.*,
+  COALESCE(wit.quality, 0)::INT as quality,
+  COALESCE(NULLIF(wdi.icon, ''), dbi.inventory_icon ->> 0, '')::TEXT as icon
+FROM deduped d
+  LEFT JOIN world_item_template wit ON wit.dataset_id = @dataset_id AND wit.entry = d.item_id
+  LEFT JOIN world_display_info wdi ON wdi.dataset_id = @dataset_id AND wdi.id = wit.display_id
+  LEFT JOIN dbc_item_display_info dbi ON dbi.dataset_id = @dataset_id AND dbi.id = wit.display_id
+ORDER BY d.received_ts DESC
+LIMIT @result_limit;
+
 -- name: GetInstanceLoot :many
 SELECT
   il.*,

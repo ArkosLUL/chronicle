@@ -3568,6 +3568,102 @@ func (q *sqlQuerier) UpsertLeaderboardVersionRequirements(ctx context.Context, a
 	return i, err
 }
 
+const getCharacterLoot = `-- name: GetCharacterLoot :many
+WITH ranked AS (
+  SELECT
+    il.instance_id, il.received_ts, il.item_id, il.item_name, il.loot_suffix, il.quantity,
+    li.name AS instance_name,
+    li.hashed_slug AS instance_slug,
+    COALESCE(li.duplicate_group_id, il.instance_id) AS run_key,
+    ROW_NUMBER() OVER (
+      PARTITION BY il.instance_id, il.item_id
+      ORDER BY il.received_ts
+    ) AS drop_idx
+  FROM instance_loot il
+  JOIN log_instances li ON li.id = il.instance_id
+  WHERE il.realm_id = $3
+    AND il.received_guid = $4
+),
+deduped AS (
+  SELECT DISTINCT ON (run_key, item_id, drop_idx)
+    instance_id, received_ts, item_id, item_name, loot_suffix, quantity,
+    instance_name, instance_slug
+  FROM ranked
+  ORDER BY run_key, item_id, drop_idx, received_ts
+)
+SELECT
+  d.instance_id, d.received_ts, d.item_id, d.item_name, d.loot_suffix, d.quantity, d.instance_name, d.instance_slug,
+  COALESCE(wit.quality, 0)::INT as quality,
+  COALESCE(NULLIF(wdi.icon, ''), dbi.inventory_icon ->> 0, '')::TEXT as icon
+FROM deduped d
+  LEFT JOIN world_item_template wit ON wit.dataset_id = $1 AND wit.entry = d.item_id
+  LEFT JOIN world_display_info wdi ON wdi.dataset_id = $1 AND wdi.id = wit.display_id
+  LEFT JOIN dbc_item_display_info dbi ON dbi.dataset_id = $1 AND dbi.id = wit.display_id
+ORDER BY d.received_ts DESC
+LIMIT $2
+`
+
+type GetCharacterLootParams struct {
+	DatasetID    uuid.UUID `db:"dataset_id" json:"dataset_id"`
+	ResultLimit  int32     `db:"result_limit" json:"result_limit"`
+	RealmID      uuid.UUID `db:"realm_id" json:"realm_id"`
+	ReceivedGuid int64     `db:"received_guid" json:"received_guid"`
+}
+
+type GetCharacterLootRow struct {
+	InstanceID   uuid.UUID          `db:"instance_id" json:"instance_id"`
+	ReceivedTs   pgtype.Timestamptz `db:"received_ts" json:"received_ts"`
+	ItemID       int32              `db:"item_id" json:"item_id"`
+	ItemName     string             `db:"item_name" json:"item_name"`
+	LootSuffix   int32              `db:"loot_suffix" json:"loot_suffix"`
+	Quantity     int32              `db:"quantity" json:"quantity"`
+	InstanceName string             `db:"instance_name" json:"instance_name"`
+	InstanceSlug pgtype.Text        `db:"instance_slug" json:"instance_slug"`
+	Quality      int32              `db:"quality" json:"quality"`
+	Icon         string             `db:"icon" json:"icon"`
+}
+
+// Loot received by one character, newest first. Duplicate uploads of the
+// same raid night are collapsed by (run, item, nth drop): each uploader's
+// clock differs, so drops are matched by their order within the upload
+// rather than by timestamp. Two genuine drops of the same item in one
+// night survive as drop 1 and drop 2.
+func (q *sqlQuerier) GetCharacterLoot(ctx context.Context, arg GetCharacterLootParams) ([]GetCharacterLootRow, error) {
+	rows, err := q.db.Query(ctx, getCharacterLoot,
+		arg.DatasetID,
+		arg.ResultLimit,
+		arg.RealmID,
+		arg.ReceivedGuid,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetCharacterLootRow
+	for rows.Next() {
+		var i GetCharacterLootRow
+		if err := rows.Scan(
+			&i.InstanceID,
+			&i.ReceivedTs,
+			&i.ItemID,
+			&i.ItemName,
+			&i.LootSuffix,
+			&i.Quantity,
+			&i.InstanceName,
+			&i.InstanceSlug,
+			&i.Quality,
+			&i.Icon,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getInstanceLoot = `-- name: GetInstanceLoot :many
 SELECT
   il.id, il.instance_id, il.realm_id, il.source_guid, il.source_ts, il.received_guid, il.received_ts, il.item_id, il.item_name, il.loot_suffix, il.quantity,
@@ -4430,6 +4526,7 @@ SELECT
     (SELECT COUNT(*) FROM log_instance_encounters lie WHERE lie.instance_id = li.id AND lie.boss = true AND lie.kill_type IN ('clean', 'partial')) as boss_kills,
     COALESCE((SELECT EXTRACT(EPOCH FROM (MAX(lie.end_time) - MIN(lie.start_time))) * 1000 
      FROM log_instance_encounters lie WHERE lie.instance_id = li.id), 0)::float8 as duration_ms,
+    iom.total_combat_duration_ms as combat_duration_ms,
     g.id as guild_id,
     g.name as guild_name,
     EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id OR yt.instance_slug = li.hashed_slug) as has_youtube_video,
@@ -4441,6 +4538,7 @@ SELECT
 FROM log_instances li
 JOIN parsed_log_group plg ON plg.id = li.log_group_id
 JOIN wow_log_groups wlg ON wlg.id = plg.id
+LEFT JOIN instance_overview_metrics iom ON iom.instance_id = li.id
 LEFT JOIN server_upload_meta sm ON sm.log_group_id = li.log_group_id
 JOIN users u ON u.id = wlg.owner
 JOIN wow_server_realms wsr ON wsr.id = li.realm_id
@@ -4518,6 +4616,7 @@ type ListInstancesByTimeRangeRow struct {
 	BossCount          int64              `db:"boss_count" json:"boss_count"`
 	BossKills          int64              `db:"boss_kills" json:"boss_kills"`
 	DurationMs         float64            `db:"duration_ms" json:"duration_ms"`
+	CombatDurationMs   pgtype.Int8        `db:"combat_duration_ms" json:"combat_duration_ms"`
 	GuildID            uuid.NullUUID      `db:"guild_id" json:"guild_id"`
 	GuildName          pgtype.Text        `db:"guild_name" json:"guild_name"`
 	HasYoutubeVideo    bool               `db:"has_youtube_video" json:"has_youtube_video"`
@@ -4561,6 +4660,7 @@ func (q *sqlQuerier) ListInstancesByTimeRange(ctx context.Context, arg ListInsta
 			&i.BossCount,
 			&i.BossKills,
 			&i.DurationMs,
+			&i.CombatDurationMs,
 			&i.GuildID,
 			&i.GuildName,
 			&i.HasYoutubeVideo,
@@ -4599,6 +4699,7 @@ SELECT
     (SELECT COUNT(*) FROM log_instance_encounters lie WHERE lie.instance_id = li.id AND lie.boss = true AND lie.kill_type IN ('clean', 'partial')) as boss_kills,
     COALESCE((SELECT EXTRACT(EPOCH FROM (MAX(lie.end_time) - MIN(lie.start_time))) * 1000 
      FROM log_instance_encounters lie WHERE lie.instance_id = li.id), 0)::float8 as duration_ms,
+    iom.total_combat_duration_ms as combat_duration_ms,
     g.id as guild_id,
     g.name as guild_name,
     EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id OR yt.instance_slug = li.hashed_slug) as has_youtube_video,
@@ -4610,6 +4711,7 @@ SELECT
 FROM log_instances li
 JOIN parsed_log_group plg ON plg.id = li.log_group_id
 JOIN wow_log_groups wlg ON wlg.id = plg.id
+LEFT JOIN instance_overview_metrics iom ON iom.instance_id = li.id
 LEFT JOIN server_upload_meta sm ON sm.log_group_id = li.log_group_id
 JOIN users u ON u.id = wlg.owner
 JOIN wow_server_realms wsr ON wsr.id = li.realm_id
@@ -4676,6 +4778,7 @@ type ListRecentInstancesRow struct {
 	BossCount          int64              `db:"boss_count" json:"boss_count"`
 	BossKills          int64              `db:"boss_kills" json:"boss_kills"`
 	DurationMs         float64            `db:"duration_ms" json:"duration_ms"`
+	CombatDurationMs   pgtype.Int8        `db:"combat_duration_ms" json:"combat_duration_ms"`
 	GuildID            uuid.NullUUID      `db:"guild_id" json:"guild_id"`
 	GuildName          pgtype.Text        `db:"guild_name" json:"guild_name"`
 	HasYoutubeVideo    bool               `db:"has_youtube_video" json:"has_youtube_video"`
@@ -4717,6 +4820,7 @@ func (q *sqlQuerier) ListRecentInstances(ctx context.Context, arg ListRecentInst
 			&i.BossCount,
 			&i.BossKills,
 			&i.DurationMs,
+			&i.CombatDurationMs,
 			&i.GuildID,
 			&i.GuildName,
 			&i.HasYoutubeVideo,
@@ -4968,7 +5072,7 @@ func (q *sqlQuerier) DeleteParseScoreResultsForTenantInstance(ctx context.Contex
 }
 
 const getCharacterParseHistory = `-- name: GetCharacterParseHistory :many
-SELECT DISTINCT ON (psr.run_id, psr.encounter_name, psr.snapshot_id)
+SELECT DISTINCT ON (psr.run_id, psr.encounter_name)
     psr.id,
     psr.instance_id,
     psr.run_id,
@@ -4995,7 +5099,7 @@ WHERE psr.tenant_id = $1
   AND psr.metric = $3
   AND psr.status IN ('ok', 'low_confidence')
   AND psr.killed_at >= $4
-ORDER BY psr.run_id, psr.encounter_name, psr.snapshot_id, psr.precise_score DESC
+ORDER BY psr.run_id, psr.encounter_name, psr.created_at DESC, psr.precise_score DESC
 `
 
 type GetCharacterParseHistoryParams struct {
@@ -5030,6 +5134,9 @@ type GetCharacterParseHistoryRow struct {
 
 // Character history: ALL deduplicated parses over the lookback window.
 // Returns every (run_id, encounter) parse — not just one best per encounter.
+// Duplicate uploads of the same run collapse to one row per encounter even
+// when they were scored against different snapshots; the most recently
+// computed scoring wins so a night's rows stay internally consistent.
 // The caller groups by (instance_name, encounter_name), takes best 3 per group,
 // averages each group, then averages groups for the Score.
 func (q *sqlQuerier) GetCharacterParseHistory(ctx context.Context, arg GetCharacterParseHistoryParams) ([]GetCharacterParseHistoryRow, error) {
@@ -6967,6 +7074,65 @@ func (q *sqlQuerier) PublishRankingSnapshot(ctx context.Context, id uuid.UUID) (
 		&i.SourceWatermark,
 	)
 	return i, err
+}
+
+const getCharacterEncounterStats = `-- name: GetCharacterEncounterStats :many
+SELECT
+  edr.instance_name,
+  edr.encounter_name,
+  edr.difficulty_name,
+  edr.max_players,
+  COUNT(DISTINCT COALESCE(li.duplicate_group_id, edr.instance_id))::INT AS kills,
+  MIN(edr.killed_at)::timestamptz AS first_killed_at,
+  MAX(edr.killed_at)::timestamptz AS last_killed_at
+FROM encounter_dps_rankings edr
+JOIN log_instances li ON li.id = edr.instance_id
+WHERE edr.player_guid = $1
+  AND edr.encounter_id IS NOT NULL
+GROUP BY edr.instance_name, edr.encounter_name, edr.difficulty_name, edr.max_players
+ORDER BY edr.instance_name, edr.encounter_name
+`
+
+type GetCharacterEncounterStatsRow struct {
+	InstanceName   string             `db:"instance_name" json:"instance_name"`
+	EncounterName  string             `db:"encounter_name" json:"encounter_name"`
+	DifficultyName string             `db:"difficulty_name" json:"difficulty_name"`
+	MaxPlayers     int16              `db:"max_players" json:"max_players"`
+	Kills          int32              `db:"kills" json:"kills"`
+	FirstKilledAt  pgtype.Timestamptz `db:"first_killed_at" json:"first_killed_at"`
+	LastKilledAt   pgtype.Timestamptz `db:"last_killed_at" json:"last_killed_at"`
+}
+
+// Per-encounter kill aggregates for one character across all time.
+// Rankings rows exist only for clean/partial kills; trash rows
+// (encounter_id IS NULL) are excluded. Duplicate uploads of the same raid
+// night are collapsed via duplicate_group_id.
+func (q *sqlQuerier) GetCharacterEncounterStats(ctx context.Context, playerGuid string) ([]GetCharacterEncounterStatsRow, error) {
+	rows, err := q.db.Query(ctx, getCharacterEncounterStats, playerGuid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetCharacterEncounterStatsRow
+	for rows.Next() {
+		var i GetCharacterEncounterStatsRow
+		if err := rows.Scan(
+			&i.InstanceName,
+			&i.EncounterName,
+			&i.DifficultyName,
+			&i.MaxPlayers,
+			&i.Kills,
+			&i.FirstKilledAt,
+			&i.LastKilledAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const hasInstanceDpsRankings = `-- name: HasInstanceDpsRankings :one

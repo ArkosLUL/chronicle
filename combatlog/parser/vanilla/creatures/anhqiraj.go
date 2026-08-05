@@ -4,9 +4,8 @@ import (
 	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/common/characters"
-
-	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/messages"
+	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 )
 
 const (
@@ -31,6 +30,24 @@ type CthunParty struct {
 	entry        uint32
 	pendingDeath *messages.Message
 	eyeDone      bool
+}
+
+func NewTentacles(id guid.GUID, all *characters.Characters) (characters.Character, bool) {
+	entry, ok := id.GetEntry()
+	if !ok {
+		return nil, false
+	}
+
+	switch entry {
+	case eyeTentacleEntry, fleshTentacleEntry, clawTentacleEntry, giantEyeTentacleEntry, giantClawTentacleEntry:
+	default:
+		return nil, false
+	}
+
+	c := characters.NewCommonCharacter(id, all)
+	c.WithTimeout(time.Second * 30)
+	c.WithTimeoutAsDeath()
+	return c, true
 }
 
 func NewCthun(id guid.GUID, all *characters.Characters) (characters.Character, bool) {

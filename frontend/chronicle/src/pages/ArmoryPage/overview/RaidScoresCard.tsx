@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card/Card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/Collapsible/Collapsible";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/Table/Table";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/Tooltip/tooltip";
+import { getInstanceAccentColor } from "@/pages/Logs/utils/instanceImages";
 import { parseColor, parseHexColor } from "@/pages/Instance/parseColors";
 import type { EncounterSummary, RaidSummary } from "../parseAggregation";
 import type { ParseMetric } from "./util";
@@ -27,14 +29,16 @@ export function RaidScoresCard({ raids, metric, bossCounts, isLoading }: RaidSco
   }
 
   return (
-    <Card className="gap-0 py-4">
-      <CardHeader className="border-b border-border pb-4">
-        <CardTitle>Raid scores</CardTitle>
+    <Card className="gap-0 border-0 bg-transparent px-0 pt-4 pb-0 shadow-none">
+      <CardHeader className="px-0 pb-4">
+        <CardTitle className="text-xs font-normal tracking-[0.2em] text-muted-foreground uppercase">
+          Raid scores
+        </CardTitle>
         <CardDescription>
           Best-3 average per boss, last 60 days · expand a raid for its bosses
         </CardDescription>
       </CardHeader>
-      <CardContent className="px-0 pt-0">
+      <CardContent className="space-y-3 px-0">
         {raids.length === 0 && (
           <div className="px-6 py-6 text-sm text-muted-foreground">
             {isLoading
@@ -47,16 +51,24 @@ export function RaidScoresCard({ raids, metric, bossCounts, isLoading }: RaidSco
           const bossesLogged = raid.encounters.length;
           const bossTotal = Math.max(bossCounts?.get(raid.instanceName) ?? 0, bossesLogged);
           const incomplete = bossesLogged < bossTotal;
+          const accent = getInstanceAccentColor(raid.instanceName);
           return (
             <Collapsible
               key={key}
               open={open === key}
               onOpenChange={(o) => setOpen(o ? key : null)}
+              className="overflow-hidden rounded-xl border border-border bg-card shadow-sm"
             >
-              <CollapsibleTrigger className="w-full cursor-pointer border-b border-border px-6 py-4 text-left transition-colors hover:bg-muted/40">
-                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-6 gap-y-2 sm:grid-cols-[minmax(0,1fr)_280px_64px_14px]">
+              <CollapsibleTrigger
+                className={`w-full cursor-pointer px-6 py-5 text-left transition-colors hover:bg-muted/30 ${open === key ? "border-b border-border" : ""}`}
+                style={{
+                  backgroundImage: `linear-gradient(90deg, ${accent}14 0%, transparent 42%)`,
+                  boxShadow: `inset 4px 0 0 ${accent}`,
+                }}
+              >
+                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-6 gap-y-2 sm:grid-cols-[minmax(0,1fr)_80px_280px_14px]">
                   <div className="min-w-0">
-                    <div className="font-wow truncate text-base text-foreground">
+                    <div className="font-wow truncate text-lg text-foreground">
                       {raid.instanceName}
                     </div>
                     <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -77,15 +89,13 @@ export function RaidScoresCard({ raids, metric, bossCounts, isLoading }: RaidSco
                       </span>
                     </div>
                   </div>
-                  <div className="relative hidden sm:block">
-                    <ScoreBar score={raid.score} />
-                  </div>
-                  <div className="text-right">
+                  <div className="flex items-baseline justify-end gap-1.5 text-right">
                     <div className={`font-mono text-3xl font-bold ${parseColor(raid.score)}`}>
                       {raid.score}
                     </div>
                     <div className="text-xs text-muted-foreground">score</div>
                   </div>
+                  <RaidScoreBars encounters={raid.encounters} />
                   <div
                     className="hidden text-xs text-muted-foreground transition-transform sm:block"
                     style={{ transform: open === key ? "rotate(0deg)" : "rotate(-90deg)" }}
@@ -95,15 +105,15 @@ export function RaidScoresCard({ raids, metric, bossCounts, isLoading }: RaidSco
                 </div>
               </CollapsibleTrigger>
               <CollapsibleContent>
-                <div className="border-b border-border bg-popover px-6 py-4">
+                <div className="bg-popover px-6 py-4">
                   <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead>Boss</TableHead>
                         <TableHead className="text-right">Best {metric.toUpperCase()}</TableHead>
                         <TableHead className="text-right">Kills</TableHead>
-                        <TableHead className="text-right">Best</TableHead>
                         <TableHead className="w-64">Score</TableHead>
+                        <TableHead className="text-right">Best</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -126,6 +136,48 @@ function raidKey(raid: RaidSummary): string {
   return `${raid.instanceName}|${raid.difficultyName}|${raid.maxPlayers}`;
 }
 
+function RaidScoreBars({ encounters }: { encounters: EncounterSummary[] }) {
+  return (
+    <div
+      className="hidden h-10 items-end justify-end gap-1 sm:flex"
+      aria-label="Boss score summary"
+    >
+      {encounters.map((encounter) => (
+        <div
+          key={encounter.encounterName}
+          className="w-1.5 min-h-0.5 rounded-sm"
+          style={{
+            height: `${encounter.score}%`,
+            background: parseHexColor(encounter.score),
+          }}
+          title={`${encounter.encounterName}: ${encounter.score}`}
+        />
+      ))}
+    </div>
+  );
+}
+
+function formatScoreInput(score: number): string {
+  return score.toFixed(1).replace(/\.0$/, "");
+}
+
+function ScoreInputsTooltip({
+  encounter,
+  children,
+}: {
+  encounter: EncounterSummary;
+  children: ReactNode;
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipContent side="top" sideOffset={6} className="font-mono">
+        Best {encounter.scoreInputs.length}: {encounter.scoreInputs.map(formatScoreInput).join(" · ")}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
 function EncounterRow({ encounter }: { encounter: EncounterSummary }) {
   return (
     <TableRow>
@@ -143,18 +195,24 @@ function EncounterRow({ encounter }: { encounter: EncounterSummary }) {
       <TableCell className="text-right font-mono text-muted-foreground">
         {encounter.kills}
       </TableCell>
-      <TableCell className={`text-right font-mono ${parseColor(encounter.best)}`}>
-        {encounter.best}
-      </TableCell>
       <TableCell>
-        <div className="flex items-center gap-3">
-          <div className="relative grow">
-            <ScoreBar score={encounter.score} best={encounter.best} />
+        <ScoreInputsTooltip encounter={encounter}>
+          <div className="flex cursor-help items-center gap-3">
+            <div className="relative min-w-16 grow">
+              <ScoreBar score={encounter.score} best={encounter.best} />
+            </div>
+            <div className={`w-7 shrink-0 text-right font-mono text-sm font-bold ${parseColor(encounter.score)}`}>
+              {encounter.score}
+            </div>
           </div>
-          <div className={`w-7 text-right font-mono text-sm font-bold ${parseColor(encounter.score)}`}>
-            {encounter.score}
-          </div>
-        </div>
+        </ScoreInputsTooltip>
+      </TableCell>
+      <TableCell className="text-right font-mono">
+        <ScoreInputsTooltip encounter={encounter}>
+          <span className={`cursor-help ${parseColor(encounter.best)}`}>
+            {encounter.best}
+          </span>
+        </ScoreInputsTooltip>
       </TableCell>
     </TableRow>
   );

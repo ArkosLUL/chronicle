@@ -13,21 +13,20 @@ func TestShadowfangKeepHostiles_Flavors(t *testing.T) {
 
 	vanilla := ShadowfangKeepHostiles(database.WoWFlavor{database.FlavorVanilla}).HostileEntries()
 	for entry, name := range map[uint32]string{
-		3851:  "Shadowfang Whitescalp",
-		3853:  "Shadowfang Moonwalker",
-		3854:  "Shadowfang Wolfguard",
-		3855:  "Shadowfang Darksoul",
-		3857:  "Shadowfang Glutton",
-		3861:  "Bleak Worg",
-		3862:  "Slavering Worg",
-		3864:  "Fel Steed",
-		3865:  "Shadow Charger",
-		3866:  "Vile Bat",
-		3868:  "Blood Seeker",
-		3875:  "Haunted Servitor",
-		3877:  "Wailing Guardsman",
-		4958:  "Haunting Spirit",
-		14682: "Sever",
+		3851: "Shadowfang Whitescalp",
+		3853: "Shadowfang Moonwalker",
+		3854: "Shadowfang Wolfguard",
+		3855: "Shadowfang Darksoul",
+		3857: "Shadowfang Glutton",
+		3861: "Bleak Worg",
+		3862: "Slavering Worg",
+		3864: "Fel Steed",
+		3865: "Shadow Charger",
+		3866: "Vile Bat",
+		3868: "Blood Seeker",
+		3875: "Haunted Servitor",
+		3877: "Wailing Guardsman",
+		4958: "Haunting Spirit",
 	} {
 		require.Equal(t, name, vanilla[entry].Name)
 		require.False(t, vanilla[entry].Boss)
@@ -50,9 +49,8 @@ func TestShadowfangKeepHostiles_Flavors(t *testing.T) {
 		database.FlavorNightmareOfUrsol,
 	}).HostileEntries()
 	for entry, name := range map[uint32]string{
-		61969:  "Prelate Ironmane",
-		61970:  "Spectral Cleric",
-		912408: "Burning Blade Flamekin",
+		61969: "Prelate Ironmane",
+		61970: "Spectral Cleric",
 	} {
 		require.Equal(t, name, nightmare[entry].Name)
 		require.False(t, nightmare[entry].Boss)

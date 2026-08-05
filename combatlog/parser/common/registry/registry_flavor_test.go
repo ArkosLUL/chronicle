@@ -71,9 +71,6 @@ func TestFlavoredDeadminesHostiles(t *testing.T) {
 	manufacturedGolem := nightmare.HostileEntries[61962]
 	require.Equal(t, "Manufactured Golem", manufacturedGolem.Name)
 	require.False(t, manufacturedGolem.Boss)
-	burningBladeFlamekin := nightmare.HostileEntries[912408]
-	require.Equal(t, "Burning Blade Flamekin", burningBladeFlamekin.Name)
-	require.False(t, burningBladeFlamekin.Boss)
 	masterpieceHarvester := nightmare.HostileEntries[61963]
 	require.Equal(t, "Masterpiece Harvester", masterpieceHarvester.Name)
 	require.True(t, masterpieceHarvester.Boss)

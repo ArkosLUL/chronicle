@@ -832,8 +832,7 @@ func DeadminesHostiles(fl database.WoWFlavor) *identifier.Identifier {
 
 	if fl.Has(database.FlavorNightmareOfUrsol) {
 		LoadAdds(hostile, map[uint32]string{
-			61962:  "Manufactured Golem",
-			912408: "Burning Blade Flamekin",
+			61962: "Manufactured Golem",
 		})
 		LoadBosses(hostile, map[uint32]string{
 			61963: "Masterpiece Harvester",
@@ -883,9 +882,8 @@ func ShadowfangKeepHostiles(fl database.WoWFlavor) *identifier.Identifier {
 
 	if fl.Has(database.FlavorNightmareOfUrsol) {
 		LoadAdds(hostile, map[uint32]string{
-			61969:  "Prelate Ironmane",
-			61970:  "Spectral Cleric",
-			912408: "Burning Blade Flamekin",
+			61969: "Prelate Ironmane",
+			61970: "Spectral Cleric",
 		})
 	}
 

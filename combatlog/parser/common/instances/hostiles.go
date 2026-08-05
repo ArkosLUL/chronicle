@@ -845,22 +845,21 @@ func DeadminesHostiles(fl database.WoWFlavor) *identifier.Identifier {
 func ShadowfangKeepHostiles(fl database.WoWFlavor) *identifier.Identifier {
 	hostile := make(map[uint32]Identity)
 	LoadAdds(hostile, map[uint32]string{
-		3851:  "Shadowfang Whitescalp",
-		3853:  "Shadowfang Moonwalker",
-		3854:  "Shadowfang Wolfguard",
-		3855:  "Shadowfang Darksoul",
-		3857:  "Shadowfang Glutton",
-		3861:  "Bleak Worg",
-		3862:  "Slavering Worg",
-		3864:  "Fel Steed",
-		3865:  "Shadow Charger",
-		3866:  "Vile Bat",
-		3868:  "Blood Seeker",
-		3872:  "Deathsworn Captain",
-		3875:  "Haunted Servitor",
-		3877:  "Wailing Guardsman",
-		4958:  "Haunting Spirit",
-		14682: "Sever",
+		3851: "Shadowfang Whitescalp",
+		3853: "Shadowfang Moonwalker",
+		3854: "Shadowfang Wolfguard",
+		3855: "Shadowfang Darksoul",
+		3857: "Shadowfang Glutton",
+		3861: "Bleak Worg",
+		3862: "Slavering Worg",
+		3864: "Fel Steed",
+		3865: "Shadow Charger",
+		3866: "Vile Bat",
+		3868: "Blood Seeker",
+		3872: "Deathsworn Captain",
+		3875: "Haunted Servitor",
+		3877: "Wailing Guardsman",
+		4958: "Haunting Spirit",
 	})
 
 	// Non-combat and friendly units are registered so they do not appear in the

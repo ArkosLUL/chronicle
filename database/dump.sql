@@ -729,7 +729,8 @@ CREATE TABLE guild_page_panels (
     config jsonb DEFAULT '{}'::jsonb NOT NULL,
     "position" jsonb DEFAULT '{"h": 2, "w": 6, "x": 0, "y": 0}'::jsonb NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    visibility text DEFAULT 'all'::text NOT NULL
 );
 
 CREATE TABLE guild_page_tabs (
@@ -738,7 +739,8 @@ CREATE TABLE guild_page_tabs (
     label text NOT NULL,
     slug text NOT NULL,
     sort_order integer DEFAULT 0 NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    visibility text DEFAULT 'all'::text NOT NULL
 );
 
 CREATE TABLE guild_pages (
@@ -2090,6 +2092,8 @@ CREATE INDEX idx_edr_realm ON encounter_dps_rankings USING btree (realm_id);
 
 CREATE UNIQUE INDEX idx_edr_trash_unique ON encounter_dps_rankings USING btree (instance_id, player_guid, player_spec) WHERE (encounter_id IS NULL);
 
+CREATE INDEX idx_game_players_guild ON game_players USING btree (guild_id) WHERE (guild_id IS NOT NULL);
+
 CREATE INDEX idx_game_players_realm_lower_name ON game_players USING btree (realm_id, lower(name));
 
 CREATE INDEX idx_guild_join_requests_guild ON guild_join_requests USING btree (guild_id);
@@ -2116,6 +2120,8 @@ CREATE INDEX idx_log_instance_players_unit_guid_instance ON log_instance_players
 
 CREATE INDEX idx_log_instances_duplicate_group ON log_instances USING btree (duplicate_group_id) WHERE (duplicate_group_id IS NOT NULL);
 
+CREATE INDEX idx_log_instances_guild ON log_instances USING btree (guild_id) WHERE (guild_id IS NOT NULL);
+
 CREATE INDEX idx_log_instances_log_group_id ON log_instances USING btree (log_group_id);
 
 CREATE INDEX idx_log_instances_realm_id ON log_instances USING btree (realm_id);
@@ -2123,6 +2129,8 @@ CREATE INDEX idx_log_instances_realm_id ON log_instances USING btree (realm_id);
 CREATE UNIQUE INDEX idx_mod_requests_pending ON application_modification_requests USING btree (application_id, type, COALESCE(parent_id, '00000000-0000-0000-0000-000000000000'::uuid)) WHERE ((status = 'pending'::text) AND (type <> ALL (ARRAY['server'::text, 'realm'::text])));
 
 CREATE INDEX idx_psr_dedup ON parse_score_results USING btree (run_id, encounter_name, player_guid, snapshot_id, metric);
+
+CREATE INDEX idx_psr_guild ON parse_score_results USING btree (tenant_id, guild_id, metric, killed_at DESC NULLS LAST) WHERE (guild_id IS NOT NULL);
 
 CREATE INDEX idx_psr_player ON parse_score_results USING btree (tenant_id, player_guid, metric, killed_at DESC NULLS LAST);
 

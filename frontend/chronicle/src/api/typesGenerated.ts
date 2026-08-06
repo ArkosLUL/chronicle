@@ -961,6 +961,55 @@ export interface Guild {
 }
 
 // From chroniclesdk/guild_page.go
+/**
+ * GuildBestRun is the guild's best full clear of one instance within the
+ * requested window — fastest, or highest average parse when ranked by parse.
+ * AvgParse is -1 when the run has no parses.
+ */
+export interface GuildBestRun {
+    readonly run_id: string;
+    readonly instance_id: string;
+    readonly instance_slug?: string;
+    readonly instance_name: string;
+    readonly difficulty_name: string;
+    readonly max_players: number;
+    readonly duration_ms: number;
+    readonly completed_at: string;
+    readonly avg_parse: number;
+    readonly parse_count: number;
+}
+
+// From chroniclesdk/guild_page.go
+export interface GuildBestRunsResponse {
+    readonly runs: readonly GuildBestRun[];
+}
+
+// From chroniclesdk/guild_page.go
+export interface GuildCharacterRosterResponse {
+    readonly members: readonly GuildRosterCharacter[];
+}
+
+// From chroniclesdk/guild_page.go
+/**
+ * GuildEncounterKill aggregates a guild's kills of one encounter across all
+ * time. Duplicate uploads of the same raid night count once.
+ */
+export interface GuildEncounterKill {
+    readonly instance_name: string;
+    readonly encounter_name: string;
+    readonly difficulty_name: string;
+    readonly max_players: number;
+    readonly kills: number;
+    readonly first_killed_at: string;
+    readonly last_killed_at: string;
+}
+
+// From chroniclesdk/guild_page.go
+export interface GuildEncounterKillsResponse {
+    readonly encounters: readonly GuildEncounterKill[];
+}
+
+// From chroniclesdk/guild_page.go
 export interface GuildInfo {
     readonly id: string;
     readonly name: string;
@@ -1025,6 +1074,13 @@ export interface GuildPageTheme {
     readonly background_url?: string;
     readonly logo_url?: string;
     readonly description?: string;
+    /**
+     * HeaderLayout selects the header arrangement: "" or "centered" for the
+     * classic centered header; "left" for the armory-style identity with the
+     * description beside it, centered as a pair; "left_joined" for the
+     * identity with the description underneath it, left-aligned.
+     */
+    readonly header_layout?: string;
     readonly tags?: readonly GuildTag[];
     readonly socials?: Record<SocialPlatform, string>; // platform key -> URL
 }
@@ -1055,10 +1111,50 @@ export interface GuildRaidClearsResponse {
 }
 
 // From chroniclesdk/guild_page.go
+/**
+ * GuildRosterCharacter is a guild character seen in raid logs. LastSeenAt is
+ * the last time a log updated the character. AvgParse is -1 when the
+ * character has no parses in the scoring window.
+ */
+export interface GuildRosterCharacter {
+    readonly id: string;
+    readonly name: string;
+    readonly class: string;
+    readonly race: string;
+    readonly level: number;
+    readonly spec?: string;
+    readonly role?: string; // "tank", "heal", or "dps"
+    readonly avg_parse: number;
+    readonly last_seen_at: string;
+    readonly realm_name: string;
+}
+
+// From chroniclesdk/guild_page.go
 export interface GuildRosterMember {
     readonly user_id: string;
     readonly username: string;
     readonly roles: readonly string[]; // "member", "leader", etc.
+}
+
+// From chroniclesdk/guild_page.go
+/**
+ * GuildRunEncounterParse is the guild's average parse for one encounter of
+ * one raid night (run). Encounters are returned in kill order; callers weight
+ * by ParseCount for a whole-run average. KillDurationMs is the fight length
+ * of the kill (0 when unknown).
+ */
+export interface GuildRunEncounterParse {
+    readonly run_id: string;
+    readonly encounter_name: string;
+    readonly avg_parse: number;
+    readonly parse_count: number;
+    readonly killed_at: string;
+    readonly kill_duration_ms: number;
+}
+
+// From chroniclesdk/guild_page.go
+export interface GuildRunParsesResponse {
+    readonly encounters: readonly GuildRunEncounterParse[];
 }
 
 // From chroniclesdk/guild_page.go
@@ -1072,6 +1168,35 @@ export interface GuildSettings {
 export type GuildTag = "Casual" | "Chinese" | "Dungeons" | "English" | "French" | "German" | "Hardcore" | "Korean" | "Leveling" | "Portuguese" | "PvP" | "Questing" | "RP" | "Raiding" | "Russian" | "Social" | "Spanish" | "Taiwanese";
 
 export const GuildTags: GuildTag[] = ["Casual", "Chinese", "Dungeons", "English", "French", "German", "Hardcore", "Korean", "Leveling", "Portuguese", "PvP", "Questing", "RP", "Raiding", "Russian", "Social", "Spanish", "Taiwanese"];
+
+// From chroniclesdk/guild_page.go
+/**
+ * GuildTopParse is one ranked parse on a guild's top parses board.
+ * InstanceID/InstanceSlug identify the raid log the parse came from.
+ */
+export interface GuildTopParse {
+    readonly player_guid: string;
+    readonly player_name: string;
+    readonly player_class: string;
+    readonly player_spec: string;
+    readonly player_role: string;
+    readonly encounter_name: string;
+    readonly instance_id: string;
+    readonly instance_slug?: string;
+    readonly instance_name: string;
+    readonly difficulty_name: string;
+    readonly max_players: number;
+    readonly metric: string;
+    readonly metric_value: number;
+    readonly display_score: number;
+    readonly killed_at: string;
+}
+
+// From chroniclesdk/guild_page.go
+export interface GuildTopParsesResponse {
+    readonly metric: string;
+    readonly parses: readonly GuildTopParse[];
+}
 
 // From chroniclesdk/log.go
 /**
@@ -2896,6 +3021,7 @@ export interface UpdateSiteConfigRequest {
 // From chroniclesdk/guild_page.go
 export interface UpdateTabRequest {
     readonly label: string;
+    readonly visibility?: DeviceVisibility; // "all", "desktop", or "mobile"
     readonly panels: readonly GuildPagePanel[];
 }
 

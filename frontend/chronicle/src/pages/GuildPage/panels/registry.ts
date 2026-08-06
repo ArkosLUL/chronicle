@@ -4,6 +4,13 @@ import { MarkdownPanel } from "./Markdown";
 import { CalendarPanel } from "./Calendar";
 import { CompactCalendarPanel } from "./CompactCalendar";
 import { RaidClearsPanel } from "./RaidClears";
+import { RosterPanel } from "./Roster";
+import { TopParsesPanel } from "./TopParses";
+import { RecruitmentPanel } from "./Recruitment";
+import { ProgressPanel } from "./Progress";
+import { BestPerformancePanel } from "./BestPerformance";
+import { QuoteBoardPanel } from "./QuoteBoard";
+import { RaidSchedulePanel } from "./RaidSchedule";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyPanelDefinition = GuildPanelDefinition<any>;
@@ -11,8 +18,13 @@ type AnyPanelDefinition = GuildPanelDefinition<any>;
 // Panel registry - all available panel types
 export const PANEL_REGISTRY: Record<string, AnyPanelDefinition> = {
   recent_raids: RecentRaidsPanel,
-  // roster: RosterPanel,
-  // progress: ProgressPanel,
+  roster: RosterPanel,
+  top_parses: TopParsesPanel,
+  recruitment: RecruitmentPanel,
+  progress: ProgressPanel,
+  best_performance: BestPerformancePanel,
+  quote_board: QuoteBoardPanel,
+  raid_schedule: RaidSchedulePanel,
   // stats: StatsPanel,
   markdown: MarkdownPanel,
   // leaderboard: LeaderboardPanel,

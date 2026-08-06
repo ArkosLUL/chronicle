@@ -1837,6 +1837,30 @@ export function useSaveGuildPage(guildId: string | undefined) {
         }
       }
 
+      // Delete tabs that were removed in the editor. The server is the
+      // source of truth for what exists; anything persisted but no longer
+      // in the list gets deleted.
+      const existingResp = await fetch(`/api/v1/guilds/${guildId}/page`, { credentials: "include" });
+      if (existingResp.ok) {
+        const existing = (await existingResp.json()) as GuildPageConfig;
+        const keptIds = new Set(tabs.map((t) => t.id));
+        const removed = (existing.tabs ?? []).filter(
+          (t) => t.id !== NIL_UUID && isValidUUID(t.id) && !keptIds.has(t.id),
+        );
+        await Promise.all(
+          removed.map(async (t) => {
+            const deleteResp = await fetch(`/api/v1/guilds/${guildId}/page/tabs/${t.id}`, {
+              method: "DELETE",
+              credentials: "include",
+            });
+            if (!deleteResp.ok) {
+              const error = await deleteResp.json().catch(() => null);
+              throw buildAPIError("Failed to delete tab", error);
+            }
+          }),
+        );
+      }
+
       // Save each tab
       await Promise.all(
         tabs.map(async (tab) => {
@@ -1869,7 +1893,11 @@ export function useSaveGuildPage(guildId: string | undefined) {
           const updateResp = await fetch(`/api/v1/guilds/${guildId}/page/tabs/${tabId}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ label: tab.label, panels: cleanPanels }),
+            body: JSON.stringify({
+              label: tab.label,
+              visibility: tab.visibility ?? "all",
+              panels: cleanPanels,
+            }),
             credentials: "include",
           });
           if (!updateResp.ok) {

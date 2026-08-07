@@ -1,9 +1,12 @@
-import { useState, useRef, useEffect, useCallback } from "react"
+import { useState, useRef, useEffect, useCallback, useMemo } from "react"
+import { useInstance } from "@/api/queries"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card/Card"
 import { cn } from "@/lib/utils"
+import { YouTubeSyncOverlapTimeline } from "../YouTubeSyncV2/YouTubeSyncOverlapTimeline"
+import { getRaidBounds, inferVideoRange } from "../YouTubeSyncV2/timeline"
 import type { YTPlayer } from "@/types/youtube"
 
 // Types
@@ -144,9 +147,50 @@ function applyTimeOffset(serverTime: string, offsetHours: number): string {
   return `${hour.toString().padStart(2, "0")}:${minute}:${second}`
 }
 
-export function YouTubeSyncPage() {
+interface PersistedSyncSettings {
+  videoUrl?: string
+  cropRegion?: CropRegion
+  ocrUrl?: string
+  interval?: number
+  syncMethod?: "ocr" | "manual"
+  chronicleUrl?: string
+  instanceId?: string
+  timeOffsetHours?: number
+}
+
+function readPersistedSettings(key?: string): PersistedSyncSettings {
+  if (!key) return {}
+  try {
+    return JSON.parse(localStorage.getItem(key) || "{}") as PersistedSyncSettings
+  } catch {
+    return {}
+  }
+}
+
+export interface YouTubeSyncPageProps {
+  initialVideoUrl?: string
+  initialInstanceId?: string
+  initialTimeOffsetHours?: number
+  initialIntervalSeconds?: number
+  controlsOnly?: boolean
+  remoteControlChannel?: string
+  capturedTimeIsUtc?: boolean
+  settingsStorageKey?: string
+}
+
+export function YouTubeSyncPage({
+  initialVideoUrl = "",
+  initialInstanceId = "",
+  initialTimeOffsetHours,
+  initialIntervalSeconds = 60,
+  controlsOnly = false,
+  remoteControlChannel,
+  settingsStorageKey,
+  capturedTimeIsUtc = false,
+}: YouTubeSyncPageProps = {}) {
+  const persistedSettings = useRef(readPersistedSettings(settingsStorageKey)).current
   // State
-  const [videoUrl, setVideoUrl] = useState("")
+  const [videoUrl, setVideoUrl] = useState(persistedSettings.videoUrl ?? initialVideoUrl)
   const [videoLoaded, setVideoLoaded] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
@@ -158,33 +202,72 @@ export function YouTubeSyncPage() {
   const [videoPosition, setVideoPosition] = useState({ x: 0, y: 0 })
 
   const [captureActive, setCaptureActive] = useState(false)
-  const [cropRegion, setCropRegion] = useState<CropRegion>({ x: 0, y: 0, width: 200, height: 50 })
+  const [cropRegion, setCropRegion] = useState<CropRegion>(
+    persistedSettings.cropRegion ?? { x: 0, y: 0, width: 200, height: 50 }
+  )
   const [capturePreview, setCapturePreview] = useState<string | null>(null)
 
   const [selectingRegion, setSelectingRegion] = useState(false)
   const [selectionStart, setSelectionStart] = useState<{ x: number; y: number } | null>(null)
 
-  const [ocrUrl, setOcrUrl] = useState("/ocr")
-  const [interval, setIntervalSec] = useState(60)
+  const [ocrUrl, setOcrUrl] = useState(persistedSettings.ocrUrl ?? "/ocr")
+  const [interval, setIntervalSec] = useState(
+    persistedSettings.interval ?? initialIntervalSeconds
+  )
   const [startTime, setStartTime] = useState(0)
   const [endTime, setEndTime] = useState(0)
 
-  const [syncMethod, setSyncMethod] = useState<"ocr" | "manual">("ocr")
+  const [syncMethod, setSyncMethod] = useState<"ocr" | "manual">(
+    persistedSettings.syncMethod ?? "ocr"
+  )
   const [syncRunning, setSyncRunning] = useState(false)
   const [syncProgress, setSyncProgress] = useState(0)
   const [statusText, setStatusText] = useState("")
   const [results, setResults] = useState<SyncResult[]>([])
   const [lastResult, setLastResult] = useState<SyncResult | null>(null)
 
-  const [chronicleUrl, setChronicleUrl] = useState(window.location.origin)
-  const [instanceId, setInstanceId] = useState("")
+  const [chronicleUrl, setChronicleUrl] = useState(
+    persistedSettings.chronicleUrl ?? window.location.origin
+  )
+  const [instanceId, setInstanceId] = useState(
+    persistedSettings.instanceId ?? initialInstanceId
+  )
+  const [lookupInstanceId, setLookupInstanceId] = useState(
+    persistedSettings.instanceId ?? initialInstanceId
+  )
   const [chronicleExporting, setChronicleExporting] = useState(false)
   const localOffsetHours = (() => {
     const offset = -new Date().getTimezoneOffset() / 60
     return Number.isFinite(offset) ? offset : 0
   })()
   // Time offset in hours to convert server_time to UTC (e.g., 1 means server is UTC+1)
-  const [timeOffsetHours, setTimeOffsetHours] = useState(localOffsetHours)
+  const [timeOffsetHours, setTimeOffsetHours] = useState(
+    persistedSettings.timeOffsetHours ?? initialTimeOffsetHours ?? localOffsetHours
+  )
+
+  const effectiveTimeOffsetHours = capturedTimeIsUtc ? 0 : timeOffsetHours
+  const instanceQuery = useInstance(lookupInstanceId, {
+    enabled: controlsOnly && lookupInstanceId.length > 0,
+  })
+  const raidBounds = useMemo(() => getRaidBounds(instanceQuery.data), [instanceQuery.data])
+  const timelineAnchor = useMemo(
+    () => [...results]
+      .sort((left, right) => left.videoTime - right.videoTime)
+      .find((result) => result.status === "success" && result.serverTime),
+    [results]
+  )
+  const inferredVideoRange = useMemo(() => {
+    if (!raidBounds || !timelineAnchor?.serverTime) return null
+    return inferVideoRange(
+      raidBounds,
+      duration,
+      {
+        videoTimeSeconds: timelineAnchor.videoTime,
+        serverTime: timelineAnchor.serverTime,
+      },
+      effectiveTimeOffsetHours
+    )
+  }, [duration, effectiveTimeOffsetHours, raidBounds, timelineAnchor])
 
   // Refs
   const playerRef = useRef<YTPlayer | null>(null)
@@ -198,20 +281,109 @@ export function YouTubeSyncPage() {
   const syncAbortedRef = useRef(false)
   const dragStartRef = useRef<{ x: number; y: number } | null>(null)
 
+  const remoteChannelRef = useRef<BroadcastChannel | null>(null)
+  const lastRemoteMessageRef = useRef(0)
+  const remoteStateRef = useRef({ currentTime: 0, duration: 0, isPlaying: false })
+  const [remoteConnected, setRemoteConnected] = useState(false)
+
   // Manual sync state
   const [manualPrompt, setManualPrompt] = useState<{ videoTime: number; videoTimeFormatted: string } | null>(null)
   const [manualTimeInput, setManualTimeInput] = useState("")
   const manualResolveRef = useRef<((value: string | null) => void) | null>(null)
 
+  useEffect(() => {
+    if (!remoteControlChannel) return
+
+    const channel = new BroadcastChannel(remoteControlChannel)
+    remoteChannelRef.current = channel
+    playerRef.current = {
+      playVideo: () => channel.postMessage({ type: "play" }),
+      pauseVideo: () => channel.postMessage({ type: "pause" }),
+      seekTo: (seconds) => channel.postMessage({ type: "seek", time: seconds }),
+      getCurrentTime: () => remoteStateRef.current.currentTime,
+      getDuration: () => remoteStateRef.current.duration,
+      getPlayerState: () => remoteStateRef.current.isPlaying ? 1 : 2,
+      loadVideoById: (videoId) => channel.postMessage({ type: "load-video", videoId }),
+      destroy: () => undefined,
+    }
+    playerReadyRef.current = true
+
+    channel.onmessage = (event: MessageEvent<{
+      type: string
+      currentTime?: number
+      duration?: number
+      isPlaying?: boolean
+      ready?: boolean
+    }>) => {
+      const message = event.data
+      lastRemoteMessageRef.current = Date.now()
+      if (message.type === "player-hello") {
+        setRemoteConnected(true)
+        return
+      }
+      if (message.type !== "player-state" || message.ready !== true) return
+      remoteStateRef.current = {
+        currentTime: message.currentTime ?? 0,
+        duration: message.duration ?? 0,
+        isPlaying: message.isPlaying ?? false,
+      }
+      setCurrentTime(remoteStateRef.current.currentTime)
+      setDuration(remoteStateRef.current.duration)
+      setIsPlaying(remoteStateRef.current.isPlaying)
+      setRemoteConnected(true)
+    }
+
+    const announce = () => channel.postMessage({ type: "controller-hello" })
+    announce()
+    const announceTimer = window.setInterval(announce, 1000)
+    const connectionTimer = window.setInterval(() => {
+      if (Date.now() - lastRemoteMessageRef.current > 1500) setRemoteConnected(false)
+    }, 500)
+    return () => {
+      window.clearInterval(announceTimer)
+      window.clearInterval(connectionTimer)
+      channel.close()
+      remoteChannelRef.current = null
+      playerRef.current = null
+      playerReadyRef.current = false
+    }
+  }, [remoteControlChannel])
+
+  useEffect(() => {
+    if (!settingsStorageKey) return
+    const settings: PersistedSyncSettings = {
+      videoUrl,
+      cropRegion,
+      ocrUrl,
+      interval,
+      syncMethod,
+      chronicleUrl,
+      instanceId,
+      timeOffsetHours,
+    }
+    localStorage.setItem(settingsStorageKey, JSON.stringify(settings))
+  }, [
+    settingsStorageKey,
+    videoUrl,
+    cropRegion,
+    ocrUrl,
+    interval,
+    syncMethod,
+    chronicleUrl,
+    instanceId,
+    timeOffsetHours,
+  ])
+
   // Load YouTube IFrame API
   useEffect(() => {
+    if (remoteControlChannel) return
     if (document.getElementById("youtube-iframe-api")) return
 
     const tag = document.createElement("script")
     tag.id = "youtube-iframe-api"
     tag.src = "https://www.youtube.com/iframe_api"
     document.head.appendChild(tag)
-  }, [])
+  }, [remoteControlChannel])
 
   // Time update interval
   useEffect(() => {
@@ -235,6 +407,7 @@ export function YouTubeSyncPage() {
     // If player exists and is ready, load new video
     if (playerRef.current && playerReadyRef.current) {
       playerRef.current.loadVideoById(videoId)
+      if (remoteControlChannel) setVideoLoaded(true)
       return
     }
 
@@ -275,7 +448,7 @@ export function YouTubeSyncPage() {
     } else {
       window.onYouTubeIframeAPIReady = initPlayer
     }
-  }, [videoUrl])
+  }, [remoteControlChannel, videoUrl])
 
   // Playback controls
   const seekRelative = (delta: number) => {
@@ -333,16 +506,35 @@ export function YouTubeSyncPage() {
 
   // Screen capture
   const startCapture = async () => {
+    remoteChannelRef.current?.postMessage({ type: "capture-picker", active: true })
     try {
       if (!navigator.mediaDevices?.getDisplayMedia) {
         throw new Error("Screen capture not available. Use HTTPS or localhost.")
       }
 
-      const stream = await navigator.mediaDevices.getDisplayMedia({
-        video: { cursor: "never" } as MediaTrackConstraints,
-        audio: false,
-        preferCurrentTab: true,
-      } as DisplayMediaStreamOptions)
+      const captureOptions = controlsOnly
+        ? ({
+            video: {
+              cursor: "never",
+              displaySurface: "browser",
+            } as MediaTrackConstraints,
+            audio: false,
+            preferCurrentTab: false,
+            selfBrowserSurface: "exclude",
+            surfaceSwitching: "include",
+          } as DisplayMediaStreamOptions)
+        : ({
+            video: { cursor: "never" } as MediaTrackConstraints,
+            audio: false,
+            preferCurrentTab: true,
+          } as DisplayMediaStreamOptions)
+
+      const stream = await navigator.mediaDevices.getDisplayMedia(captureOptions)
+      const captureTrack = stream.getVideoTracks()[0]
+      if (controlsOnly && captureTrack.label.toLowerCase().includes("youtube sync controls")) {
+        stream.getTracks().forEach((track) => track.stop())
+        throw new Error('Select the window named "Chronicle YouTube Player", not the controls window.')
+      }
 
       captureStreamRef.current = stream
       if (captureVideoRef.current) {
@@ -356,6 +548,8 @@ export function YouTubeSyncPage() {
       setCaptureActive(true)
     } catch (err) {
       alert("Failed to start screen capture: " + (err as Error).message)
+    } finally {
+      remoteChannelRef.current?.postMessage({ type: "capture-picker", active: false })
     }
   }
 
@@ -561,17 +755,31 @@ export function YouTubeSyncPage() {
 
     const totalSteps = Math.ceil((effectiveEnd - startTime) / interval)
     let step = 0
+    let stopReason: string | null = null
 
     for (let time = startTime; time < effectiveEnd && !syncAbortedRef.current; time += interval) {
       step++
       setSyncProgress(step / totalSteps)
       setStatusText(`Processing ${formatTime(time)} (${step}/${totalSteps})...`)
 
-      playerRef.current.seekTo(time, true)
+      const player = playerRef.current
+      if (!player) {
+        syncAbortedRef.current = true
+        stopReason = "Player window disconnected. Sync stopped."
+        break
+      }
+      player.seekTo(time, true)
       await sleep(1500)
 
+      const activePlayer = playerRef.current
+      if (!activePlayer) {
+        syncAbortedRef.current = true
+        stopReason = "Player window disconnected. Sync stopped."
+        break
+      }
+
       // Get actual video time from player (has sub-second precision)
-      const actualTime = playerRef.current.getCurrentTime()
+      const actualTime = activePlayer.getCurrentTime()
 
       const result: SyncResult = {
         videoTime: actualTime,
@@ -611,7 +819,9 @@ export function YouTubeSyncPage() {
     }
 
     setSyncRunning(false)
-    setStatusText(syncAbortedRef.current ? "Sync aborted" : `Done! ${step} frames processed.`)
+    setStatusText(
+      stopReason ?? (syncAbortedRef.current ? "Sync aborted" : `Done! ${step} frames processed.`)
+    )
   }
 
   const stopSync = () => {
@@ -655,15 +865,29 @@ export function YouTubeSyncPage() {
 
     const totalSteps = Math.ceil((effectiveEnd - startTime) / interval)
     let step = 0
+    let stopReason: string | null = null
 
     for (let time = startTime; time < effectiveEnd && !syncAbortedRef.current; time += interval) {
       step++
       setSyncProgress(step / totalSteps)
       setStatusText(`Step ${step}/${totalSteps} — waiting for input...`)
 
-      playerRef.current.seekTo(time, true)
+      const player = playerRef.current
+      if (!player) {
+        syncAbortedRef.current = true
+        stopReason = "Player window disconnected. Sync stopped."
+        break
+      }
+      player.seekTo(time, true)
       await sleep(1000)
-      const actualTime = playerRef.current.getCurrentTime()
+
+      const activePlayer = playerRef.current
+      if (!activePlayer) {
+        syncAbortedRef.current = true
+        stopReason = "Player window disconnected. Sync stopped."
+        break
+      }
+      const actualTime = activePlayer.getCurrentTime()
 
       setManualPrompt({ videoTime: actualTime, videoTimeFormatted: formatTime(actualTime) })
       const userInput = await waitForManualInput()
@@ -702,7 +926,9 @@ export function YouTubeSyncPage() {
     }
 
     setSyncRunning(false)
-    setStatusText(syncAbortedRef.current ? "Sync aborted" : `Done! ${step} frames processed.`)
+    setStatusText(
+      stopReason ?? (syncAbortedRef.current ? "Sync aborted" : `Done! ${step} frames processed.`)
+    )
   }
 
   // Export
@@ -778,7 +1004,9 @@ export function YouTubeSyncPage() {
           video_time_seconds: Math.round(r.videoTime),
           raw_ocr: r.rawOCR,
           server_time: r.serverTime,
-          utc_time: r.serverTime ? applyTimeOffset(r.serverTime, timeOffsetHours) : undefined,
+          utc_time: r.serverTime
+            ? applyTimeOffset(r.serverTime, effectiveTimeOffsetHours)
+            : undefined,
           confidence: r.confidence,
         })),
       }
@@ -855,10 +1083,28 @@ export function YouTubeSyncPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground dark">
-      {/* Fixed Video Area */}
-      <div className="fixed top-0 left-0 right-0 bg-card border-b border-border z-50 p-4">
-        {/* URL Input */}
-        {!videoLoaded && (
+      {/* Video or remote control header */}
+      <div
+        className={cn(
+          "left-0 right-0 z-50 border-b border-border bg-card p-4",
+          controlsOnly ? "sticky top-0" : "fixed top-0"
+        )}
+      >
+        {controlsOnly && (
+          <div className="flex items-center justify-between gap-3 text-xs">
+            <span className="font-semibold uppercase tracking-wider text-muted-foreground">
+              YouTube Sync V2 control desk
+            </span>
+            <span className={cn("rounded-full px-2 py-1", remoteConnected
+              ? "bg-green-500/15 text-green-300"
+              : "bg-amber-500/15 text-amber-300")}
+            >
+              {remoteConnected ? "Player connected" : "Waiting for main window"}
+            </span>
+          </div>
+        )}
+
+        {!controlsOnly && !videoLoaded && (
           <div className="flex gap-3 items-center">
             <Input
               type="text"
@@ -866,112 +1112,247 @@ export function YouTubeSyncPage() {
               onChange={(e) => setVideoUrl(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && loadVideo()}
               placeholder="Paste YouTube URL and press Enter..."
-              className="max-w-lg"
+              className="min-w-0 flex-1"
             />
             <Button onClick={loadVideo}>Load</Button>
           </div>
         )}
 
-        {/* Video viewport */}
+        {videoLoaded && !controlsOnly && (
+          <div className="w-[800px] h-[450px] bg-black rounded-md overflow-hidden border border-border relative">
+            <div
+              className={cn(
+                "absolute",
+                panMode && "cursor-grab active:cursor-grabbing [&_iframe]:pointer-events-none"
+              )}
+              style={{
+                width: videoWidth,
+                height: videoHeight,
+                left: videoPosition.x,
+                top: videoPosition.y,
+              }}
+              onMouseDown={handleVideoDragStart}
+            >
+              <div id="yt-player" className="w-full h-full" />
+            </div>
+          </div>
+        )}
+
         {videoLoaded && (
-          <>
-            <div className="w-[800px] h-[450px] bg-black rounded-md overflow-hidden border border-border relative">
-              <div
-                className={cn(
-                  "absolute",
-                  panMode && "cursor-grab active:cursor-grabbing [&_iframe]:pointer-events-none"
-                )}
-                style={{
-                  width: videoWidth,
-                  height: videoHeight,
-                  left: videoPosition.x,
-                  top: videoPosition.y,
-                }}
-                onMouseDown={handleVideoDragStart}
-              >
-                <div id="yt-player" className="w-full h-full" />
-              </div>
+          <div className="flex gap-3 items-center mt-3 flex-wrap">
+            <div className="flex gap-2 items-center">
+              <Button variant="secondary" size="sm" onClick={() => seekRelative(-60)}>-60s</Button>
+              <Button variant="secondary" size="sm" onClick={() => seekRelative(-10)}>-10s</Button>
+              <Button variant="secondary" size="sm" onClick={togglePlayPause}>
+                {isPlaying ? "Pause" : "Play"}
+              </Button>
+              <Button variant="secondary" size="sm" onClick={() => seekRelative(10)}>+10s</Button>
+              <Button variant="secondary" size="sm" onClick={() => seekRelative(60)}>+60s</Button>
+              <span className="font-mono bg-muted px-3 py-1.5 rounded text-sm">
+                {formatTime(currentTime)} / {formatTime(duration)}
+              </span>
             </div>
 
-            {/* Controls bar */}
-            <div className="flex gap-4 items-center mt-3 flex-wrap">
-              <div className="flex gap-2 items-center">
-                <Button variant="secondary" size="sm" onClick={() => seekRelative(-60)}>
-                  -60s
-                </Button>
-                <Button variant="secondary" size="sm" onClick={() => seekRelative(-10)}>
-                  -10s
-                </Button>
-                <Button variant="secondary" size="sm" onClick={togglePlayPause}>
-                  {isPlaying ? "Pause" : "Play"}
-                </Button>
-                <Button variant="secondary" size="sm" onClick={() => seekRelative(10)}>
-                  +10s
-                </Button>
-                <Button variant="secondary" size="sm" onClick={() => seekRelative(60)}>
-                  +60s
-                </Button>
-                <span className="font-mono bg-muted px-3 py-1.5 rounded text-sm">
-                  {formatTime(currentTime)} / {formatTime(duration)}
-                </span>
-              </div>
+            {!controlsOnly && (
+              <>
+                <div className="w-px h-6 bg-border" />
+                <div className="flex gap-2 items-center">
+                  <Input
+                    type="number"
+                    value={videoWidth}
+                    onChange={(e) => setVideoWidth(Number(e.target.value))}
+                    className="w-[70px]"
+                  />
+                  <span className="text-muted-foreground">×</span>
+                  <Input
+                    type="number"
+                    value={videoHeight}
+                    onChange={(e) => setVideoHeight(Number(e.target.value))}
+                    className="w-[70px]"
+                  />
+                  <Button
+                    variant={panMode ? "default" : "secondary"}
+                    size="sm"
+                    onClick={() => setPanMode(!panMode)}
+                    title="Toggle pan mode"
+                  >
+                    🖐
+                  </Button>
+                </div>
+              </>
+            )}
 
-              <div className="w-px h-6 bg-border" />
-
-              <div className="flex gap-2 items-center">
-                <Input
-                  type="number"
-                  value={videoWidth}
-                  onChange={(e) => setVideoWidth(Number(e.target.value))}
-                  className="w-[70px]"
-                />
-                <span className="text-muted-foreground">×</span>
-                <Input
-                  type="number"
-                  value={videoHeight}
-                  onChange={(e) => setVideoHeight(Number(e.target.value))}
-                  className="w-[70px]"
-                />
-                <Button
-                  variant={panMode ? "default" : "secondary"}
-                  size="sm"
-                  onClick={() => setPanMode(!panMode)}
-                  title="Toggle pan mode"
-                >
-                  🖐
-                </Button>
-              </div>
-
-              <div className="w-px h-6 bg-border" />
-
-              <div className="flex gap-2 items-center">
-                {!captureActive ? (
-                  <Button onClick={startCapture}>Start Capture</Button>
-                ) : (
-                  <>
-                    <Button variant="secondary" onClick={stopCapture}>
-                      Stop
-                    </Button>
-                    <Button variant="secondary" onClick={openRegionSelector}>
-                      Select Region
-                    </Button>
-                  </>
-                )}
-              </div>
-            </div>
-          </>
+            {!controlsOnly && (
+              <>
+                <div className="w-px h-6 bg-border" />
+                <div className="flex gap-2 items-center">
+                  {!captureActive ? (
+                    <Button onClick={startCapture}>Start Capture</Button>
+                  ) : (
+                    <>
+                      <Button variant="secondary" onClick={stopCapture}>Stop</Button>
+                      <Button variant="secondary" onClick={openRegionSelector}>Select Region</Button>
+                    </>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
         )}
       </div>
 
       {/* Scrollable Content */}
-      <div className="pt-[540px] px-5 pb-5 max-w-5xl mx-auto space-y-5">
+      <div className={cn(
+        "px-3 pb-5 mx-auto space-y-5",
+        controlsOnly ? "max-w-3xl pt-4" : "max-w-5xl pt-[540px]"
+      )}>
+        {controlsOnly && (
+          <WorkflowSteps
+            videoReady={videoLoaded && duration > 0}
+            captureReady={captureActive}
+            clockReady={syncMethod === "manual" || Boolean(capturePreview)}
+            syncReady={results.length > 0}
+          />
+        )}
+
+        {controlsOnly && (
+          <Card>
+            <CardHeader>
+              <StepCardTitle
+                step={1}
+                title="Load the video"
+                complete={videoLoaded && duration > 0}
+              />
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <div className="space-y-2">
+                <Label htmlFor="workflow-video-url">YouTube URL</Label>
+                <div className="flex gap-3">
+                  <Input
+                    id="workflow-video-url"
+                    type="text"
+                    value={videoUrl}
+                    onChange={(event) => setVideoUrl(event.target.value)}
+                    onKeyDown={(event) => event.key === "Enter" && loadVideo()}
+                    placeholder="https://youtu.be/…"
+                    className="min-w-0 flex-1"
+                  />
+                  <Button
+                    onClick={loadVideo}
+                    disabled={!remoteConnected}
+                  >
+                    {videoLoaded ? "Load another" : "Load video"}
+                  </Button>
+                </div>
+                {!remoteConnected && (
+                  <p className="text-xs text-amber-300">Waiting for the main player window to connect.</p>
+                )}
+              </div>
+
+              <div className="border-t border-border pt-5">
+                <div className="mb-4 flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-medium">Raid context</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Optional. Load an instance to compare the raid and video on the same timeline.
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-muted px-2 py-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+                    Optional
+                  </span>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+                <div>
+                  <Label htmlFor="early-instance-id">Instance ID</Label>
+                  <Input
+                    id="early-instance-id"
+                    value={instanceId}
+                    onChange={(event) => setInstanceId(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") setLookupInstanceId(instanceId.trim())
+                    }}
+                    placeholder="Optional instance ID"
+                    className="mt-1 font-mono"
+                  />
+                </div>
+                <Button
+                  variant="secondary"
+                  onClick={() => setLookupInstanceId(instanceId.trim())}
+                  disabled={!instanceId.trim() || instanceQuery.isFetching}
+                >
+                  {instanceQuery.isFetching ? "Loading…" : "Load raid"}
+                </Button>
+              </div>
+              {instanceQuery.isError && (
+                <p className="rounded-md bg-red-500/10 p-3 text-sm text-red-300">
+                  Could not load that instance. Check the ID and your access.
+                </p>
+              )}
+                {instanceQuery.data && !raidBounds && (
+                  <p className="mt-4 rounded-md bg-amber-500/10 p-3 text-sm text-amber-200">
+                    The instance loaded, but it does not contain usable start and end timestamps.
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {controlsOnly && (
+          <Card className={cn(!videoLoaded && "opacity-70")}>
+            <CardHeader>
+              <StepCardTitle
+                step={2}
+                title="Share the YouTube player window"
+                complete={captureActive}
+              />
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Share the main window named “Chronicle YouTube Player”. The controls window is excluded from the picker where the browser supports it.
+              </p>
+              {!captureActive ? (
+                <Button onClick={startCapture} disabled={!videoLoaded}>
+                  Capture YouTube window
+                </Button>
+              ) : (
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className="rounded-full bg-green-500/15 px-3 py-1 text-sm text-green-300">
+                    ✓ YouTube window shared
+                  </span>
+                  <Button variant="secondary" onClick={stopCapture}>Change window</Button>
+                </div>
+              )}
+              {!videoLoaded && (
+                <p className="text-xs text-amber-300">Complete step 1 by loading a video first.</p>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         {/* Capture Section */}
         {captureActive && syncMethod === "ocr" && (
           <Card>
             <CardHeader>
-              <CardTitle>📷 Capture Region</CardTitle>
+              {controlsOnly ? (
+                <StepCardTitle
+                  step={3}
+                  title="Select and test the clock"
+                  complete={Boolean(capturePreview)}
+                />
+              ) : (
+                <CardTitle>📷 Capture Region</CardTitle>
+              )}
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-muted/40 p-3">
+                <p className="text-sm text-muted-foreground">
+                  Draw a tight box around the in-game clock, then test that the preview is readable.
+                </p>
+                <Button variant="secondary" onClick={openRegionSelector} disabled={syncRunning}>
+                  Select clock region
+                </Button>
+              </div>
               <div className="flex gap-5">
                 <div className="flex-1 min-h-[100px] max-h-[200px] bg-muted rounded-lg flex items-center justify-center overflow-hidden">
                   {capturePreview ? (
@@ -1032,10 +1413,24 @@ export function YouTubeSyncPage() {
           </Card>
         )}
 
+        {controlsOnly && syncMethod === "ocr" && !captureActive && (
+          <p className="rounded-lg border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-200">
+            Complete step 2 before configuring automatic OCR synchronization.
+          </p>
+        )}
+
         {/* Sync Settings */}
         <Card>
           <CardHeader>
-            <CardTitle>⚡ Sync Settings</CardTitle>
+            {controlsOnly ? (
+              <StepCardTitle
+                step={4}
+                title="Choose timing and run sync"
+                complete={results.length > 0}
+              />
+            ) : (
+              <CardTitle>⚡ Sync Settings</CardTitle>
+            )}
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex gap-4 items-center mb-4">
@@ -1160,7 +1555,9 @@ export function YouTubeSyncPage() {
                     <span className="font-mono text-lg">{lastResult.videoTimeFormatted}</span>
                   </div>
                   <div className="flex-1">
-                    <span className="text-xs text-muted-foreground block">Server Time</span>
+                    <span className="text-xs text-muted-foreground block">
+                      {capturedTimeIsUtc ? "UTC Time" : "Server Time"}
+                    </span>
                     <span className="font-mono text-lg">{lastResult.serverTime || "-"}</span>
                   </div>
                   <div className="flex-1">
@@ -1176,7 +1573,15 @@ export function YouTubeSyncPage() {
         {/* Results */}
         <Card>
           <CardHeader>
-            <CardTitle>📊 Results</CardTitle>
+            {controlsOnly ? (
+              <StepCardTitle
+                step={5}
+                title="Review and export"
+                complete={results.length > 0}
+              />
+            ) : (
+              <CardTitle>📊 Results</CardTitle>
+            )}
           </CardHeader>
           <CardContent>
             {results.length === 0 ? (
@@ -1198,7 +1603,7 @@ export function YouTubeSyncPage() {
                         Image
                       </th>
                       <th className="text-left py-2 px-3 text-muted-foreground font-medium">
-                        Server Time
+                        {capturedTimeIsUtc ? "UTC Time" : "Server Time"}
                       </th>
                       <th className="text-left py-2 px-3 text-muted-foreground font-medium">
                         Raw OCR
@@ -1257,7 +1662,10 @@ export function YouTubeSyncPage() {
                 {/* Chronicle Export */}
                 <div className="mt-6 pt-4 border-t border-border">
                   <h4 className="text-sm font-medium mb-3">Export to Chronicle</h4>
-                  <div className="grid grid-cols-3 gap-4 mb-3">
+                  <div className={cn(
+                    "grid gap-4 mb-3",
+                    capturedTimeIsUtc ? "grid-cols-2" : "grid-cols-3"
+                  )}>
                     <div>
                       <Label htmlFor="chronicle-url" className="text-xs">
                         Chronicle URL
@@ -1271,34 +1679,35 @@ export function YouTubeSyncPage() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="instance-id" className="text-xs">
+                      <Label htmlFor="export-instance-id" className="text-xs">
                         Instance ID
                       </Label>
                       <Input
-                        id="instance-id"
+                        id="export-instance-id"
                         value={instanceId}
                         onChange={(e) => setInstanceId(e.target.value)}
                         placeholder="abc123..."
                         className="mt-1"
                       />
                     </div>
-                    <div>
-                      <Label htmlFor="time-offset" className="text-xs">
-                        Time Offset (hours)
-                      </Label>
-                      <Input
-                        id="time-offset"
-                        type="number"
-                        value={timeOffsetHours}
-                        onChange={(e) => setTimeOffsetHours(Number(e.target.value))}
-                        placeholder="0"
-                        className="mt-1"
-                      />
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Server timezone offset from UTC (e.g., 1 for CET).
-                        Your local offset: UTC{localOffsetHours >= 0 ? "+" : ""}{localOffsetHours}
-                      </p>
-                    </div>
+                    {!capturedTimeIsUtc && (
+                      <div>
+                        <Label htmlFor="export-time-offset" className="text-xs">
+                          Time Offset (hours)
+                        </Label>
+                        <Input
+                          id="export-time-offset"
+                          type="number"
+                          value={timeOffsetHours}
+                          onChange={(e) => setTimeOffsetHours(Number(e.target.value))}
+                          placeholder="0"
+                          className="mt-1"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Applied only to the captured video clock when converting it to UTC. Raid timestamps are already UTC.
+                        </p>
+                      </div>
+                    )}
                   </div>
                   <Button onClick={exportToChronicle} disabled={chronicleExporting}>
                     {chronicleExporting ? "Exporting..." : "Export to Chronicle"}
@@ -1308,6 +1717,14 @@ export function YouTubeSyncPage() {
             )}
           </CardContent>
         </Card>
+
+        {controlsOnly && raidBounds && (
+          <YouTubeSyncOverlapTimeline
+            raid={raidBounds}
+            video={inferredVideoRange}
+            instanceName={instanceQuery.data?.name}
+          />
+        )}
       </div>
 
       {/* Region selector overlay */}
@@ -1338,6 +1755,91 @@ export function YouTubeSyncPage() {
       />
       <video ref={captureVideoRef} className="hidden" autoPlay />
       <canvas ref={captureCanvasRef} className="hidden" />
+    </div>
+  )
+}
+
+function StepCardTitle({
+  step,
+  title,
+  complete,
+  optional = false,
+}: {
+  step: number
+  title: string
+  complete: boolean
+  optional?: boolean
+}) {
+  return (
+    <CardTitle className="flex items-center gap-3 text-base">
+      <span className={cn(
+        "flex size-8 shrink-0 items-center justify-center rounded-full border font-mono text-sm font-bold",
+        complete
+          ? "border-green-400/40 bg-green-400/15 text-green-300"
+          : "border-primary/40 bg-primary/10 text-primary"
+      )}>
+        {complete ? "✓" : step}
+      </span>
+      <span>{title}</span>
+      {optional && (
+        <span className="ml-auto text-xs font-normal text-muted-foreground">Optional</span>
+      )}
+    </CardTitle>
+  )
+}
+
+function WorkflowSteps({
+  videoReady,
+  captureReady,
+  clockReady,
+  syncReady,
+}: {
+  videoReady: boolean
+  captureReady: boolean
+  clockReady: boolean
+  syncReady: boolean
+}) {
+  const steps = [
+    { label: "Load video", complete: videoReady },
+    { label: "Share window", complete: captureReady },
+    { label: "Select clock", complete: clockReady },
+    { label: "Run sync", complete: syncReady },
+    { label: "Export", complete: false },
+  ]
+
+  return (
+    <div className="grid grid-cols-5 overflow-hidden rounded-lg border border-border bg-card">
+      {steps.map((step, index) => {
+        const previousComplete = index === 0 || steps[index - 1].complete
+        const active = !step.complete && previousComplete
+        return (
+          <div
+            key={step.label}
+            className={cn(
+              "relative min-w-0 border-r border-border px-2 py-3 text-center last:border-r-0",
+              step.complete && "bg-green-500/5",
+              active && "bg-primary/10"
+            )}
+          >
+            <div className={cn(
+              "mx-auto flex size-6 items-center justify-center rounded-full border font-mono text-[11px] font-bold",
+              step.complete
+                ? "border-green-400/40 bg-green-400/15 text-green-300"
+                : active
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border text-muted-foreground"
+            )}>
+              {step.complete ? "✓" : index + 1}
+            </div>
+            <p className={cn(
+              "mt-1 truncate text-[10px] sm:text-xs",
+              active ? "font-semibold text-foreground" : "text-muted-foreground"
+            )}>
+              {step.label}
+            </p>
+          </div>
+        )
+      })}
     </div>
   )
 }

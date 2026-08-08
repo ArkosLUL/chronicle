@@ -41,6 +41,7 @@ import { createHealingDonePanel } from "./HealingDone/HealingDone";
 import { createExtraAttacksPanel } from "./ExtraAttacks/ExtraAttacks";
 import { createConsumablesPanel } from "./Consumables/Consumables";
 import { createConsumablesTotalPanel } from "./Consumables/ConsumablesTotal";
+import { createConsumablesLedgerPanel } from "./Consumables/ConsumablesLedger";
 import { createHealingTakenPanel } from "./HealingTaken/HealingTaken";
 import { createDeathsPanel } from "./Deaths/Deaths";
 import { createDeathLogPanel } from "./Deaths/DeathLog";
@@ -96,6 +97,7 @@ export const PANELS: Record<string, PanelDefinition<any, any>> = {
   extra_attacks: createExtraAttacksPanel(),
   consumables: createConsumablesPanel(),
   consumables_total: createConsumablesTotalPanel(),
+  consumables_ledger: createConsumablesLedgerPanel(),
   deaths: createDeathsPanel(),
   death_log: createDeathLogPanel(),
   mitigation: createMitigationPanel(),
@@ -521,6 +523,18 @@ export function EventsPanel({
     return buildPanelOptionFromTokens(tokens);
   }, [customToggleTokens, grouping, petMode]);
 
+  // Aggregation only sees tokens that can change processing. Render-only
+  // tokens (declared per panel, e.g. a selected-player token) are stripped so
+  // flipping them reuses the cached worker result instead of re-processing.
+  const aggregationPanelOption = useMemo(() => {
+    const renderOnly = panel.renderOnlyOptionTokens;
+    if (!renderOnly || renderOnly.length === 0) return effectivePanelOption;
+    const tokens = parsePanelOptionTokens(effectivePanelOption).filter(
+      (token) => !renderOnly.some((entry) => entry.endsWith(":") ? token.startsWith(entry) : token === entry),
+    );
+    return buildPanelOptionFromTokens(tokens);
+  }, [effectivePanelOption, panel.renderOnlyOptionTokens]);
+
   // -- ChartDataRegistry: register/unregister for cross-panel comparison ------
   const { register: chartRegister, unregister: chartUnregister } = useChartDataActions();
 
@@ -794,7 +808,7 @@ export function EventsPanel({
   } = usePanelAggregation({
     panel,
     context,
-    panelOption: effectivePanelOption,
+    panelOption: aggregationPanelOption,
     panelContext,
     panelContextKey: panelContextVersion,
     panelIndex,

@@ -223,3 +223,10 @@ export const consumablesTotalProcessor: PanelProcessor<ConsumablesResult, Consum
   id: "consumables_total",
   createState: createConsumablesState,
 };
+
+/** Same consume aggregation, exposed under the ledger panel's worker ID. */
+export const consumablesLedgerProcessor: PanelProcessor<ConsumablesResult, ConsumeProcessorEvent> = {
+  ...consumablesProcessor,
+  id: "consumables_ledger",
+  createState: createConsumablesState,
+};

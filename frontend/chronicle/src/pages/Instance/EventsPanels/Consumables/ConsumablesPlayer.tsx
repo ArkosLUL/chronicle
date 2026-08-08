@@ -6,9 +6,10 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Popover as PopoverPrimitive } from "radix-ui";
-import { ChevronsUpDown, Search } from "lucide-react";
+import { ChevronsUpDown, Search, Users } from "lucide-react";
 import { usePortalContainer } from "@/components/ui/PortalContainerContext";
 import { ScrollArea } from "@/components/ui/ScrollArea/ScrollArea";
+import { HintTooltip, TooltipContent, TooltipTrigger } from "@/components/ui/Tooltip/tooltip";
 import { useCachedValue } from "@/hooks/useCachedValue";
 import { useDatasetId } from "@/hooks/useDatasetId";
 import { useConsumableDisambiguations } from "@/api/queries";
@@ -29,7 +30,13 @@ import {
 } from "./consumablesLedger";
 import { FloatingIncomingEventsBreakout } from "../IncomingEvents/FloatingIncomingEventsBreakout";
 import { PlayerItemBreakout, type PlayerItemBreakoutData } from "./LedgerItemBreakout";
-import { AmbiguousSection, LedgerFilterInput, LedgerRow, useFilteredUses } from "./LedgerShared";
+import {
+  AmbiguousSection,
+  LedgerFilterInput,
+  LedgerRow,
+  useFilteredUses,
+  VIEW_ALL_TOKEN,
+} from "./LedgerShared";
 
 const PLAYER_TOKEN = "pl:";
 
@@ -288,6 +295,21 @@ export function ConsumablesPlayerContent(props: ConsumablesPlayerContentProps) {
     selectPlayer(roster[next].guid);
   };
 
+  // Switch to the all-players view. Folds any pending debounced player
+  // selection into the same panelOption write so neither token is lost.
+  const enterViewAll = () => {
+    if (flushTimerRef.current) clearTimeout(flushTimerRef.current);
+    const pendingGuid = pendingGuidRef.current;
+    pendingGuidRef.current = null;
+    let tokens = optionTokens.filter((token) => token !== VIEW_ALL_TOKEN);
+    if (pendingGuid !== null) {
+      tokens = tokens.filter((token) => !token.startsWith(PLAYER_TOKEN));
+      tokens.push(`${PLAYER_TOKEN}${pendingGuid}`);
+    }
+    tokens.push(VIEW_ALL_TOKEN);
+    setPanelOption?.(tokens.join(","));
+  };
+
   const ledger = useMemo(
     () =>
       aggregateConsumablesLedger(
@@ -412,6 +434,15 @@ export function ConsumablesPlayerContent(props: ConsumablesPlayerContentProps) {
                   ›
                 </button>
               </div>
+              <button
+                type="button"
+                onClick={enterViewAll}
+                title="View all players at once"
+                className="flex h-5 shrink-0 cursor-pointer items-center gap-1 rounded border border-border/60 px-1.5 text-2xs text-muted-foreground transition-colors hover:border-border hover:text-foreground"
+              >
+                <Users className="h-3 w-3" />
+                View All
+              </button>
             </div>
             <div className="flex shrink-0 flex-col items-end gap-0.5">
               <span className="font-mono text-sm font-semibold text-foreground">
@@ -430,12 +461,12 @@ export function ConsumablesPlayerContent(props: ConsumablesPlayerContentProps) {
               const value = rosterBars.valueOf(player.guid);
               const heightPct = Math.max(16, (value / rosterBars.max) * 100);
               return (
+                // HintTooltip: delayed, hoverable variant — the instant
+                // Tooltip flickers when the content opens under the cursor.
+                <HintTooltip key={player.guid} delayDuration={150}>
+                  <TooltipTrigger asChild>
                 <button
-                  key={player.guid}
                   type="button"
-                  title={`${player.name} · ${player.cls?.toLowerCase() ?? "unknown"}${
-                    uses > 0 ? ` · ${uses} uses` : " · no uses"
-                  }${gold > 0 ? ` · ${formatGold(gold)}` : ""}`}
                   onClick={() => selectPlayer(player.guid)}
                   className={cn(
                     "group/bar flex h-full min-w-0 flex-1 cursor-pointer items-end overflow-hidden rounded-sm bg-background/80",
@@ -462,6 +493,29 @@ export function ConsumablesPlayerContent(props: ConsumablesPlayerContentProps) {
                     />
                   )}
                 </button>
+                  </TooltipTrigger>
+                  <TooltipContent
+                    side="bottom"
+                    sideOffset={6}
+                    hideArrow
+                    className="flex flex-col gap-0.5 border border-border bg-popover text-popover-foreground shadow-md"
+                  >
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-xs font-medium" style={{ color: classColor(player.cls) }}>
+                        {player.name}
+                      </span>
+                      <span className="text-2xs capitalize text-muted-foreground">
+                        {player.cls?.toLowerCase() ?? "unknown"}
+                      </span>
+                    </div>
+                    <div className="font-mono text-2xs text-foreground/80">
+                      {uses} consume{uses === 1 ? "" : "s"} used
+                    </div>
+                    <div className={cn("font-mono text-2xs", gold > 0 ? "text-amber-300/90" : "text-muted-foreground")}>
+                      {gold > 0 ? formatGold(gold) : "no price data"}
+                    </div>
+                  </TooltipContent>
+                </HintTooltip>
               );
             })}
           </div>

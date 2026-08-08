@@ -51,13 +51,11 @@ func resolveRealmByName(
 	realmName string,
 	jobRealmID uuid.UUID,
 ) resolvedRealm {
-	bypassCtx := servicetenant.AdminBypass(ctx)
-
 	var realmID uuid.UUID
 
-	// Tier 1: realm name lookup.
+	// Tier 1: realm name lookup within the restored tenant context.
 	if realmName != "" {
-		realm, err := db.GetWoWServerRealmByName(bypassCtx, realmName)
+		realm, err := db.GetWoWServerRealmByName(ctx, realmName)
 		if err == nil {
 			realmID = realm.ID
 		}
@@ -67,14 +65,15 @@ func resolveRealmByName(
 	if realmID == uuid.Nil && jobRealmID != uuid.Nil {
 		realmID = jobRealmID
 		if realmName == "" {
-			if r, err := db.GetWoWServerRealm(bypassCtx, realmID); err == nil {
+			if r, err := db.GetWoWServerRealm(ctx, realmID); err == nil {
 				realmName = r.Name
 			}
 		}
 	}
 
-	// Tier 3: "Unknown" realm (create on demand).
+	// Tier 3: "Unknown" realm creation is an administrative fallback.
 	if realmID == uuid.Nil {
+		bypassCtx := servicetenant.AdminBypass(ctx)
 		realmID = dbstatic.RealmUnknown()
 		_, err := db.GetWoWServerRealm(bypassCtx, realmID)
 		if err != nil {

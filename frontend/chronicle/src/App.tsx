@@ -32,6 +32,11 @@ import { AdminOutdatedInstancesPage } from "./pages/Admin/AdminOutdatedInstances
 import { AdminApplicationsListPage } from "./pages/Admin/AdminApplicationsListPage"
 import { AdminCacheStatsPage } from "./pages/Admin/AdminCacheStatsPage"
 import { AdminParsingPage } from "./pages/Admin/AdminParsingPage"
+import { GearLayout } from "./pages/Gear/GearLayout"
+import { GearListsPage } from "./pages/Gear/GearListsPage"
+import { GearListPage } from "./pages/Gear/builder/GearListPage"
+import { GearTrendsPage } from "./pages/Gear/trends/GearTrendsPage"
+import { StatWeightsPage } from "./pages/Gear/weights/StatWeightsPage"
 import { ServersLayout, ServersPage, UploadKeysPage, RetentionPage } from "./pages/Servers"
 import { SpellPage } from "./pages/WoWDB/SpellPage"
 import { SpellByNamePage } from "./pages/WoWDB/SpellByNamePage"
@@ -165,6 +170,12 @@ function App() {
           <Route path="/wowdb/spell/:spellId" element={<SpellPage />} />
           <Route path="/wowdb/spell-by-name" element={<SpellByNamePage />} />
           <Route path="/wowdb/spell-by-name/:name" element={<SpellByNamePage />} />
+          <Route path="/gear" element={<GearLayout />}>
+            <Route index element={<GearListsPage />} />
+            <Route path="weights" element={<StatWeightsPage />} />
+            <Route path="trends" element={<GearTrendsPage />} />
+          </Route>
+          <Route path="/gear/lists/:listID" element={<GearListPage />} />
         </Route>
         <Route path="/technical" element={<TenantDatasetLayout />}>
           <Route index element={<TechnicalDetailsPage />} />

@@ -628,6 +628,30 @@ export interface CorePayload {
     readonly tags: readonly string[];
 }
 
+// From chroniclesdk/gear_builder.go
+/**
+ * CreateGearListRequest is the request body for creating a gear list.
+ */
+export interface CreateGearListRequest {
+    readonly title: string;
+    readonly description: string;
+    readonly class_id: number;
+    readonly spec_name: string;
+    readonly payload: Record<string, string>;
+}
+
+// From chroniclesdk/gear_builder.go
+/**
+ * CreateGearStatWeightRequest is the request body for creating a stat weight.
+ */
+export interface CreateGearStatWeightRequest {
+    readonly name: string;
+    readonly description: string;
+    readonly class_id: number;
+    readonly spec_name: string;
+    readonly weights: Record<string, string>;
+}
+
 // From chroniclesdk/guild_page.go
 export interface CreateJoinRequestBody {
     readonly message: string;
@@ -884,6 +908,17 @@ export interface DuplicateInstance {
 // From chroniclesdk/log.go
 export type Duration = number;
 
+// From chroniclesdk/gamedata.go
+/**
+ * ItemSetSearchResult is a summary for item set search results.
+ * EnchantmentSearchResult is one enchantment matched by name. The same
+ * display name can exist at several IDs (ranks), so both are returned.
+ */
+export interface EnchantmentSearchResult {
+    readonly id: number;
+    readonly name: string;
+}
+
 // From chroniclesdk/log.go
 export interface EncounterKillTime {
     readonly encounter_name: string;
@@ -972,6 +1007,160 @@ export interface ExternalVerificationPublic {
 
 // From chroniclesdk/log.go
 export type GUIDString = string;
+
+// From chroniclesdk/gear_builder.go
+/**
+ * GearList is a user-owned gear progression list.
+ */
+export interface GearList {
+    readonly id: string;
+    readonly user_id: string;
+    readonly tenant_id: string;
+    readonly title: string;
+    readonly description: string;
+    readonly class_id: number;
+    readonly spec_name: string;
+    readonly payload: Record<string, string>;
+    readonly created_at: string;
+    readonly updated_at: string;
+    /**
+     * Fork lineage; nil when the list was not forked.
+     */
+    readonly forked_from_list_id?: string;
+}
+
+// From chroniclesdk/gear_builder.go
+/**
+ * GearListAlternate is a ranked alternate item for a slot; array order
+ * is the rank.
+ */
+export interface GearListAlternate {
+    readonly item_id: number;
+    readonly note?: string;
+}
+
+// From chroniclesdk/gear_builder.go
+/**
+ * GearListPayload is the versioned document stored in GearList.Payload.
+ */
+export interface GearListPayload {
+    readonly version: number;
+    readonly stages: readonly GearListStage[];
+}
+
+// From chroniclesdk/gear_builder.go
+/**
+ * GearListSlot is the primary pick for one equipment slot plus its
+ * ranked alternates and an optional author note.
+ */
+export interface GearListSlot {
+    readonly item_id: number;
+    readonly enchant_id?: number;
+    readonly note?: string;
+    readonly alternates?: readonly GearListAlternate[];
+}
+
+// From chroniclesdk/gear_builder.go
+/**
+ * GearListStage is one stage of a gear progression. Slot keys are the
+ * 19 PlayerOutfit indexes ("0".."18"); slots without an item are absent.
+ */
+export interface GearListStage {
+    readonly name: string;
+    readonly slots: Record<string, GearListSlot>;
+}
+
+// From chroniclesdk/gear_builder.go
+/**
+ * GearStatWeight is a user-defined stat-weight set.
+ */
+export interface GearStatWeight {
+    readonly id: string;
+    readonly user_id: string;
+    readonly tenant_id: string;
+    readonly name: string;
+    readonly description: string;
+    readonly class_id: number;
+    readonly spec_name: string;
+    readonly weights: Record<string, string>;
+    readonly created_at: string;
+    readonly updated_at: string;
+}
+
+// From chroniclesdk/gear_trends.go
+/**
+ * GearTrendsEnchant is one observed permanent enchant with its rate.
+ */
+export interface GearTrendsEnchant {
+    readonly enchant_id: number;
+    readonly name: string;
+    readonly wearer_count: number;
+    readonly percent: number;
+}
+
+// From chroniclesdk/gear_trends.go
+/**
+ * GearTrendsItem is one observed item with its equip rate.
+ */
+export interface GearTrendsItem {
+    readonly item_id: number;
+    readonly item_name: string;
+    readonly item_quality: number;
+    readonly item_icon: string;
+    readonly item_level?: number;
+    readonly wearer_count: number;
+    readonly percent: number;
+}
+
+// From chroniclesdk/gear_trends.go
+/**
+ * GearTrendsResponse is the observed-gear-trends aggregate for one
+ * class/spec cohort: the gear worn during the top leaderboard
+ * performances. This is observed equipment, not a recommendation.
+ */
+export interface GearTrendsResponse {
+    readonly class: string;
+    readonly spec: string;
+    readonly lookback_days: number;
+    /**
+     * InstanceName is the raid filter, empty when all raids qualify.
+     */
+    readonly instance_name?: string;
+    /**
+     * RealmID is the realm filter, empty when all realms qualify.
+     */
+    readonly realm_id?: string;
+    /**
+     * TopPerformances is the cohort target: the N best-parsing unique
+     * players considered (each observed in the gear worn during that
+     * parse).
+     */
+    readonly top_performances: number;
+    /**
+     * CohortSize is how many qualifying players were actually found
+     * (at most TopPerformances).
+     */
+    readonly cohort_size: number;
+    readonly min_sample_size: number;
+    /**
+     * InsufficientSample is true when the cohort is below the minimum
+     * sample size; Slots is empty in that case.
+     */
+    readonly insufficient_sample: boolean;
+    readonly generated_at: string;
+    readonly slots: readonly GearTrendsSlot[];
+}
+
+// From chroniclesdk/gear_trends.go
+/**
+ * GearTrendsSlot is one equipment slot's observed items and enchants.
+ * Slot is the PlayerOutfit index (0-18).
+ */
+export interface GearTrendsSlot {
+    readonly slot: number;
+    readonly items: readonly GearTrendsItem[];
+    readonly enchants?: readonly GearTrendsEnchant[];
+}
 
 // From chroniclesdk/log.go
 export interface Guild {
@@ -1575,9 +1764,6 @@ export interface ItemSetPieceInfo {
 }
 
 // From chroniclesdk/gamedata.go
-/**
- * ItemSetSearchResult is a summary for item set search results.
- */
 export interface ItemSetSearchResult {
     readonly id: number;
     readonly name: string;
@@ -2990,6 +3176,30 @@ export interface UpdateActionBarSlotsRequest {
     readonly slot_8: string | null;
     readonly slot_9: string | null;
     readonly slot_0: string | null;
+}
+
+// From chroniclesdk/gear_builder.go
+/**
+ * UpdateGearListRequest is the request body for updating a gear list.
+ */
+export interface UpdateGearListRequest {
+    readonly title?: string;
+    readonly description?: string;
+    readonly class_id?: number;
+    readonly spec_name?: string;
+    readonly payload?: (Record<string, string>);
+}
+
+// From chroniclesdk/gear_builder.go
+/**
+ * UpdateGearStatWeightRequest is the request body for updating a stat weight.
+ */
+export interface UpdateGearStatWeightRequest {
+    readonly name?: string;
+    readonly description?: string;
+    readonly class_id?: number;
+    readonly spec_name?: string;
+    readonly weights?: (Record<string, string>);
 }
 
 // From chroniclesdk/guild_page.go

@@ -1201,6 +1201,33 @@ type GamePlayerGearHistory struct {
 	CreatedAt  pgtype.Timestamptz `db:"created_at" json:"created_at"`
 }
 
+type GearList struct {
+	ID               uuid.UUID          `db:"id" json:"id"`
+	UserID           uuid.UUID          `db:"user_id" json:"user_id"`
+	TenantID         uuid.UUID          `db:"tenant_id" json:"tenant_id"`
+	Title            string             `db:"title" json:"title"`
+	Description      string             `db:"description" json:"description"`
+	ClassID          int32              `db:"class_id" json:"class_id"`
+	SpecName         string             `db:"spec_name" json:"spec_name"`
+	Payload          []byte             `db:"payload" json:"payload"`
+	ForkedFromListID uuid.NullUUID      `db:"forked_from_list_id" json:"forked_from_list_id"`
+	CreatedAt        pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt        pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
+type GearStatWeight struct {
+	ID          uuid.UUID          `db:"id" json:"id"`
+	UserID      uuid.UUID          `db:"user_id" json:"user_id"`
+	TenantID    uuid.UUID          `db:"tenant_id" json:"tenant_id"`
+	Name        string             `db:"name" json:"name"`
+	Description string             `db:"description" json:"description"`
+	ClassID     int32              `db:"class_id" json:"class_id"`
+	SpecName    string             `db:"spec_name" json:"spec_name"`
+	Weights     []byte             `db:"weights" json:"weights"`
+	CreatedAt   pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
 type Guild struct {
 	ID        uuid.UUID          `db:"id" json:"id"`
 	RealmID   uuid.UUID          `db:"realm_id" json:"realm_id"`

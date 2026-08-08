@@ -44,8 +44,17 @@ type sqlcQuerier interface {
 	CountTimeParseSnapshotBossKillMembers(ctx context.Context, snapshotID uuid.UUID) (int64, error)
 	CountTimeParseSnapshotClearTimeMembers(ctx context.Context, snapshotID uuid.UUID) (int64, error)
 	CountUserAuthLinks(ctx context.Context) (int64, error)
+	CountUserGearLists(ctx context.Context, arg CountUserGearListsParams) (int64, error)
 	CountUserPanelLayoutsTotal(ctx context.Context, userID uuid.NullUUID) (int32, error)
 	CountUserTalentBuilds(ctx context.Context, arg CountUserTalentBuildsParams) (int64, error)
+	// ============================================================
+	// Gear Lists
+	// ============================================================
+	CreateGearList(ctx context.Context, arg CreateGearListParams) (GearList, error)
+	// ============================================================
+	// Stat Weights
+	// ============================================================
+	CreateGearStatWeight(ctx context.Context, arg CreateGearStatWeightParams) (GearStatWeight, error)
 	// Guild Join Requests
 	CreateGuildJoinRequest(ctx context.Context, arg CreateGuildJoinRequestParams) (GuildJoinRequest, error)
 	CreateSharedView(ctx context.Context, arg CreateSharedViewParams) (SharedView, error)
@@ -58,6 +67,8 @@ type sqlcQuerier interface {
 	DeleteDataGrant(ctx context.Context, arg DeleteDataGrantParams) error
 	DeleteDataset(ctx context.Context, id uuid.UUID) error
 	DeleteDatasetTalentTrees(ctx context.Context, datasetID uuid.UUID) error
+	DeleteGearList(ctx context.Context, arg DeleteGearListParams) (int64, error)
+	DeleteGearStatWeight(ctx context.Context, arg DeleteGearStatWeightParams) (int64, error)
 	DeleteGuildJoinRequest(ctx context.Context, arg DeleteGuildJoinRequestParams) error
 	DeleteGuildPage(ctx context.Context, guildID uuid.UUID) error
 	DeleteGuildPagePanel(ctx context.Context, id uuid.UUID) error
@@ -104,6 +115,25 @@ type sqlcQuerier interface {
 	// instance_token (unique per instance, immune to AzerothCore ID reuse),
 	// instance_id, instance_name, and realm_id.
 	FindMatchingServerUpload(ctx context.Context, arg FindMatchingServerUploadParams) (WoWLogGroup, error)
+	GearTrendsSlotEnchants(ctx context.Context, arg GearTrendsSlotEnchantsParams) ([]GearTrendsSlotEnchantsRow, error)
+	// Observed gear trends: the gear worn by the top leaderboard performances
+	// of a class/spec, aggregated per equipment slot.
+	//
+	// Cohort rules (shared by both queries):
+	//   * ranked parses only (encounter_dps_rankings), deduped to one
+	//     representative instance per run (duplicate uploads collapse via
+	//     COALESCE(duplicate_group_id, id) — the house convention);
+	//   * best parse (highest DPS) per unique player, optionally filtered by
+	//     raid (instance_name) and realm, then the top @top_n players by that
+	//     parse's DPS;
+	//   * each player's observation is the gear snapshot from THAT parse's
+	//     log instance — what they wore during the performance, not their
+	//     latest outfit;
+	//   * tenant scoping comes from RLS on encounter_dps_rankings plus the
+	//     wow_server_realms join for gear history (which has no RLS).
+	// Item name/quality/icon/level are read from the snapshot jsonb itself,
+	// so results are self-contained.
+	GearTrendsSlotItems(ctx context.Context, arg GearTrendsSlotItemsParams) ([]GearTrendsSlotItemsRow, error)
 	GetAppliedAuthzMigrations(ctx context.Context) ([]int32, error)
 	// Per-encounter kill aggregates for one character across all time.
 	// Rankings rows exist only for clean/partial kills; trash rows
@@ -147,6 +177,8 @@ type sqlcQuerier interface {
 	// Full page fetch with all tabs and panels
 	GetFullGuildPage(ctx context.Context, guildID uuid.UUID) (GetFullGuildPageRow, error)
 	GetGamePlayerByGUID(ctx context.Context, arg GetGamePlayerByGUIDParams) (GetGamePlayerByGUIDRow, error)
+	GetGearListByID(ctx context.Context, id uuid.UUID) (GearList, error)
+	GetGearStatWeightByID(ctx context.Context, id uuid.UUID) (GearStatWeight, error)
 	GetGuildByID(ctx context.Context, id uuid.UUID) (GetGuildByIDRow, error)
 	GetGuildJoinRequestByUser(ctx context.Context, arg GetGuildJoinRequestByUserParams) (GuildJoinRequest, error)
 	// Guild Pages
@@ -469,6 +501,8 @@ type sqlcQuerier interface {
 	ListExternalAPICharacterLogs(ctx context.Context, arg ListExternalAPICharacterLogsParams) ([]ListExternalAPICharacterLogsRow, error)
 	ListExternalAPIRealms(ctx context.Context, server string) ([]ListExternalAPIRealmsRow, error)
 	ListExternalAPIServers(ctx context.Context) ([]ListExternalAPIServersRow, error)
+	ListGearListsByUser(ctx context.Context, arg ListGearListsByUserParams) ([]GearList, error)
+	ListGearStatWeightsByUser(ctx context.Context, arg ListGearStatWeightsByUserParams) ([]GearStatWeight, error)
 	ListGuildJoinRequests(ctx context.Context, guildID uuid.UUID) ([]ListGuildJoinRequestsRow, error)
 	// Guild Page Panels
 	ListGuildPagePanels(ctx context.Context, tabID uuid.UUID) ([]GuildPagePanel, error)
@@ -611,6 +645,16 @@ type sqlcQuerier interface {
 	SearchGamePlayers(ctx context.Context, arg SearchGamePlayersParams) ([]SearchGamePlayersRow, error)
 	SearchItemSets(ctx context.Context, arg SearchItemSetsParams) ([]SearchItemSetsRow, error)
 	SearchItemTemplates(ctx context.Context, arg SearchItemTemplatesParams) ([]SearchItemTemplatesRow, error)
+	// Slot-aware enchant search for the gear builder. Joining through the
+	// spells that apply each enchant (effect 53 = enchant item, permanent)
+	// keeps only actually-applyable enchants and derives slot validity from
+	// the spell's equipped-item restrictions. Armor enchant spells carry an
+	// inventory-type mask; weapon enchant spells restrict by weapon subclass
+	// instead and usually leave the inventory mask zero.
+	SearchSlotEnchantments(ctx context.Context, arg SearchSlotEnchantmentsParams) ([]SearchSlotEnchantmentsRow, error)
+	// Name search for the gear builder's enchant picker. Same names appear at
+	// multiple ranks/IDs, so the ID is part of the result identity.
+	SearchSpellItemEnchantments(ctx context.Context, arg SearchSpellItemEnchantmentsParams) ([]SearchSpellItemEnchantmentsRow, error)
 	SetDuplicateGroupIDs(ctx context.Context, arg SetDuplicateGroupIDsParams) error
 	SetPanelLayoutCode(ctx context.Context, arg SetPanelLayoutCodeParams) (int64, error)
 	SetPrimaryUserCharacter(ctx context.Context, arg SetPrimaryUserCharacterParams) (UserCharacterLink, error)
@@ -668,6 +712,8 @@ type sqlcQuerier interface {
 	// Only non-null params are applied; NULL means "keep existing value".
 	UpdateDataset(ctx context.Context, arg UpdateDatasetParams) (Dataset, error)
 	UpdateExternalCharacterLinkSyncResponse(ctx context.Context, arg UpdateExternalCharacterLinkSyncResponseParams) error
+	UpdateGearList(ctx context.Context, arg UpdateGearListParams) (GearList, error)
+	UpdateGearStatWeight(ctx context.Context, arg UpdateGearStatWeightParams) (GearStatWeight, error)
 	UpdateGuildPagePanel(ctx context.Context, arg UpdateGuildPagePanelParams) (GuildPagePanel, error)
 	UpdateGuildPageTab(ctx context.Context, arg UpdateGuildPageTabParams) (GuildPageTab, error)
 	UpdateLogFileAfterAppend(ctx context.Context, arg UpdateLogFileAfterAppendParams) error

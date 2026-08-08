@@ -3443,6 +3443,638 @@ func (q *sqlQuerier) UpdateWoWLogGroupLogType(ctx context.Context, arg UpdateWoW
 	return err
 }
 
+const countUserGearLists = `-- name: CountUserGearLists :one
+SELECT COUNT(*) FROM gear_lists WHERE user_id = $1 AND tenant_id = $2
+`
+
+type CountUserGearListsParams struct {
+	UserID   uuid.UUID `db:"user_id" json:"user_id"`
+	TenantID uuid.UUID `db:"tenant_id" json:"tenant_id"`
+}
+
+func (q *sqlQuerier) CountUserGearLists(ctx context.Context, arg CountUserGearListsParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countUserGearLists, arg.UserID, arg.TenantID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const createGearList = `-- name: CreateGearList :one
+
+INSERT INTO gear_lists (id, user_id, tenant_id, title, description, class_id, spec_name, payload,
+                        forked_from_list_id)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+RETURNING id, user_id, tenant_id, title, description, class_id, spec_name, payload, forked_from_list_id, created_at, updated_at
+`
+
+type CreateGearListParams struct {
+	ID               uuid.UUID     `db:"id" json:"id"`
+	UserID           uuid.UUID     `db:"user_id" json:"user_id"`
+	TenantID         uuid.UUID     `db:"tenant_id" json:"tenant_id"`
+	Title            string        `db:"title" json:"title"`
+	Description      string        `db:"description" json:"description"`
+	ClassID          int32         `db:"class_id" json:"class_id"`
+	SpecName         string        `db:"spec_name" json:"spec_name"`
+	Payload          []byte        `db:"payload" json:"payload"`
+	ForkedFromListID uuid.NullUUID `db:"forked_from_list_id" json:"forked_from_list_id"`
+}
+
+// ============================================================
+// Gear Lists
+// ============================================================
+func (q *sqlQuerier) CreateGearList(ctx context.Context, arg CreateGearListParams) (GearList, error) {
+	row := q.db.QueryRow(ctx, createGearList,
+		arg.ID,
+		arg.UserID,
+		arg.TenantID,
+		arg.Title,
+		arg.Description,
+		arg.ClassID,
+		arg.SpecName,
+		arg.Payload,
+		arg.ForkedFromListID,
+	)
+	var i GearList
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.TenantID,
+		&i.Title,
+		&i.Description,
+		&i.ClassID,
+		&i.SpecName,
+		&i.Payload,
+		&i.ForkedFromListID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const createGearStatWeight = `-- name: CreateGearStatWeight :one
+
+INSERT INTO gear_stat_weights (id, user_id, tenant_id, name, description, class_id, spec_name, weights)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+RETURNING id, user_id, tenant_id, name, description, class_id, spec_name, weights, created_at, updated_at
+`
+
+type CreateGearStatWeightParams struct {
+	ID          uuid.UUID `db:"id" json:"id"`
+	UserID      uuid.UUID `db:"user_id" json:"user_id"`
+	TenantID    uuid.UUID `db:"tenant_id" json:"tenant_id"`
+	Name        string    `db:"name" json:"name"`
+	Description string    `db:"description" json:"description"`
+	ClassID     int32     `db:"class_id" json:"class_id"`
+	SpecName    string    `db:"spec_name" json:"spec_name"`
+	Weights     []byte    `db:"weights" json:"weights"`
+}
+
+// ============================================================
+// Stat Weights
+// ============================================================
+func (q *sqlQuerier) CreateGearStatWeight(ctx context.Context, arg CreateGearStatWeightParams) (GearStatWeight, error) {
+	row := q.db.QueryRow(ctx, createGearStatWeight,
+		arg.ID,
+		arg.UserID,
+		arg.TenantID,
+		arg.Name,
+		arg.Description,
+		arg.ClassID,
+		arg.SpecName,
+		arg.Weights,
+	)
+	var i GearStatWeight
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.TenantID,
+		&i.Name,
+		&i.Description,
+		&i.ClassID,
+		&i.SpecName,
+		&i.Weights,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const deleteGearList = `-- name: DeleteGearList :execrows
+DELETE FROM gear_lists WHERE id = $1 AND user_id = $2 AND tenant_id = $3
+`
+
+type DeleteGearListParams struct {
+	ID       uuid.UUID `db:"id" json:"id"`
+	UserID   uuid.UUID `db:"user_id" json:"user_id"`
+	TenantID uuid.UUID `db:"tenant_id" json:"tenant_id"`
+}
+
+func (q *sqlQuerier) DeleteGearList(ctx context.Context, arg DeleteGearListParams) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteGearList, arg.ID, arg.UserID, arg.TenantID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const deleteGearStatWeight = `-- name: DeleteGearStatWeight :execrows
+DELETE FROM gear_stat_weights WHERE id = $1 AND user_id = $2 AND tenant_id = $3
+`
+
+type DeleteGearStatWeightParams struct {
+	ID       uuid.UUID `db:"id" json:"id"`
+	UserID   uuid.UUID `db:"user_id" json:"user_id"`
+	TenantID uuid.UUID `db:"tenant_id" json:"tenant_id"`
+}
+
+func (q *sqlQuerier) DeleteGearStatWeight(ctx context.Context, arg DeleteGearStatWeightParams) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteGearStatWeight, arg.ID, arg.UserID, arg.TenantID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const getGearListByID = `-- name: GetGearListByID :one
+SELECT id, user_id, tenant_id, title, description, class_id, spec_name, payload, forked_from_list_id, created_at, updated_at FROM gear_lists WHERE id = $1
+`
+
+func (q *sqlQuerier) GetGearListByID(ctx context.Context, id uuid.UUID) (GearList, error) {
+	row := q.db.QueryRow(ctx, getGearListByID, id)
+	var i GearList
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.TenantID,
+		&i.Title,
+		&i.Description,
+		&i.ClassID,
+		&i.SpecName,
+		&i.Payload,
+		&i.ForkedFromListID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getGearStatWeightByID = `-- name: GetGearStatWeightByID :one
+SELECT id, user_id, tenant_id, name, description, class_id, spec_name, weights, created_at, updated_at FROM gear_stat_weights WHERE id = $1
+`
+
+func (q *sqlQuerier) GetGearStatWeightByID(ctx context.Context, id uuid.UUID) (GearStatWeight, error) {
+	row := q.db.QueryRow(ctx, getGearStatWeightByID, id)
+	var i GearStatWeight
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.TenantID,
+		&i.Name,
+		&i.Description,
+		&i.ClassID,
+		&i.SpecName,
+		&i.Weights,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const listGearListsByUser = `-- name: ListGearListsByUser :many
+SELECT id, user_id, tenant_id, title, description, class_id, spec_name, payload, forked_from_list_id, created_at, updated_at FROM gear_lists
+WHERE user_id = $1 AND tenant_id = $2
+ORDER BY updated_at DESC
+`
+
+type ListGearListsByUserParams struct {
+	UserID   uuid.UUID `db:"user_id" json:"user_id"`
+	TenantID uuid.UUID `db:"tenant_id" json:"tenant_id"`
+}
+
+func (q *sqlQuerier) ListGearListsByUser(ctx context.Context, arg ListGearListsByUserParams) ([]GearList, error) {
+	rows, err := q.db.Query(ctx, listGearListsByUser, arg.UserID, arg.TenantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GearList
+	for rows.Next() {
+		var i GearList
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.TenantID,
+			&i.Title,
+			&i.Description,
+			&i.ClassID,
+			&i.SpecName,
+			&i.Payload,
+			&i.ForkedFromListID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listGearStatWeightsByUser = `-- name: ListGearStatWeightsByUser :many
+SELECT id, user_id, tenant_id, name, description, class_id, spec_name, weights, created_at, updated_at FROM gear_stat_weights
+WHERE user_id = $1 AND tenant_id = $2
+ORDER BY updated_at DESC
+`
+
+type ListGearStatWeightsByUserParams struct {
+	UserID   uuid.UUID `db:"user_id" json:"user_id"`
+	TenantID uuid.UUID `db:"tenant_id" json:"tenant_id"`
+}
+
+func (q *sqlQuerier) ListGearStatWeightsByUser(ctx context.Context, arg ListGearStatWeightsByUserParams) ([]GearStatWeight, error) {
+	rows, err := q.db.Query(ctx, listGearStatWeightsByUser, arg.UserID, arg.TenantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GearStatWeight
+	for rows.Next() {
+		var i GearStatWeight
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.TenantID,
+			&i.Name,
+			&i.Description,
+			&i.ClassID,
+			&i.SpecName,
+			&i.Weights,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const updateGearList = `-- name: UpdateGearList :one
+UPDATE gear_lists SET
+  title = COALESCE($1, title),
+  description = COALESCE($2, description),
+  class_id = COALESCE($3, class_id),
+  spec_name = COALESCE($4, spec_name),
+  payload = COALESCE($5, payload),
+  updated_at = now()
+WHERE id = $6 AND user_id = $7 AND tenant_id = $8
+RETURNING id, user_id, tenant_id, title, description, class_id, spec_name, payload, forked_from_list_id, created_at, updated_at
+`
+
+type UpdateGearListParams struct {
+	Title       pgtype.Text `db:"title" json:"title"`
+	Description pgtype.Text `db:"description" json:"description"`
+	ClassID     pgtype.Int4 `db:"class_id" json:"class_id"`
+	SpecName    pgtype.Text `db:"spec_name" json:"spec_name"`
+	Payload     []byte      `db:"payload" json:"payload"`
+	ID          uuid.UUID   `db:"id" json:"id"`
+	UserID      uuid.UUID   `db:"user_id" json:"user_id"`
+	TenantID    uuid.UUID   `db:"tenant_id" json:"tenant_id"`
+}
+
+func (q *sqlQuerier) UpdateGearList(ctx context.Context, arg UpdateGearListParams) (GearList, error) {
+	row := q.db.QueryRow(ctx, updateGearList,
+		arg.Title,
+		arg.Description,
+		arg.ClassID,
+		arg.SpecName,
+		arg.Payload,
+		arg.ID,
+		arg.UserID,
+		arg.TenantID,
+	)
+	var i GearList
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.TenantID,
+		&i.Title,
+		&i.Description,
+		&i.ClassID,
+		&i.SpecName,
+		&i.Payload,
+		&i.ForkedFromListID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const updateGearStatWeight = `-- name: UpdateGearStatWeight :one
+UPDATE gear_stat_weights SET
+  name = COALESCE($1, name),
+  description = COALESCE($2, description),
+  class_id = COALESCE($3, class_id),
+  spec_name = COALESCE($4, spec_name),
+  weights = COALESCE($5, weights),
+  updated_at = now()
+WHERE id = $6 AND user_id = $7 AND tenant_id = $8
+RETURNING id, user_id, tenant_id, name, description, class_id, spec_name, weights, created_at, updated_at
+`
+
+type UpdateGearStatWeightParams struct {
+	Name        pgtype.Text `db:"name" json:"name"`
+	Description pgtype.Text `db:"description" json:"description"`
+	ClassID     pgtype.Int4 `db:"class_id" json:"class_id"`
+	SpecName    pgtype.Text `db:"spec_name" json:"spec_name"`
+	Weights     []byte      `db:"weights" json:"weights"`
+	ID          uuid.UUID   `db:"id" json:"id"`
+	UserID      uuid.UUID   `db:"user_id" json:"user_id"`
+	TenantID    uuid.UUID   `db:"tenant_id" json:"tenant_id"`
+}
+
+func (q *sqlQuerier) UpdateGearStatWeight(ctx context.Context, arg UpdateGearStatWeightParams) (GearStatWeight, error) {
+	row := q.db.QueryRow(ctx, updateGearStatWeight,
+		arg.Name,
+		arg.Description,
+		arg.ClassID,
+		arg.SpecName,
+		arg.Weights,
+		arg.ID,
+		arg.UserID,
+		arg.TenantID,
+	)
+	var i GearStatWeight
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.TenantID,
+		&i.Name,
+		&i.Description,
+		&i.ClassID,
+		&i.SpecName,
+		&i.Weights,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const gearTrendsSlotEnchants = `-- name: GearTrendsSlotEnchants :many
+WITH representative_instances AS (
+    SELECT DISTINCT ON (COALESCE(li.duplicate_group_id, li.id))
+        li.id
+    FROM log_instances li
+    ORDER BY COALESCE(li.duplicate_group_id, li.id),
+        (li.id = li.duplicate_group_id) DESC NULLS LAST,
+        li.start_time ASC,
+        li.id ASC
+),
+best_parse AS (
+    SELECT DISTINCT ON (edr.realm_id, edr.player_guid)
+        edr.realm_id, edr.player_guid, edr.instance_id, edr.dps
+    FROM encounter_dps_rankings edr
+    JOIN representative_instances ri ON ri.id = edr.instance_id
+    WHERE edr.player_class = $2
+      AND edr.player_spec = $3
+      AND edr.encounter_id IS NOT NULL
+      AND edr.killed_at >= $4::timestamptz
+      AND ($5::text IS NULL OR edr.instance_name = $5)
+      AND ($6::uuid IS NULL OR edr.realm_id = $6)
+    ORDER BY edr.realm_id, edr.player_guid, edr.dps DESC
+),
+top_players AS (
+    SELECT bp.realm_id, bp.player_guid, bp.instance_id
+    FROM best_parse bp
+    ORDER BY bp.dps DESC
+    LIMIT $7
+),
+cohort AS (
+    SELECT h.gear
+    FROM game_player_gear_history h
+    JOIN wow_server_realms wsr ON wsr.id = h.realm_id
+    JOIN top_players tp
+      ON h.player_id = tp.player_guid
+     AND h.realm_id = tp.realm_id
+     AND h.instance_id = tp.instance_id
+),
+slot_enchants AS (
+    SELECT (elem.ordinality - 1)::int AS slot,
+        NULLIF(elem.value ->> 'enchant_id', '')::int AS enchant_id
+    FROM cohort c
+    CROSS JOIN LATERAL jsonb_array_elements(c.gear) WITH ORDINALITY AS elem(value, ordinality)
+    WHERE COALESCE((elem.value ->> 'item_id')::int, 0) > 0
+)
+SELECT
+    se.slot,
+    se.enchant_id::int AS enchant_id,
+    COUNT(*)::int AS wearer_count,
+    (SELECT COUNT(*) FROM cohort)::int AS cohort_size,
+    COALESCE(e.name_lang, '')::text AS enchant_name
+FROM slot_enchants se
+LEFT JOIN dbc_spell_item_enchantment e
+       ON e.dataset_id = $1 AND e.id = se.enchant_id
+WHERE se.enchant_id IS NOT NULL
+GROUP BY se.slot, se.enchant_id, e.name_lang
+ORDER BY se.slot, wearer_count DESC, se.enchant_id
+`
+
+type GearTrendsSlotEnchantsParams struct {
+	DatasetID    uuid.UUID          `db:"dataset_id" json:"dataset_id"`
+	PlayerClass  string             `db:"player_class" json:"player_class"`
+	PlayerSpec   string             `db:"player_spec" json:"player_spec"`
+	Since        pgtype.Timestamptz `db:"since" json:"since"`
+	InstanceName pgtype.Text        `db:"instance_name" json:"instance_name"`
+	RealmID      uuid.NullUUID      `db:"realm_id" json:"realm_id"`
+	TopN         int32              `db:"top_n" json:"top_n"`
+}
+
+type GearTrendsSlotEnchantsRow struct {
+	Slot        int32  `db:"slot" json:"slot"`
+	EnchantID   int32  `db:"enchant_id" json:"enchant_id"`
+	WearerCount int32  `db:"wearer_count" json:"wearer_count"`
+	CohortSize  int32  `db:"cohort_size" json:"cohort_size"`
+	EnchantName string `db:"enchant_name" json:"enchant_name"`
+}
+
+func (q *sqlQuerier) GearTrendsSlotEnchants(ctx context.Context, arg GearTrendsSlotEnchantsParams) ([]GearTrendsSlotEnchantsRow, error) {
+	rows, err := q.db.Query(ctx, gearTrendsSlotEnchants,
+		arg.DatasetID,
+		arg.PlayerClass,
+		arg.PlayerSpec,
+		arg.Since,
+		arg.InstanceName,
+		arg.RealmID,
+		arg.TopN,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GearTrendsSlotEnchantsRow
+	for rows.Next() {
+		var i GearTrendsSlotEnchantsRow
+		if err := rows.Scan(
+			&i.Slot,
+			&i.EnchantID,
+			&i.WearerCount,
+			&i.CohortSize,
+			&i.EnchantName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const gearTrendsSlotItems = `-- name: GearTrendsSlotItems :many
+
+WITH representative_instances AS (
+    SELECT DISTINCT ON (COALESCE(li.duplicate_group_id, li.id))
+        li.id
+    FROM log_instances li
+    ORDER BY COALESCE(li.duplicate_group_id, li.id),
+        (li.id = li.duplicate_group_id) DESC NULLS LAST,
+        li.start_time ASC,
+        li.id ASC
+),
+best_parse AS (
+    SELECT DISTINCT ON (edr.realm_id, edr.player_guid)
+        edr.realm_id, edr.player_guid, edr.instance_id, edr.dps
+    FROM encounter_dps_rankings edr
+    JOIN representative_instances ri ON ri.id = edr.instance_id
+    WHERE edr.player_class = $1
+      AND edr.player_spec = $2
+      AND edr.encounter_id IS NOT NULL
+      AND edr.killed_at >= $3::timestamptz
+      AND ($4::text IS NULL OR edr.instance_name = $4)
+      AND ($5::uuid IS NULL OR edr.realm_id = $5)
+    ORDER BY edr.realm_id, edr.player_guid, edr.dps DESC
+),
+top_players AS (
+    SELECT bp.realm_id, bp.player_guid, bp.instance_id
+    FROM best_parse bp
+    ORDER BY bp.dps DESC
+    LIMIT $6
+),
+cohort AS (
+    SELECT h.gear
+    FROM game_player_gear_history h
+    JOIN wow_server_realms wsr ON wsr.id = h.realm_id
+    JOIN top_players tp
+      ON h.player_id = tp.player_guid
+     AND h.realm_id = tp.realm_id
+     AND h.instance_id = tp.instance_id
+),
+slot_items AS (
+    SELECT (elem.ordinality - 1)::int AS slot,
+        COALESCE((elem.value ->> 'item_id')::int, 0) AS item_id,
+        elem.value ->> 'item_name' AS item_name,
+        COALESCE((elem.value ->> 'item_quality')::int, 0) AS item_quality,
+        COALESCE(elem.value ->> 'item_icon', '') AS item_icon,
+        (elem.value ->> 'item_level')::int AS item_level
+    FROM cohort c
+    CROSS JOIN LATERAL jsonb_array_elements(c.gear) WITH ORDINALITY AS elem(value, ordinality)
+)
+SELECT
+    si.slot,
+    si.item_id::int AS item_id,
+    COUNT(*)::int AS wearer_count,
+    (SELECT COUNT(*) FROM cohort)::int AS cohort_size,
+    COALESCE(MAX(si.item_name), '')::text AS item_name,
+    COALESCE(MAX(si.item_quality), 0)::int AS item_quality,
+    COALESCE(MAX(si.item_icon), '')::text AS item_icon,
+    COALESCE(MAX(si.item_level), 0)::int AS item_level
+FROM slot_items si
+WHERE si.item_id > 0
+GROUP BY si.slot, si.item_id
+ORDER BY si.slot, wearer_count DESC, si.item_id
+`
+
+type GearTrendsSlotItemsParams struct {
+	PlayerClass  string             `db:"player_class" json:"player_class"`
+	PlayerSpec   string             `db:"player_spec" json:"player_spec"`
+	Since        pgtype.Timestamptz `db:"since" json:"since"`
+	InstanceName pgtype.Text        `db:"instance_name" json:"instance_name"`
+	RealmID      uuid.NullUUID      `db:"realm_id" json:"realm_id"`
+	TopN         int32              `db:"top_n" json:"top_n"`
+}
+
+type GearTrendsSlotItemsRow struct {
+	Slot        int32  `db:"slot" json:"slot"`
+	ItemID      int32  `db:"item_id" json:"item_id"`
+	WearerCount int32  `db:"wearer_count" json:"wearer_count"`
+	CohortSize  int32  `db:"cohort_size" json:"cohort_size"`
+	ItemName    string `db:"item_name" json:"item_name"`
+	ItemQuality int32  `db:"item_quality" json:"item_quality"`
+	ItemIcon    string `db:"item_icon" json:"item_icon"`
+	ItemLevel   int32  `db:"item_level" json:"item_level"`
+}
+
+// Observed gear trends: the gear worn by the top leaderboard performances
+// of a class/spec, aggregated per equipment slot.
+//
+// Cohort rules (shared by both queries):
+//   - ranked parses only (encounter_dps_rankings), deduped to one
+//     representative instance per run (duplicate uploads collapse via
+//     COALESCE(duplicate_group_id, id) — the house convention);
+//   - best parse (highest DPS) per unique player, optionally filtered by
+//     raid (instance_name) and realm, then the top @top_n players by that
+//     parse's DPS;
+//   - each player's observation is the gear snapshot from THAT parse's
+//     log instance — what they wore during the performance, not their
+//     latest outfit;
+//   - tenant scoping comes from RLS on encounter_dps_rankings plus the
+//     wow_server_realms join for gear history (which has no RLS).
+//
+// Item name/quality/icon/level are read from the snapshot jsonb itself,
+// so results are self-contained.
+func (q *sqlQuerier) GearTrendsSlotItems(ctx context.Context, arg GearTrendsSlotItemsParams) ([]GearTrendsSlotItemsRow, error) {
+	rows, err := q.db.Query(ctx, gearTrendsSlotItems,
+		arg.PlayerClass,
+		arg.PlayerSpec,
+		arg.Since,
+		arg.InstanceName,
+		arg.RealmID,
+		arg.TopN,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GearTrendsSlotItemsRow
+	for rows.Next() {
+		var i GearTrendsSlotItemsRow
+		if err := rows.Scan(
+			&i.Slot,
+			&i.ItemID,
+			&i.WearerCount,
+			&i.CohortSize,
+			&i.ItemName,
+			&i.ItemQuality,
+			&i.ItemIcon,
+			&i.ItemLevel,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const bulkUpsertGuildPagePanels = `-- name: BulkUpsertGuildPagePanels :exec
 INSERT INTO guild_page_panels (id, tab_id, panel_type, config, position)
 SELECT 
@@ -15740,6 +16372,109 @@ func (q *sqlQuerier) SearchItemTemplates(ctx context.Context, arg SearchItemTemp
 			&i.Armor,
 			&i.Icon,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const searchSlotEnchantments = `-- name: SearchSlotEnchantments :many
+SELECT DISTINCT e.id, e.name_lang
+FROM dbc_spell_item_enchantment e
+JOIN dbc_spells s ON s.dataset_id = e.dataset_id
+    AND ((s.effect_0 = 53 AND s.effect_misc_value_0 = e.id)
+      OR (s.effect_1 = 53 AND s.effect_misc_value_1 = e.id)
+      OR (s.effect_2 = 53 AND s.effect_misc_value_2 = e.id))
+WHERE e.dataset_id = $1
+  AND ($2::text = '' OR e.name_lang ILIKE '%' || $2::text || '%')
+  AND (
+      (s.equipped_item_class = 4 AND (s.equipped_item_inv_types & $3::int) <> 0)
+   OR ($4::int <> 0 AND s.equipped_item_class = 2
+       AND (s.equipped_item_subclass = 0 OR (s.equipped_item_subclass & $4) <> 0)
+       AND (s.equipped_item_inv_types = 0 OR (s.equipped_item_inv_types & $3::int) <> 0))
+  )
+ORDER BY e.name_lang, e.id
+LIMIT 50
+`
+
+type SearchSlotEnchantmentsParams struct {
+	DatasetID          uuid.UUID `db:"dataset_id" json:"dataset_id"`
+	SearchTerm         string    `db:"search_term" json:"search_term"`
+	InvMask            int32     `db:"inv_mask" json:"inv_mask"`
+	WeaponSubclassMask int32     `db:"weapon_subclass_mask" json:"weapon_subclass_mask"`
+}
+
+type SearchSlotEnchantmentsRow struct {
+	ID       int32  `db:"id" json:"id"`
+	NameLang string `db:"name_lang" json:"name_lang"`
+}
+
+// Slot-aware enchant search for the gear builder. Joining through the
+// spells that apply each enchant (effect 53 = enchant item, permanent)
+// keeps only actually-applyable enchants and derives slot validity from
+// the spell's equipped-item restrictions. Armor enchant spells carry an
+// inventory-type mask; weapon enchant spells restrict by weapon subclass
+// instead and usually leave the inventory mask zero.
+func (q *sqlQuerier) SearchSlotEnchantments(ctx context.Context, arg SearchSlotEnchantmentsParams) ([]SearchSlotEnchantmentsRow, error) {
+	rows, err := q.db.Query(ctx, searchSlotEnchantments,
+		arg.DatasetID,
+		arg.SearchTerm,
+		arg.InvMask,
+		arg.WeaponSubclassMask,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SearchSlotEnchantmentsRow
+	for rows.Next() {
+		var i SearchSlotEnchantmentsRow
+		if err := rows.Scan(&i.ID, &i.NameLang); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const searchSpellItemEnchantments = `-- name: SearchSpellItemEnchantments :many
+SELECT id, name_lang
+FROM dbc_spell_item_enchantment
+WHERE dataset_id = $1
+  AND name_lang ILIKE '%' || $2::text || '%'
+ORDER BY name_lang, id
+LIMIT 25
+`
+
+type SearchSpellItemEnchantmentsParams struct {
+	DatasetID  uuid.UUID `db:"dataset_id" json:"dataset_id"`
+	SearchTerm string    `db:"search_term" json:"search_term"`
+}
+
+type SearchSpellItemEnchantmentsRow struct {
+	ID       int32  `db:"id" json:"id"`
+	NameLang string `db:"name_lang" json:"name_lang"`
+}
+
+// Name search for the gear builder's enchant picker. Same names appear at
+// multiple ranks/IDs, so the ID is part of the result identity.
+func (q *sqlQuerier) SearchSpellItemEnchantments(ctx context.Context, arg SearchSpellItemEnchantmentsParams) ([]SearchSpellItemEnchantmentsRow, error) {
+	rows, err := q.db.Query(ctx, searchSpellItemEnchantments, arg.DatasetID, arg.SearchTerm)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SearchSpellItemEnchantmentsRow
+	for rows.Next() {
+		var i SearchSpellItemEnchantmentsRow
+		if err := rows.Scan(&i.ID, &i.NameLang); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

@@ -10,21 +10,22 @@ import type {
   VehicleControlInterval,
 } from "@/api/typesGenerated";
 import { getClassColorVar } from "@/pages/ArmoryPage/types";
-import { ScrollArea, ScrollBar } from "@/components/ui/ScrollArea/ScrollArea";
-import {
-  HintTooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/Tooltip/tooltip";
 import type { PanelDefinition, PanelRenderProps } from "../types";
+import {
+  TemporalTimeline,
+  TemporalTimelineHeader,
+  TemporalTimelineInterval,
+  TemporalTimelineLegend,
+  TemporalTimelineLegendItem,
+  TemporalTimelineRow,
+  TemporalTimelineTrack,
+} from "../TemporalTimeline";
 import { vehicleProcessor, type VehicleResult } from "./vehicle.processor";
 import {
-  buildTimelineTicks,
   clipIntervalToRange,
   formatVehicleDuration,
   intervalOverlapsRange,
   selectedEncounterRange,
-  type TimelineTick,
 } from "./vehiclePanelLogic";
 
 interface VehicleRow {
@@ -103,12 +104,13 @@ function VehiclePanelContent({ context }: PanelRenderProps<VehicleResult>) {
     return Array.from(byVehicle.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [context.instance.units, visibleIntervals]);
 
-  const controllerCount = useMemo(
-    () => new Set(visibleIntervals.map((interval) => interval.controller_guid)).size,
-    [visibleIntervals],
-  );
   const durationMs = range ? Math.max(range.endMs - range.startMs, 1) : 1;
-  const timelineTicks = useMemo(() => buildTimelineTicks(durationMs), [durationMs]);
+  const selectedEncounters = useMemo(
+    () => context.instance.encounters.filter((encounter) =>
+      context.selectedEncounterIds.includes(encounter.id),
+    ),
+    [context.instance.encounters, context.selectedEncounterIds],
+  );
 
   if (!metadata || (intervals.length === 0 && diagnostics.length === 0)) {
     return (
@@ -131,108 +133,52 @@ function VehiclePanelContent({ context }: PanelRenderProps<VehicleResult>) {
   }
 
   return (
-    <ScrollArea className="h-full">
-      <div className="min-w-max space-y-3 p-2">
-        <div className="flex min-w-[520px] flex-wrap items-center gap-2 border-b pb-2 text-[10px]">
-          <SummaryPill label="Vehicles" value={rows.length} />
-          <SummaryPill label="Pilots" value={controllerCount} />
-          <SummaryPill label="Intervals" value={visibleIntervals.length} />
-          {visibleDiagnostics.length > 0 && (
-            <SummaryPill label="Diagnostics" value={visibleDiagnostics.length} warning />
-          )}
-          <span className="ml-auto text-muted-foreground">
-            {formatVehicleDuration(durationMs)} selected
-          </span>
+    <TemporalTimeline>
+      <TemporalTimelineHeader
+        label="Vehicle"
+        title="Vehicle Timeline"
+        duration={formatVehicleDuration(durationMs)}
+      />
+
+      {rows.length > 0 ? (
+        rows.map((row) => (
+          <VehicleTimelineRow
+            key={row.guid}
+            row={row}
+            rangeStartMs={range.startMs}
+            rangeEndMs={range.endMs}
+            selectedEncounters={selectedEncounters}
+            context={context}
+          />
+        ))
+      ) : (
+        <div className="py-5 text-center text-xs text-muted-foreground">
+          No vehicle assignments overlap the selected encounters.
         </div>
+      )}
 
-        {rows.length > 0 ? (
-          <div>
-            <div className="mb-1 flex items-end gap-2 text-[10px] font-medium text-muted-foreground">
-              <span className="w-40 shrink-0 pb-4">Vehicle</span>
-              <TimelineAxis ticks={timelineTicks} />
-            </div>
-            {rows.map((row) => (
-              <VehicleTimelineRow
-                key={row.guid}
-                row={row}
-                rangeStartMs={range.startMs}
-                rangeEndMs={range.endMs}
-                ticks={timelineTicks}
-                context={context}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="py-5 text-center text-xs text-muted-foreground">
-            No vehicle assignments overlap the selected encounters.
-          </div>
-        )}
+      {rows.length > 0 && (
+        <TemporalTimelineLegend>
+          <TemporalTimelineLegendItem marker={<div className="h-3 w-3 rounded bg-sky-500/60" />}>
+            Pilot class color
+          </TemporalTimelineLegendItem>
+          <TemporalTimelineLegendItem
+            marker={<div className="h-3 w-3 rounded border-r-2 border-dashed border-white/40 bg-sky-500/60" />}
+          >
+            Ongoing
+          </TemporalTimelineLegendItem>
+          <TemporalTimelineLegendItem
+            marker={<div className="h-3 w-3 rounded border-r-2 border-amber-400 bg-sky-500/60" />}
+          >
+            Inferred release
+          </TemporalTimelineLegendItem>
+        </TemporalTimelineLegend>
+      )}
 
-        {visibleDiagnostics.length > 0 && (
-          <VehicleDiagnostics diagnostics={visibleDiagnostics} context={context} />
-        )}
-      </div>
-      <ScrollBar orientation="horizontal" />
-    </ScrollArea>
-  );
-}
-
-function SummaryPill({
-  label,
-  value,
-  warning = false,
-}: {
-  label: string;
-  value: number;
-  warning?: boolean;
-}) {
-  return (
-    <span
-      className={
-        warning
-          ? "rounded border border-amber-500/30 bg-amber-500/10 px-2 py-1 text-amber-300"
-          : "rounded border border-border/60 bg-muted/30 px-2 py-1 text-muted-foreground"
-      }
-    >
-      {label} <strong className="ml-1 text-foreground">{value}</strong>
-    </span>
-  );
-}
-
-function TimelineAxis({ ticks }: { ticks: TimelineTick[] }) {
-  return (
-    <div className="min-w-[340px] flex-1">
-      <div className="mb-1 text-[10px] font-medium text-muted-foreground">Elapsed time</div>
-      <div className="relative h-7 border-t border-border/70">
-        {ticks.map((tick, index) => {
-          const isFirst = index === 0;
-          const isLast = index === ticks.length - 1;
-          return (
-            <div
-              key={tick.elapsedMs}
-              className="absolute top-0"
-              style={{
-                left: `${tick.positionPercent}%`,
-                transform: isFirst ? undefined : isLast ? "translateX(-100%)" : "translateX(-50%)",
-              }}
-            >
-              <div
-                className={
-                  isFirst
-                    ? "h-1.5 border-l border-muted-foreground/60"
-                    : isLast
-                      ? "ml-auto h-1.5 border-r border-muted-foreground/60"
-                      : "mx-auto h-1.5 border-l border-muted-foreground/50"
-                }
-              />
-              <span className="mt-0.5 block whitespace-nowrap font-mono text-[9px] text-muted-foreground">
-                {tick.label}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-    </div>
+      {visibleDiagnostics.length > 0 && (
+        <VehicleDiagnostics diagnostics={visibleDiagnostics} context={context} />
+      )}
+    </TemporalTimeline>
   );
 }
 
@@ -240,41 +186,36 @@ function VehicleTimelineRow({
   row,
   rangeStartMs,
   rangeEndMs,
-  ticks,
+  selectedEncounters,
   context,
 }: {
   row: VehicleRow;
   rangeStartMs: number;
   rangeEndMs: number;
-  ticks: TimelineTick[];
+  selectedEncounters: PanelRenderProps<VehicleResult>["context"]["instance"]["encounters"];
   context: PanelRenderProps<VehicleResult>["context"];
 }) {
-  const durationMs = Math.max(rangeEndMs - rangeStartMs, 1);
   return (
-    <div className="flex items-center gap-2 border-b border-border/30 py-1.5 hover:bg-muted/20">
-      <div className="w-40 shrink-0 overflow-hidden">
-        <div className="truncate text-xs font-medium text-sky-300" title={`${row.name} (${row.guid})`}>
+    <TemporalTimelineRow
+      label={(
+        <span
+          className="block truncate text-xs font-medium text-sky-300"
+          title={`${row.name} (${row.guid})`}
+        >
           {row.name}
-        </div>
-        <div className="truncate font-mono text-[9px] text-muted-foreground" title={row.guid}>
-          {shortGuid(row.guid)}
-        </div>
-      </div>
-      <div className="relative h-7 min-w-[340px] flex-1 overflow-hidden rounded bg-muted/30">
-        {ticks.slice(1, -1).map((tick) => (
-          <div
-            key={tick.elapsedMs}
-            className="absolute inset-y-0 w-px bg-border/35"
-            style={{ left: `${tick.positionPercent}%` }}
-          />
-        ))}
+        </span>
+      )}
+    >
+      <TemporalTimelineTrack
+        rangeStartMs={rangeStartMs}
+        rangeEndMs={rangeEndMs}
+        encounters={selectedEncounters}
+      >
         {row.intervals.map((interval) => {
           const clipped = clipIntervalToRange(interval, {
             startMs: rangeStartMs,
             endMs: rangeEndMs,
           });
-          const left = ((clipped.startMs - rangeStartMs) / durationMs) * 100;
-          const width = ((clipped.endMs - clipped.startMs) / durationMs) * 100;
           const player = context.instance.players?.[interval.controller_guid];
           const controllerName =
             interval.controller_name ||
@@ -285,35 +226,39 @@ function VehicleTimelineRow({
           const actualEndMs = interval.released_at_ms ?? rangeEndMs;
 
           return (
-            <HintTooltip
+            <TemporalTimelineInterval
               key={`${interval.session_id ?? "unknown"}-${interval.vehicle_guid}-${interval.assigned_at_ms}-${interval.assigned_ordinal}`}
-            >
-              <TooltipTrigger asChild>
-                <div
-                  className="absolute inset-y-1 cursor-help overflow-hidden rounded-sm border border-white/20 px-1 text-[9px] font-medium leading-5 text-black/80 shadow-sm transition-[filter] hover:brightness-110"
-                  style={{
-                    left: `${left}%`,
-                    width: `${Math.max(width, 0.6)}%`,
-                    backgroundColor: color,
-                  }}
-                >
-                  <span className="whitespace-nowrap">{controllerName}</span>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent side="top" hideArrow className="max-w-sm bg-popover text-popover-foreground">
-                <div className="space-y-1 text-xs">
+              startMs={clipped.startMs}
+              endMs={clipped.endMs}
+              rangeStartMs={rangeStartMs}
+              rangeEndMs={rangeEndMs}
+              className={
+                interval.inferred_release
+                  ? "border-r-2 border-amber-400"
+                  : interval.released_at_ms == null
+                    ? "border-r-2 border-dashed border-white/40"
+                    : undefined
+              }
+              style={{ backgroundColor: color, opacity: 0.7 }}
+              tooltip={(
+                <div className="space-y-1.5 text-xs">
                   <div className="font-medium text-sky-300">{row.name}</div>
-                  <div>
+                  <div className="break-all font-mono text-[10px] text-muted-foreground">
+                    {row.guid}
+                  </div>
+                  <div className="border-b border-border pb-1 text-[10px] text-muted-foreground">
                     Piloted by <span className="font-medium" style={{ color }}>{controllerName}</span>
                   </div>
-                  <div className="font-mono text-[10px] text-muted-foreground">
-                    {interval.controller_guid}
+                  <div>
+                    Start: <span className="font-medium">{formatClock(interval.assigned_at_ms)}</span>
                   </div>
                   <div>
-                    {formatClock(interval.assigned_at_ms)} to{" "}
-                    {interval.released_at_ms ? formatClock(interval.released_at_ms) : "session end / unknown"}
+                    End:{" "}
+                    <span className="font-medium">
+                      {interval.released_at_ms ? formatClock(interval.released_at_ms) : "ongoing"}
+                    </span>
                   </div>
-                  <div className="font-medium">
+                  <div className="pt-1 font-medium">
                     Duration: {formatVehicleDuration(Math.max(actualEndMs - interval.assigned_at_ms, 0))}
                   </div>
                   {interval.release_reason && (
@@ -322,18 +267,13 @@ function VehicleTimelineRow({
                       {interval.inferred_release ? " (inferred)" : ""}
                     </div>
                   )}
-                  {interval.session_id && (
-                    <div className="font-mono text-[10px] text-muted-foreground">
-                      Session: {interval.session_id}
-                    </div>
-                  )}
                 </div>
-              </TooltipContent>
-            </HintTooltip>
+              )}
+            />
           );
         })}
-      </div>
-    </div>
+      </TemporalTimelineTrack>
+    </TemporalTimelineRow>
   );
 }
 
@@ -345,7 +285,7 @@ function VehicleDiagnostics({
   context: PanelRenderProps<VehicleResult>["context"];
 }) {
   return (
-    <div className="min-w-[520px] border-t border-amber-500/20 pt-2">
+    <div className="mt-3 min-w-[520px] border-t border-amber-500/20 pt-2">
       <div className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-amber-300">
         <TriangleAlert className="h-3.5 w-3.5" />
         Transport diagnostics

@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 import { BreakoutIdentity } from '@/components/ui/BreakoutPanel/BreakoutIdentity';
 import { usePortalContainer } from '@/components/ui/PortalContainerContext';
 import { X, GripHorizontal } from 'lucide-react';
+import { usePlayerSpecializations } from './PlayerSpecializationContext';
 import {
   createPlayerMetricChartModel,
   type PlayerMetricChartData,
@@ -115,14 +116,28 @@ export function PlayerMetricChart({
   ...divProps
 }: PlayerMetricChartProps) {
   void _dir;
+  const playerSpecializations = usePlayerSpecializations();
+  const enrichedData = useMemo(
+    () => data.map((player) => {
+      const specialization = playerSpecializations.get(player.playerID);
+      if (!specialization) return player;
+      return {
+        ...player,
+        specialization: specialization.name,
+        specializationIconUrl: specialization.iconUrl,
+      };
+    }),
+    [data, playerSpecializations],
+  );
+
   // Track which rows have pinned tooltips (multiple allowed)
   const [pinnedPlayerIds, setPinnedPlayerIds] = useState<Set<string>>(
     () => new Set(initialPinnedPositions?.keys() ?? []),
   )
 
   const { chartData, maximumValue, summedValue } = useMemo(
-    () => createPlayerMetricChartModel(data, perSecond, duration_millis),
-    [data, perSecond, duration_millis],
+    () => createPlayerMetricChartModel(enrichedData, perSecond, duration_millis),
+    [enrichedData, perSecond, duration_millis],
   )
 
   const handleTogglePin = (playerId: string) => {
@@ -284,7 +299,12 @@ function DraggablePinnedTooltip({ player, initialPosition, positionOverride, onC
         >
           {/* Header */}
           <div className="flex shrink-0 items-center gap-2 border-b border-border bg-background/45 px-2.5 py-1.5">
-            <BreakoutIdentity color={player.color} name={player.playerName} className={player.className} />
+            <BreakoutIdentity
+              color={player.color}
+              name={player.playerName}
+              className={player.className}
+              specialization={player.specialization}
+            />
             {panelTitle && (
               <span className="ml-auto border-l border-border pl-2 text-2xs text-muted-foreground">
                 {panelTitle}
@@ -331,7 +351,12 @@ function DraggablePinnedTooltip({ player, initialPosition, positionOverride, onC
         style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
       >
         <GripHorizontal className="h-3 w-3 shrink-0 text-muted-foreground" />
-        <BreakoutIdentity color={player.color} name={player.playerName} className={player.className} />
+        <BreakoutIdentity
+          color={player.color}
+          name={player.playerName}
+          className={player.className}
+          specialization={player.specialization}
+        />
         {panelTitle && (
           <span className="ml-auto border-l border-border pl-2 text-2xs text-muted-foreground">
             {panelTitle}
@@ -621,31 +646,31 @@ export function PlayerMetricRow({
         </span>
         )}
 
-        {/* Icon */}
+        {/* Specialization icon, falling back to class when talents are unavailable. */}
         <img
-          // src={`/c/icons/spec_${player.className.toLowerCase()}_${player.specialization.toLowerCase().replace(/\s+/g, '')}.png`}
-          src={`${classIconBasePath}/class_${player.className.toLowerCase()}.png`}
-          alt={player.specialization}
+          src={player.specializationIconUrl ?? `${classIconBasePath}/class_${player.className.toLowerCase()}.png`}
+          alt={player.specialization || player.className}
+          data-player-icon={player.specializationIconUrl ? "specialization" : "class"}
           style={{
-            width: '20px',
-            height: '20px',
+            width: '24px',
+            height: '24px',
             marginRight: '8px',
-            borderRadius: '2px',
+            flexShrink: 0,
+            borderRadius: '3px',
           }}
           onError={(e) => {
-            // Fallback to class icon if spec icon not found, then to unknown
             const target = e.currentTarget;
             const classIcon = `${classIconBasePath}/class_${player.className.toLowerCase()}.png`;
             const unknownIcon = `${classIconBasePath}/class_unknown.png`;
-            if (target.src.endsWith(unknownIcon)) {
-              // Already at fallback, hide the image
-              target.style.display = 'none';
-            } else if (target.src.includes('/c/icons/class_')) {
-              // Class icon failed, try unknown
+            const iconType = target.dataset.playerIcon;
+            if (iconType === "specialization") {
+              target.dataset.playerIcon = "class";
+              target.src = classIcon;
+            } else if (iconType === "class") {
+              target.dataset.playerIcon = "unknown";
               target.src = unknownIcon;
             } else {
-              // Spec icon failed, try class icon
-              target.src = classIcon;
+              target.style.display = 'none';
             }
           }}
         />
@@ -756,7 +781,7 @@ export function PlayerMetricRow({
               />
               <span className="font-medium">{player.playerName}</span>
               <span className="text-muted-foreground text-xs ml-auto">
-                {player.className}
+                {player.specialization ? `${player.specialization.toUpperCase()} ${player.className}` : player.className}
               </span>
             </div>
           </div>

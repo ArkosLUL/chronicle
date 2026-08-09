@@ -67,6 +67,15 @@ func OculusHostiles() map[uint32]instances.Identity {
 		28183: "Centrifuge Core",
 		27635: "Azure Spellbinder",
 		27640: "Ring-Lord Conjurer",
+		27642: "Phantasmal Mammoth",
+		27644: "Phantasmal Wolf",
+		27645: "Phantasmal Cloudscraper",
+		27647: "Phantasmal Ogre",
+		27648: "Phantasmal Naga",
+		27649: "Phantasmal Murloc",
+		27650: "Phantasmal Air",
+		27651: "Phantasmal Fire",
+		27653: "Phantasmal Water",
 	})
 	instances.LoadBosses(hostile, map[uint32]string{
 		27447: "Varos Cloudstrider",

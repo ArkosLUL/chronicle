@@ -13,6 +13,7 @@ import {
   resolveSpellDescription,
 } from "@/api/wowdb";
 import { cn } from "@/lib/utils";
+import { isSocketBonusFulfilled } from "./socketBonus";
 
 // WoW item quality colors
 const QUALITY_COLORS: Record<number, string> = {
@@ -163,6 +164,11 @@ export function ItemTooltip({ item, className, includeReferenceLinks = false, sh
     })),
   });
   const qualityColor = QUALITY_COLORS[item.quality] ?? "text-white";
+  const socketBonusFulfilled = isSocketBonusFulfilled(
+    item.sockets,
+    gemEnchantIds,
+    gemQueries.map((query) => query.data),
+  );
   const iconUrl = buildIconUrl(item.icon, iconBaseUrl);
   const slotText = INVENTORY_TYPE_TEXT[item.inventory_type] ?? "";
   const subtypeText = ITEM_CLASS_TEXT[`${item.item_class}-${item.item_subclass}`] ?? "";
@@ -272,7 +278,7 @@ export function ItemTooltip({ item, className, includeReferenceLinks = false, sh
           const gem = gemQueries[i]?.data;
           if (gem) {
             return (
-              <div key={i} className={cn("flex items-center gap-1.5", QUALITY_COLORS[gem.quality] ?? "text-white")}>
+              <div key={i} className="flex items-center gap-1.5 text-white">
                 <img src={buildIconUrl(gem.icon, iconBaseUrl)} alt="" width={12} height={12} className="inline-block rounded-sm" />
                 {gem.enchantment ?? gem.name}
               </div>
@@ -286,7 +292,9 @@ export function ItemTooltip({ item, className, includeReferenceLinks = false, sh
           ) : null;
         })}
         {item.socket_bonus && (
-          <div className="text-gray-500">Socket Bonus: {item.socket_bonus.name}</div>
+          <div className={socketBonusFulfilled ? "text-quality-uncommon" : "text-gray-500"}>
+            Socket Bonus: {item.socket_bonus.name}
+          </div>
         )}
 
         {/* Enchantment (green text) */}

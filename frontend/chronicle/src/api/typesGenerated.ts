@@ -2085,6 +2085,14 @@ export interface ParseConfig {
     readonly snapshot_cadence?: string;
 }
 
+// From chroniclesdk/parser_version.go
+/**
+ * ParserVersionResponse is returned by GET /api/v1/parser-version.
+ */
+export interface ParserVersionResponse {
+    readonly version: string;
+}
+
 // From chroniclesdk/log.go
 export interface PeriodMoment {
     readonly timestamp: string;

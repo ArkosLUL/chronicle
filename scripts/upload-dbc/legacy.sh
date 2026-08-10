@@ -4,6 +4,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 TARGETS=(
   # Format: server|api-url|dataset-id
+  "tbc|https://legacy.chronicleclassic.com/|857144d0-9c25-4124-ac5f-306744186e6e"
   "triumvirate|https://legacy.chronicleclassic.com/|0aaca0ed-7f02-4c18-a94f-02491bcd0b88"
   "faebright|https://legacy.chronicleclassic.com/|de34ab0a-8542-4fe3-9bf9-f4503b58d999"
   "azerothcore|https://legacy.chronicleclassic.com/|e6606f7b-7e9e-4bc2-970b-bde8cd500a6b"

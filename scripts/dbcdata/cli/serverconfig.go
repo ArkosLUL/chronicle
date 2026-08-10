@@ -30,6 +30,8 @@ func DefaultClientPath(server string) string {
 		return "/home/steven/Games/OctoWoW"
 	case "lunatic":
 		return "/home/steven/Games/LunaticPTR"
+	case "tbc":
+		return "/home/steven/Games/World of Warcraft 2.4.3"
 	default:
 		return ""
 	}

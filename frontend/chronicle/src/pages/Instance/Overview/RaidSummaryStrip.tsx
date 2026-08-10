@@ -200,6 +200,8 @@ export function RaidSummaryStrip({
   const comparisonSummary = comparison
     ? summarizeComparisonRaids(comparisonRuns)
     : null;
+  // Clear-time parse is computed against the selected comparison cohort so
+  // it updates with the population selector. No comparison → no parse.
   const clearTimeParseScore = comparison
     ? clearTimeParse(primaryQuery.data?.runs[0], comparisonRuns)
     : null;

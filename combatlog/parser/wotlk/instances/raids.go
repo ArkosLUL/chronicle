@@ -1,10 +1,14 @@
 package instances
 
 import (
+	"context"
+
 	"github.com/Emyrk/chronicle/combatlog/parser/common/identifier"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/instances"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/instances/rankings"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/parsectx"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
+	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 	"github.com/Emyrk/chronicle/database"
 )
 
@@ -78,19 +82,89 @@ var ObsidianSanctumFactory = &instances.CommonFactory{
 	Hostiles:  instances.FromMap(ObsidianSanctumHostiles()),
 }
 
-var OnyxiaFactory = &instances.CommonFactory{
-	Name:      "Onyxia's Lair",
-	ZoneNames: []string{"onyxia's lair", "奥妮克希亚的巢穴"},
-	MapIDs:    []uint32{249},
-	Hostiles:  instances.OnyxiaHostiles,
-	FlavoredRankings: func(database.WoWFlavor) *rankings.Rankings {
-		return &rankings.Rankings{
-			Speedrun: &rankings.SpeedrunRules{
-				Requirements: []rankings.SpeedrunRequirement{
-					{Name: "Onyxia", EntryIDs: []uint32{10184}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
-				},
-			},
+func onyxiaZoneName(ctx context.Context, z zone.Zone, fl database.WoWFlavor) string {
+	if !fl.Has(database.FlavorAzerothcoreProgression) {
+		return "Onyxia's Lair"
+	}
+	format, ok := parsectx.Format(ctx)
+	if !ok || format != database.LogFormat335aCcAddon {
+		return "Onyxia's Lair"
+	}
+
+	// AzerothCore progression servers can expose both the level 60 and level 80
+	// versions of Onyxia on the same client and zone name. The companion reports
+	// 10/25-player metadata for the WotLK raid, while the classic raid has none.
+	if z.InstanceType == "raid" && z.DifficultyName == "" && z.MaxPlayers == 0 {
+		return "Onyxia Classic"
+	}
+	return "Onyxia's Lair"
+}
+
+func onyxiaRankings(fl database.WoWFlavor, classic bool) *rankings.Rankings {
+	onyxiaEntry := uint32(10184)
+	warderEntry := uint32(12129)
+	if classic {
+		onyxiaEntry = 301000
+		warderEntry = 301002
+	}
+	trash := []rankings.SpeedrunRequirement{
+		{Name: "Onyxian Warder", EntryIDs: []uint32{warderEntry}, Count: 3, Category: rankings.SpeedrunCategoryTrash},
+	}
+	if fl.Has(database.FlavorNightmareOfUrsol) {
+		// TODO: Should figure this out.
+		trash = []rankings.SpeedrunRequirement{
+			//{Name: "Onyxian Warder", EntryIDs: []uint32{12129}, Count: 3, Category: rankings.SpeedrunCategoryTrash},
+			//{Name: "Onyxian Inciter/Onyxian Flamespawn", EntryIDs: []uint32{49016}, Count: 2, Category: rankings.SpeedrunCategoryTrash},
 		}
+	}
+
+	rules := &rankings.SpeedrunRules{
+		Requirements: append([]rankings.SpeedrunRequirement{
+			{Name: "Onyxia", EntryIDs: []uint32{onyxiaEntry}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		}, trash...),
+	}
+	if classic {
+		rules.LevelRange = instances.Level60Cap(fl)
+	}
+	return &rankings.Rankings{Speedrun: rules}
+}
+
+func onyxiaDerivedName(fl database.WoWFlavor) *instances.MultiInstanceZone {
+	if !fl.Has(database.FlavorAzerothcoreProgression) {
+		return nil
+	}
+	return instances.NewMultiInstanceZone(map[string][]uint32{
+		"Onyxia Classic": {301000, 301001, 301002},
+		"Onyxia's Lair":  {10184},
+	})
+}
+
+var OnyxiaFactory = &instances.CommonFactory{
+	Name:         "Onyxia's Lair",
+	NameFromZone: onyxiaZoneName,
+	DerivedName:  onyxiaDerivedName,
+	ZoneNames:    []string{"onyxia's lair", "奥妮克希亚的巢穴"},
+	MapIDs:       []uint32{249},
+	Hostiles:     instances.OnyxiaHostiles,
+	FlavoredRankings: func(fl database.WoWFlavor) *rankings.Rankings {
+		if fl.Has(database.FlavorAzerothcoreProgression) {
+			return nil
+		}
+		return onyxiaRankings(fl, false)
+	},
+	DerivedRankings: map[string]func(database.WoWFlavor) *rankings.Rankings{
+		"Onyxia Classic": func(fl database.WoWFlavor) *rankings.Rankings {
+			if !fl.Has(database.FlavorAzerothcoreProgression) {
+				return nil
+			}
+			return onyxiaRankings(fl, true)
+		},
+		"Onyxia's Lair": func(fl database.WoWFlavor) *rankings.Rankings {
+			if !fl.Has(database.FlavorAzerothcoreProgression) {
+				return nil
+			}
+			return onyxiaRankings(fl, false)
+		},
 	},
 }
 

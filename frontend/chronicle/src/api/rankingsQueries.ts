@@ -10,16 +10,71 @@ import type {
   InstanceParsesResponse,
   SnapshotSummary,
   CohortDebugResponse,
+  CharacterParseHistoryResponse,
+  CharacterEncounterStatsResponse,
 } from "./typesGenerated";
 
 const RANKINGS_STALE_TIME = 5 * 60 * 1000; // 5 minutes
 
+class RankingsAPIError extends Error {
+  readonly status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "RankingsAPIError";
+    this.status = status;
+  }
+}
+
 async function fetchJSON<T>(url: string): Promise<T> {
   const response = await fetch(url);
   if (!response.ok) {
-    throw new Error(`Rankings API error: ${response.status}`);
+    throw new RankingsAPIError(`Rankings API error: ${response.status}`, response.status);
   }
   return response.json() as Promise<T>;
+}
+
+/**
+ * Retry policy for rankings queries: client errors (4xx — missing endpoint,
+ * bad GUID) are fatal and never retried; anything else gets the default
+ * three attempts.
+ */
+function retryUnlessClientError(failureCount: number, error: unknown): boolean {
+  if (error instanceof RankingsAPIError && error.status >= 400 && error.status < 500) {
+    return false;
+  }
+  return failureCount < 3;
+}
+
+/**
+ * A character's deduped parse history (last 60 days) plus their overall
+ * score, for one metric.
+ */
+export function useCharacterParses(playerGuid?: string, metric: "dps" | "hps" = "dps") {
+  return useQuery({
+    queryKey: ["rankings", "character-parses", playerGuid, metric],
+    queryFn: () =>
+      fetchJSON<CharacterParseHistoryResponse>(
+        `/api/v1/rankings/characters/${encodeURIComponent(playerGuid!)}/parses?metric=${metric}`,
+      ),
+    staleTime: RANKINGS_STALE_TIME,
+    enabled: !!playerGuid,
+    retry: retryUnlessClientError,
+  });
+}
+
+/** Per-encounter kill aggregates for a character across all recorded logs. */
+export function useCharacterEncounters(playerGuid?: string, enabled = true) {
+  return useQuery({
+    queryKey: ["rankings", "character-encounters", playerGuid],
+    queryFn: () =>
+      fetchJSON<CharacterEncounterStatsResponse>(
+        `/api/v1/rankings/characters/${encodeURIComponent(playerGuid!)}/encounters`,
+      ),
+    staleTime: RANKINGS_STALE_TIME,
+    enabled: enabled && !!playerGuid,
+    retry: retryUnlessClientError,
+  });
 }
 
 export function useRankingsInstances(enabled = true) {

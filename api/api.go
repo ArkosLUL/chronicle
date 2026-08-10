@@ -57,6 +57,7 @@ type Options struct {
 	GameDB           *gamedb.WoWDB // For cache invalidation on DBC import
 	Assets           http.Handler
 	InternalGameData http.Handler
+	ExternalAPI      http.Handler
 	Rankings         http.Handler
 	Mailer           *chroniclemail.Mailer
 
@@ -71,9 +72,9 @@ type Options struct {
 	// provider (e.g. zug-zug). Configured via environment variables; nil
 	// when disabled.
 	ExternalVerification *chroniclesdk.ExternalVerification
-	DevOAuth              bool
-	Discord               chronauth.DiscordOAuth
-	SecretPEM             []byte // Used for JWTs
+	DevOAuth             bool
+	Discord              chronauth.DiscordOAuth
+	SecretPEM            []byte // Used for JWTs
 
 	// Tenant is the multi-tenant service for subdomain → tenant resolution.
 	// If nil, tenant middleware is a no-op.
@@ -155,7 +156,7 @@ func (api *API) Routes() chi.Router {
 		httpmw.Recover(api.Opts.Logger),
 		httpmw.Log500(api.Opts.Logger),
 		context2.ClearHandler,
-		Cors(api.Opts.Tenant),
+		RouteCors(api.Opts.Tenant),
 		httpmw.SecurityHeaders(),
 		httpmw.ContentSecurityPolicy(),
 		httpmw.NoWWW(),
@@ -167,6 +168,10 @@ func (api *API) Routes() chi.Router {
 		api.shortLinkRedirectMiddleware,
 		api.tenantMiddleware,
 	)
+
+	if api.Opts.ExternalAPI != nil {
+		r.Mount(ExternalAPIPath, api.Opts.ExternalAPI)
+	}
 
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Group(func(r chi.Router) {
@@ -262,6 +267,12 @@ func (api *API) Routes() chi.Router {
 					r.Get("/snapshots", api.AdminListSnapshots)
 					r.Post("/snapshots/delete", api.AdminBulkDeleteSnapshots)
 					r.Delete("/snapshots/{snapshotID}", api.AdminDeleteSnapshot)
+
+					// Time-parse snapshot admin
+					r.Post("/time-parse-snapshot", api.AdminTriggerTimeParseSnapshot)
+					r.Get("/time-parse-snapshots", api.AdminListTimeParseSnapshots)
+					r.Post("/time-parse-snapshots/delete", api.AdminBulkDeleteTimeParseSnapshots)
+					r.Delete("/time-parse-snapshots/{snapshotID}", api.AdminDeleteTimeParseSnapshot)
 				})
 
 				// Tenant management — routes owned by servicetenant
@@ -339,6 +350,11 @@ func (api *API) Routes() chi.Router {
 					r.Get("/page", api.GetGuildPage)
 					r.Get("/settings", api.GetGuildSettings)
 					r.Get("/speedruns/clears", api.GuildRaidClears)
+					r.Get("/characters", api.GuildCharacterRoster)
+					r.Get("/best-runs", api.GuildBestRuns)
+					r.Get("/encounters", api.GuildEncounterKills)
+					r.Get("/parses/top", api.GuildTopParses)
+					r.Get("/parses/runs", api.GuildRunParses)
 
 					// Authenticated routes (non-admin)
 					r.Group(func(r chi.Router) {
@@ -392,6 +408,8 @@ func (api *API) Routes() chi.Router {
 			// Public armory routes
 			r.Get("/armory/search", api.SearchArmoryPlayers)
 			r.Get("/armory/{realm}/{player}", api.GetArmoryPlayer)
+			r.Get("/armory/{realm}/{player}/gear-history", api.GetArmoryPlayerGearHistory)
+			r.Get("/armory/{realm}/{player}/loot", api.GetArmoryPlayerLoot)
 
 			// Public realm listing
 			r.Get("/realms", api.ListPublicRealms)

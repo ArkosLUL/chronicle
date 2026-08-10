@@ -269,6 +269,18 @@ CREATE VIEW chronicle_users AS
           WHERE (log_file.storage_deleted_at IS NULL)
           GROUP BY log_file.owner) lf ON ((lf.owner = u.id)));
 
+CREATE TABLE dataset_consumable_disambiguations (
+    dataset_id uuid NOT NULL,
+    effect_kind text NOT NULL,
+    spell_id integer NOT NULL,
+    item_id integer,
+    ignored boolean DEFAULT false NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT dataset_consumable_disambiguations_check CHECK (((ignored AND (item_id IS NULL)) OR ((NOT ignored) AND (item_id IS NOT NULL)))),
+    CONSTRAINT dataset_consumable_disambiguations_effect_kind_check CHECK ((effect_kind = ANY (ARRAY['buff'::text, 'direct'::text])))
+);
+
 CREATE TABLE dataset_talent_trees (
     dataset_id uuid NOT NULL,
     data jsonb NOT NULL,
@@ -686,6 +698,18 @@ CREATE TABLE external_character_link_syncs (
     last_response jsonb
 );
 
+CREATE TABLE game_player_gear_history (
+    player_id wow_guid NOT NULL,
+    realm_id uuid NOT NULL,
+    instance_id uuid NOT NULL,
+    gear jsonb NOT NULL,
+    avg_ilvl real,
+    equipped_at timestamp with time zone NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+COMMENT ON TABLE game_player_gear_history IS 'One gear snapshot per (player, log instance): the outfit worn as of the last COMBATANT_INFO in that instance. Powers armory item-level trends and gear-over-time views.';
+
 CREATE TABLE game_players (
     id wow_guid NOT NULL,
     realm_id uuid NOT NULL,
@@ -717,7 +741,8 @@ CREATE TABLE guild_page_panels (
     config jsonb DEFAULT '{}'::jsonb NOT NULL,
     "position" jsonb DEFAULT '{"h": 2, "w": 6, "x": 0, "y": 0}'::jsonb NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    visibility text DEFAULT 'all'::text NOT NULL
 );
 
 CREATE TABLE guild_page_tabs (
@@ -726,7 +751,8 @@ CREATE TABLE guild_page_tabs (
     label text NOT NULL,
     slug text NOT NULL,
     sort_order integer DEFAULT 0 NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    visibility text DEFAULT 'all'::text NOT NULL
 );
 
 CREATE TABLE guild_pages (
@@ -925,6 +951,7 @@ CREATE TABLE tenants (
     available_formats text[] DEFAULT '{}'::text[] NOT NULL,
     parse_config jsonb,
     external_linking jsonb,
+    additional_flavor text[] DEFAULT '{}'::text[] NOT NULL,
     CONSTRAINT tenants_slug_format CHECK (((slug IS NULL) OR (slug ~ '^[a-z0-9][a-z0-9-]{1,30}[a-z0-9]$'::text))),
     CONSTRAINT tenants_slug_reserved CHECK ((slug <> ALL (ARRAY['www'::text, 'api'::text, 'auth'::text, 'admin'::text, 'legacy'::text, 'app'::text, 'mail'::text, 'staging'::text])))
 );
@@ -995,6 +1022,49 @@ CREATE VIEW log_instances_guild AS
      LEFT JOIN tenants t ON ((ws.tenant_id = t.id)))
      LEFT JOIN guilds g ON ((li.guild_id = g.id)))
      LEFT JOIN wow_log_groups wlg ON ((wlg.id = li.log_group_id)));
+
+CREATE TABLE parse_score_receipts (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    tenant_id uuid DEFAULT '00000000-0000-0000-0000-000000000000'::uuid NOT NULL,
+    instance_id uuid NOT NULL,
+    snapshot_id uuid NOT NULL,
+    policy_version smallint DEFAULT 1 NOT NULL,
+    query_version smallint DEFAULT 1 NOT NULL,
+    lookback_days smallint DEFAULT 60 NOT NULL,
+    source_count integer DEFAULT 0 NOT NULL,
+    result_count integer DEFAULT 0 NOT NULL,
+    computed_at timestamp with time zone DEFAULT now() NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+CREATE TABLE parse_score_results (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    tenant_id uuid DEFAULT '00000000-0000-0000-0000-000000000000'::uuid NOT NULL,
+    instance_id uuid NOT NULL,
+    run_id uuid NOT NULL,
+    snapshot_id uuid,
+    log_group_id uuid,
+    guild_id uuid,
+    encounter_name text NOT NULL,
+    player_guid text NOT NULL,
+    player_name text DEFAULT ''::text NOT NULL,
+    player_class text DEFAULT ''::text NOT NULL,
+    player_spec text DEFAULT ''::text NOT NULL,
+    player_role text DEFAULT ''::text NOT NULL,
+    metric text NOT NULL,
+    metric_value double precision NOT NULL,
+    precise_score double precision NOT NULL,
+    display_score smallint NOT NULL,
+    rank integer NOT NULL,
+    sample_size integer NOT NULL,
+    status text DEFAULT 'ok'::text NOT NULL,
+    instance_name text DEFAULT ''::text NOT NULL,
+    difficulty_name text DEFAULT ''::text NOT NULL,
+    max_players smallint DEFAULT 0 NOT NULL,
+    killed_at timestamp with time zone,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT parse_score_results_metric_check CHECK ((metric = ANY (ARRAY['dps'::text, 'hps'::text])))
+);
 
 CREATE TABLE parsed_log_group (
     id uuid NOT NULL
@@ -1231,6 +1301,49 @@ CREATE TABLE talent_builds (
     spec text DEFAULT 'Unknown'::text NOT NULL,
     sub_spec text,
     created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+CREATE TABLE time_parse_boss_kill_members (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    snapshot_id uuid NOT NULL,
+    instance_id uuid NOT NULL,
+    run_id uuid NOT NULL,
+    instance_name text NOT NULL,
+    encounter_name text NOT NULL,
+    difficulty_name text DEFAULT ''::text NOT NULL,
+    max_players smallint DEFAULT 0 NOT NULL,
+    duration_ms bigint NOT NULL,
+    killed_at timestamp with time zone NOT NULL
+);
+
+CREATE TABLE time_parse_clear_time_members (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    snapshot_id uuid NOT NULL,
+    instance_id uuid NOT NULL,
+    run_id uuid NOT NULL,
+    instance_name text NOT NULL,
+    difficulty_name text DEFAULT ''::text NOT NULL,
+    max_players smallint DEFAULT 0 NOT NULL,
+    duration_ms bigint NOT NULL,
+    start_time timestamp with time zone NOT NULL
+);
+
+CREATE TABLE time_parse_snapshots (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    tenant_id uuid DEFAULT '00000000-0000-0000-0000-000000000000'::uuid NOT NULL,
+    cutoff timestamp with time zone NOT NULL,
+    window_start timestamp with time zone,
+    lookback_days integer DEFAULT 0 NOT NULL,
+    policy_version smallint DEFAULT 1 NOT NULL,
+    query_version smallint DEFAULT 1 NOT NULL,
+    status text DEFAULT 'pending'::text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    published_at timestamp with time zone,
+    source_row_count bigint DEFAULT 0 NOT NULL,
+    source_watermark timestamp with time zone,
+    source_fingerprint bigint DEFAULT 0 NOT NULL,
+    CONSTRAINT time_parse_snapshots_check CHECK (((status <> 'published'::text) OR (published_at IS NOT NULL))),
+    CONSTRAINT time_parse_snapshots_status_check CHECK ((status = ANY (ARRAY['pending'::text, 'published'::text])))
 );
 
 CREATE TABLE user_action_bar_slots (
@@ -1608,6 +1721,9 @@ ALTER TABLE ONLY data_grants
 ALTER TABLE ONLY data_grants
     ADD CONSTRAINT data_grants_user_id_source_key UNIQUE (user_id, source);
 
+ALTER TABLE ONLY dataset_consumable_disambiguations
+    ADD CONSTRAINT dataset_consumable_disambiguations_pkey PRIMARY KEY (dataset_id, effect_kind, spell_id);
+
 ALTER TABLE ONLY dataset_talent_trees
     ADD CONSTRAINT dataset_talent_trees_pkey PRIMARY KEY (dataset_id);
 
@@ -1698,6 +1814,9 @@ ALTER TABLE ONLY encounter_dps_rankings
 ALTER TABLE ONLY external_character_link_syncs
     ADD CONSTRAINT external_character_link_syncs_pkey PRIMARY KEY (user_id, source);
 
+ALTER TABLE ONLY game_player_gear_history
+    ADD CONSTRAINT game_player_gear_history_pkey PRIMARY KEY (player_id, realm_id, instance_id);
+
 ALTER TABLE ONLY game_players
     ADD CONSTRAINT game_players_pkey PRIMARY KEY (id, realm_id);
 
@@ -1763,6 +1882,15 @@ ALTER TABLE ONLY log_instance_youtube_timestamped
 
 ALTER TABLE ONLY log_instances
     ADD CONSTRAINT log_instances_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY parse_score_receipts
+    ADD CONSTRAINT parse_score_receipts_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY parse_score_receipts
+    ADD CONSTRAINT parse_score_receipts_tenant_id_instance_id_snapshot_id_look_key UNIQUE (tenant_id, instance_id, snapshot_id, lookback_days, policy_version, query_version);
+
+ALTER TABLE ONLY parse_score_results
+    ADD CONSTRAINT parse_score_results_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY parsed_log_group
     ADD CONSTRAINT parsed_log_group_pkey PRIMARY KEY (id);
@@ -1851,6 +1979,21 @@ ALTER TABLE ONLY tenants
 ALTER TABLE ONLY tenants
     ADD CONSTRAINT tenants_slug_key UNIQUE (slug);
 
+ALTER TABLE ONLY time_parse_boss_kill_members
+    ADD CONSTRAINT time_parse_boss_kill_members_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY time_parse_boss_kill_members
+    ADD CONSTRAINT time_parse_boss_kill_members_snapshot_id_instance_id_encoun_key UNIQUE (snapshot_id, instance_id, encounter_name);
+
+ALTER TABLE ONLY time_parse_clear_time_members
+    ADD CONSTRAINT time_parse_clear_time_members_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY time_parse_clear_time_members
+    ADD CONSTRAINT time_parse_clear_time_members_snapshot_id_instance_id_key UNIQUE (snapshot_id, instance_id);
+
+ALTER TABLE ONLY time_parse_snapshots
+    ADD CONSTRAINT time_parse_snapshots_pkey PRIMARY KEY (id);
+
 ALTER TABLE ONLY user_action_bar_slots
     ADD CONSTRAINT user_action_bar_slots_pkey PRIMARY KEY (user_id);
 
@@ -1938,6 +2081,8 @@ CREATE INDEX dbc_consumable_buffs_spell_idx ON dbc_consumable_buffs USING btree 
 
 CREATE UNIQUE INDEX files_unique_owner_hash ON log_file USING btree (owner, hash);
 
+CREATE INDEX game_player_gear_history_player_time ON game_player_gear_history USING btree (realm_id, player_id, equipped_at DESC);
+
 CREATE INDEX game_players_player_and_realm ON game_players USING btree (name, realm_id);
 
 CREATE INDEX idx_data_grants_user_id ON data_grants USING btree (user_id);
@@ -1956,9 +2101,21 @@ CREATE INDEX idx_edr_instance_name ON encounter_dps_rankings USING btree (instan
 
 CREATE INDEX idx_edr_killed_at ON encounter_dps_rankings USING btree (killed_at);
 
+CREATE INDEX idx_edr_player_guid ON encounter_dps_rankings USING btree (player_guid);
+
 CREATE INDEX idx_edr_realm ON encounter_dps_rankings USING btree (realm_id);
 
 CREATE UNIQUE INDEX idx_edr_trash_unique ON encounter_dps_rankings USING btree (instance_id, player_guid, player_spec) WHERE (encounter_id IS NULL);
+
+CREATE INDEX idx_encounter_dps_rankings_instance_id ON encounter_dps_rankings USING btree (instance_id);
+
+CREATE INDEX idx_game_player_gear_history_instance_id ON game_player_gear_history USING btree (instance_id);
+
+CREATE INDEX idx_game_players_guild ON game_players USING btree (guild_id) WHERE (guild_id IS NOT NULL);
+
+CREATE INDEX idx_game_players_realm_lower_name ON game_players USING btree (realm_id, lower(name));
+
+CREATE INDEX idx_game_players_updated_from_instance ON game_players USING btree (updated_from_instance) WHERE (updated_from_instance IS NOT NULL);
 
 CREATE INDEX idx_guild_join_requests_guild ON guild_join_requests USING btree (guild_id);
 
@@ -1976,17 +2133,47 @@ CREATE INDEX idx_instance_speedruns_leaderboard ON instance_speedruns USING btre
 
 CREATE INDEX idx_instance_speedruns_realm ON instance_speedruns USING btree (realm_id, instance_name);
 
+CREATE INDEX idx_log_file_wow_log_id ON log_file USING btree (wow_log_id);
+
 CREATE INDEX idx_log_instance_encounters_instance_id ON log_instance_encounters USING btree (instance_id);
+
+CREATE INDEX idx_log_instance_events_instance_id ON log_instance_events USING btree (instance_id);
 
 CREATE INDEX idx_log_instance_players_instance_id ON log_instance_players USING btree (instance_id);
 
+CREATE INDEX idx_log_instance_players_unit_guid_instance ON log_instance_players USING btree (unit_guid, instance_id);
+
 CREATE INDEX idx_log_instances_duplicate_group ON log_instances USING btree (duplicate_group_id) WHERE (duplicate_group_id IS NOT NULL);
+
+CREATE INDEX idx_log_instances_guild ON log_instances USING btree (guild_id) WHERE (guild_id IS NOT NULL);
 
 CREATE INDEX idx_log_instances_log_group_id ON log_instances USING btree (log_group_id);
 
 CREATE INDEX idx_log_instances_realm_id ON log_instances USING btree (realm_id);
 
 CREATE UNIQUE INDEX idx_mod_requests_pending ON application_modification_requests USING btree (application_id, type, COALESCE(parent_id, '00000000-0000-0000-0000-000000000000'::uuid)) WHERE ((status = 'pending'::text) AND (type <> ALL (ARRAY['server'::text, 'realm'::text])));
+
+CREATE INDEX idx_parse_score_results_instance_id ON parse_score_results USING btree (instance_id);
+
+CREATE INDEX idx_parse_score_results_log_group_id ON parse_score_results USING btree (log_group_id) WHERE (log_group_id IS NOT NULL);
+
+CREATE INDEX idx_psr_dedup ON parse_score_results USING btree (run_id, encounter_name, player_guid, snapshot_id, metric);
+
+CREATE INDEX idx_psr_guild ON parse_score_results USING btree (tenant_id, guild_id, metric, killed_at DESC NULLS LAST) WHERE (guild_id IS NOT NULL);
+
+CREATE INDEX idx_psr_player ON parse_score_results USING btree (tenant_id, player_guid, metric, killed_at DESC NULLS LAST);
+
+CREATE INDEX idx_psr_snapshot ON parse_score_results USING btree (snapshot_id);
+
+CREATE INDEX idx_psr_tenant_instance ON parse_score_results USING btree (tenant_id, instance_id);
+
+CREATE INDEX idx_psreceipt_instance ON parse_score_receipts USING btree (instance_id);
+
+CREATE INDEX idx_psreceipt_snapshot ON parse_score_receipts USING btree (snapshot_id);
+
+CREATE INDEX idx_psreceipt_tenant ON parse_score_receipts USING btree (tenant_id);
+
+CREATE INDEX idx_ranking_snapshot_members_ranking_id ON ranking_snapshot_members USING btree (ranking_id);
 
 CREATE INDEX idx_regression_snapshots_fixture ON regression_snapshots USING btree (fixture_id, created_at DESC);
 
@@ -2016,17 +2203,29 @@ CREATE INDEX idx_tb_sub_spec ON talent_builds USING btree (sub_spec) WHERE (sub_
 
 CREATE UNIQUE INDEX idx_tenants_name_unique ON tenants USING btree (lower(name));
 
+CREATE INDEX idx_tpbkm_cohort ON time_parse_boss_kill_members USING btree (snapshot_id, instance_name, encounter_name, difficulty_name, max_players);
+
+CREATE INDEX idx_tpctm_cohort ON time_parse_clear_time_members USING btree (snapshot_id, instance_name, difficulty_name, max_players);
+
+CREATE INDEX idx_tps_tenant_lookback ON time_parse_snapshots USING btree (tenant_id, lookback_days, published_at DESC NULLS LAST);
+
+CREATE INDEX idx_tps_tenant_status ON time_parse_snapshots USING btree (tenant_id, status);
+
 CREATE INDEX idx_upload_keys_realm ON wow_server_upload_keys USING btree (realm_id);
 
 CREATE INDEX idx_user_panel_layouts_code ON user_panel_layouts USING btree (code);
 
 CREATE INDEX idx_world_creature_template_name ON world_creature_template USING btree (dataset_id, name);
 
+CREATE INDEX idx_world_item_template_dataset_set_inventory_type ON world_item_template USING btree (dataset_id, set_id, inventory_type);
+
 CREATE INDEX idx_world_item_template_name ON world_item_template USING btree (dataset_id, name);
 
 CREATE UNIQUE INDEX idx_wow_server_realms_name_unique ON wow_server_realms USING btree (lower(name));
 
 CREATE UNIQUE INDEX idx_wow_servers_name_unique ON wow_servers USING btree (lower(name));
+
+CREATE INDEX instance_loot_received ON instance_loot USING btree (realm_id, received_guid, received_ts DESC);
 
 CREATE INDEX instance_speedruns_cohort_lookup_idx ON instance_speedruns USING btree (instance_name, start_time);
 
@@ -2049,6 +2248,8 @@ CREATE INDEX river_job_prioritized_fetching_index ON river_job USING btree (stat
 CREATE INDEX river_job_state_and_finalized_at_index ON river_job USING btree (state, finalized_at) WHERE (finalized_at IS NOT NULL);
 
 CREATE UNIQUE INDEX river_job_unique_idx ON river_job USING btree (unique_key) WHERE ((unique_key IS NOT NULL) AND (unique_states IS NOT NULL) AND river_job_state_in_bitmask(unique_states, state));
+
+CREATE UNIQUE INDEX time_parse_snapshots_published_key_idx ON time_parse_snapshots USING btree (tenant_id, cutoff, lookback_days, policy_version, query_version) WHERE (status = 'published'::text);
 
 CREATE UNIQUE INDEX user_auths_unique_linked_id ON user_auth_links USING btree (lower(linked_id), provider);
 
@@ -2081,6 +2282,9 @@ ALTER TABLE ONLY application_modification_requests
 
 ALTER TABLE ONLY data_grants
     ADD CONSTRAINT data_grants_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY dataset_consumable_disambiguations
+    ADD CONSTRAINT dataset_consumable_disambiguations_dataset_id_fkey FOREIGN KEY (dataset_id) REFERENCES datasets(id) ON DELETE CASCADE;
 
 ALTER TABLE ONLY dataset_talent_trees
     ADD CONSTRAINT dataset_talent_trees_dataset_id_fkey FOREIGN KEY (dataset_id) REFERENCES datasets(id) ON DELETE CASCADE;
@@ -2175,6 +2379,12 @@ ALTER TABLE ONLY encounter_dps_rankings
 ALTER TABLE ONLY external_character_link_syncs
     ADD CONSTRAINT external_character_link_syncs_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
 
+ALTER TABLE ONLY game_player_gear_history
+    ADD CONSTRAINT game_player_gear_history_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES log_instances(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
+
+ALTER TABLE ONLY game_player_gear_history
+    ADD CONSTRAINT game_player_gear_history_player_id_realm_id_fkey FOREIGN KEY (player_id, realm_id) REFERENCES game_players(id, realm_id) ON DELETE CASCADE;
+
 ALTER TABLE ONLY game_players
     ADD CONSTRAINT game_players_guild_id_fkey FOREIGN KEY (guild_id) REFERENCES guilds(id) ON DELETE SET NULL;
 
@@ -2259,6 +2469,24 @@ ALTER TABLE ONLY log_instances
 ALTER TABLE ONLY log_instances
     ADD CONSTRAINT log_instances_realm_id_fkey FOREIGN KEY (realm_id) REFERENCES wow_server_realms(id);
 
+ALTER TABLE ONLY parse_score_receipts
+    ADD CONSTRAINT parse_score_receipts_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES log_instances(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY parse_score_receipts
+    ADD CONSTRAINT parse_score_receipts_snapshot_id_fkey FOREIGN KEY (snapshot_id) REFERENCES ranking_snapshots(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY parse_score_results
+    ADD CONSTRAINT parse_score_results_guild_id_fkey FOREIGN KEY (guild_id) REFERENCES guilds(id) ON DELETE SET NULL;
+
+ALTER TABLE ONLY parse_score_results
+    ADD CONSTRAINT parse_score_results_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES log_instances(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY parse_score_results
+    ADD CONSTRAINT parse_score_results_log_group_id_fkey FOREIGN KEY (log_group_id) REFERENCES wow_log_groups(id) ON DELETE SET NULL;
+
+ALTER TABLE ONLY parse_score_results
+    ADD CONSTRAINT parse_score_results_snapshot_id_fkey FOREIGN KEY (snapshot_id) REFERENCES ranking_snapshots(id) ON DELETE SET NULL;
+
 ALTER TABLE ONLY parsed_log_group
     ADD CONSTRAINT parsed_log_group_id_fkey FOREIGN KEY (id) REFERENCES wow_log_groups(id) ON DELETE CASCADE;
 
@@ -2309,6 +2537,12 @@ ALTER TABLE ONLY shared_views
 
 ALTER TABLE ONLY tenants
     ADD CONSTRAINT tenants_default_dataset_id_fkey FOREIGN KEY (default_dataset_id) REFERENCES datasets(id);
+
+ALTER TABLE ONLY time_parse_boss_kill_members
+    ADD CONSTRAINT time_parse_boss_kill_members_snapshot_id_fkey FOREIGN KEY (snapshot_id) REFERENCES time_parse_snapshots(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY time_parse_clear_time_members
+    ADD CONSTRAINT time_parse_clear_time_members_snapshot_id_fkey FOREIGN KEY (snapshot_id) REFERENCES time_parse_snapshots(id) ON DELETE CASCADE;
 
 ALTER TABLE ONLY user_action_bar_slots
     ADD CONSTRAINT user_action_bar_slots_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;

@@ -22,6 +22,61 @@ func TestWrathRegistryReplacesClassicOnyxia(t *testing.T) {
 	require.Equal(t, []uint32{10184}, wrath.SpeedrunRules.Requirements[0].EntryIDs)
 }
 
+func TestProgressionOnyxiaHasSeparateSpeedrunRules(t *testing.T) {
+	t.Parallel()
+
+	flavor := database.WoWFlavor{
+		database.FlavorWrath,
+		database.FlavorAzerothcore,
+		database.FlavorAzerothcoreProgression,
+	}
+	rules := RegistryForFlavor(nil, flavor).SpeedrunRules()
+
+	classic := rules["Onyxia Classic"]
+	require.NotNil(t, classic)
+	require.Equal(t, []uint32{301000}, classic.Requirements[0].EntryIDs)
+	require.Equal(t, []uint32{301002}, classic.Requirements[1].EntryIDs)
+	require.NotNil(t, classic.LevelRange)
+	require.Equal(t, int32(60), classic.LevelRange.MaxLevel)
+
+	wrath := rules["Onyxia's Lair"]
+	require.NotNil(t, wrath)
+	require.Equal(t, []uint32{10184}, wrath.Requirements[0].EntryIDs)
+	require.Nil(t, wrath.LevelRange)
+}
+
+func TestFlavoredDeadminesHostiles(t *testing.T) {
+	t.Parallel()
+
+	vanilla := RegistryForFlavor(nil, database.WoWFlavor{database.FlavorVanilla}).EntryByName("Deadmines")
+	require.NotNil(t, vanilla)
+	for _, entry := range []uint32{61962, 912408, 61963} {
+		require.NotContains(t, vanilla.HostileEntries, entry)
+	}
+
+	lunatic := RegistryForFlavor(nil, database.WoWFlavor{
+		database.FlavorVanilla,
+		database.FlavorLunatic,
+	}).EntryByName("Deadmines")
+	require.NotNil(t, lunatic)
+	for _, entry := range []uint32{61962, 912408, 61963} {
+		require.NotContains(t, lunatic.HostileEntries, entry)
+	}
+
+	nightmare := RegistryForFlavor(nil, database.WoWFlavor{
+		database.FlavorVanilla,
+		database.FlavorNightmareOfUrsol,
+	}).EntryByName("Deadmines")
+	require.NotNil(t, nightmare)
+	manufacturedGolem := nightmare.HostileEntries[61962]
+	require.Equal(t, "Manufactured Golem", manufacturedGolem.Name)
+	require.False(t, manufacturedGolem.Boss)
+	masterpieceHarvester := nightmare.HostileEntries[61963]
+	require.Equal(t, "Masterpiece Harvester", masterpieceHarvester.Name)
+	require.True(t, masterpieceHarvester.Boss)
+	require.Equal(t, "Masterpiece Harvester", masterpieceHarvester.EncounterName)
+}
+
 func TestInstanceDetailsBossCount(t *testing.T) {
 	t.Parallel()
 
@@ -32,7 +87,8 @@ func TestInstanceDetailsBossCount(t *testing.T) {
 		bossCount *int
 	}{
 		{name: "vanilla onyxia", flavor: database.WoWFlavor{database.FlavorVanilla}, instance: "Onyxia's Lair", bossCount: intPtr(1)},
-		{name: "turtle onyxia", flavor: database.WoWFlavor{database.FlavorTurtle}, instance: "Onyxia's Lair", bossCount: intPtr(2)},
+		{name: "turtle onyxia", flavor: database.WoWFlavor{database.FlavorTurtle}, instance: "Onyxia's Lair", bossCount: intPtr(1)},
+		{name: "nightmare of ursol onyxia", flavor: database.WoWFlavor{database.FlavorNightmareOfUrsol}, instance: "Onyxia's Lair", bossCount: intPtr(2)},
 		{name: "epoch onyxia", flavor: database.WoWFlavor{database.FlavorEpoch}, instance: "Onyxia's Lair", bossCount: intPtr(3)},
 		{name: "naxxramas groups multi-unit encounters", flavor: database.WoWFlavor{database.FlavorVanilla}, instance: "Naxxramas", bossCount: intPtr(15)},
 		{name: "gruul groups council members", flavor: database.WoWFlavor{database.FlavorTBC}, instance: "Gruul's Lair", bossCount: intPtr(2)},

@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import type {
   InstanceOverviewMetrics,
+  InstanceTimeParsesResponse,
+  SpeedrunCohortOverviewMetrics,
   SpeedrunCohortResponse,
   SpeedrunCohortRun,
   SpeedrunResult,
@@ -17,6 +19,7 @@ export interface ResolvedSpeedrunPopulation {
   label: string;
   selection: PopulationSelection;
   runs: readonly SpeedrunCohortRun[];
+  overview: SpeedrunCohortOverviewMetrics;
   windowStart?: string;
   overviewCoverage?: OverviewMetricsCoverage;
   windowEnd?: string;
@@ -75,6 +78,13 @@ export function useSpeedrunPopulation(selection: PopulationSelection | undefined
             overview,
             encounter_kill_times: speedrun?.encounter_kill_times ?? [],
           }],
+          overview: {
+            runs: overview ? 1 : 0,
+            top_incoming_damage_abilities: overview?.top_incoming_damage_abilities.map((ability) => ({
+              ...ability,
+              runs: 1,
+            })) ?? [],
+          },
         };
       }
 
@@ -91,6 +101,7 @@ export function useSpeedrunPopulation(selection: PopulationSelection | undefined
         label: `${cohort.cohort.label} · ${cohort.cohort.lookback_days} days`,
         selection,
         runs: cohort.runs,
+        overview: cohort.overview,
         windowStart: cohort.cohort.window_start,
         overviewCoverage: {
           eligibleRuns: cohort.cohort.eligible_runs,
@@ -103,5 +114,26 @@ export function useSpeedrunPopulation(selection: PopulationSelection | undefined
     staleTime: 5 * 60 * 1000,
     retry: false,
     enabled: selection !== undefined,
+  });
+}
+
+/**
+ * Fetches immutable time-parse scores for an instance from the snapshot API.
+ * Returns clear-time and per-boss kill-time scores computed server-side.
+ */
+export function useInstanceTimeParses(instanceId: string | undefined) {
+  return useQuery({
+    queryKey: ["rankings", "time-parses", instanceId] as const,
+    queryFn: async (): Promise<InstanceTimeParsesResponse> => {
+      if (!instanceId) throw new Error("No instance ID");
+      const response = await fetch(
+        `/api/v1/rankings/instances/${encodeURIComponent(instanceId)}/time-parses`,
+      );
+      if (!response.ok) throw new Error("Unable to load time parses");
+      return response.json() as Promise<InstanceTimeParsesResponse>;
+    },
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+    enabled: instanceId !== undefined,
   });
 }

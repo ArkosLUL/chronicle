@@ -79,6 +79,7 @@ type Hookable struct {
 	Characters      *characters.Characters
 	currentFight    *ongoingFight
 	events          *encounterevents.Events
+	lastActivity    time.Time
 	completedFights []encounter.Fight
 	lastProcessedAt time.Time
 	finalizing      bool
@@ -114,8 +115,12 @@ func (f *CommonFactory) NewHookable(ctx context.Context, logger *slog.Logger, db
 	if f.FlavoredRankings != nil {
 		r = f.FlavoredRankings(flavor)
 	}
+	name := f.Name
+	if f.NameFromZone != nil {
+		name = f.NameFromZone(ctx, z, flavor)
+	}
 	return NewHookable(ctx, logger, db, z, InstanceParams{
-		Name:        f.Name,
+		Name:        name,
 		MatchesZone: f.MatchZone,
 		Idf:         f.Hostiles(flavor),
 		Rankings:    r,
@@ -354,9 +359,48 @@ func (h *Hookable) UpdateZoneDifficulty(z zone.Zone) {
 	h.CurrentZone.SubZone = z.SubZone
 }
 
+// ShouldStartNewRun reports whether a later entry into the same zone should
+// start a new parsed instance. The current run must be complete and inactive
+// for its configured re-entry gap.
+func (h *Hookable) ShouldStartNewRun(at time.Time) bool {
+	completedAt, gap, ok := h.completedSpeedrunBoundary()
+	if !ok {
+		return false
+	}
+	lastActivity := h.lastActivity
+	if lastActivity.Before(completedAt) {
+		lastActivity = completedAt
+	}
+	return at.Sub(lastActivity) > gap
+}
+
+func (h *Hookable) completedSpeedrunBoundary() (time.Time, time.Duration, bool) {
+	var completedAt time.Time
+	var gap time.Duration
+	trackers := make([]*rankings.SpeedrunTracker, 0, 1+len(h.derivedSpeedrunTrackers))
+	if h.speedrunTracker != nil {
+		trackers = append(trackers, h.speedrunTracker)
+	}
+	for _, tracker := range h.derivedSpeedrunTrackers {
+		trackers = append(trackers, tracker)
+	}
+	for _, tracker := range trackers {
+		at, complete := tracker.CompletedAt()
+		if !complete || (!completedAt.IsZero() && !at.After(completedAt)) {
+			continue
+		}
+		completedAt = at
+		gap = tracker.ReentryGap()
+	}
+	return completedAt, gap, !completedAt.IsZero()
+}
+
 func (h *Hookable) Process(m messages.Message) error {
 	if h.finalizing || h.finalized {
 		return fmt.Errorf("cannot process message after instance finalization started")
+	}
+	if at := m.Date(); at.After(h.lastActivity) {
+		h.lastActivity = at
 	}
 	return h.process(m)
 }

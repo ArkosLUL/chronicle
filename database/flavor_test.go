@@ -1,6 +1,7 @@
 package database_test
 
 import (
+	"slices"
 	"testing"
 
 	"github.com/Emyrk/chronicle/database"
@@ -26,16 +27,19 @@ func TestWoWFlavorHas(t *testing.T) {
 	}
 }
 
-func TestAllFlavorTagValuesIncludesTBC(t *testing.T) {
+func TestAllFlavorTagValuesIncludesKnownTags(t *testing.T) {
 	t.Parallel()
 
-	for _, tag := range database.AllFlavorTagValues() {
-		if tag == database.FlavorTBC {
-			return
+	all := database.WoWFlavor(database.AllFlavorTagValues())
+	for _, tag := range []database.FlavorTag{
+		database.FlavorTBC,
+		database.FlavorAzerothcoreProgression,
+		database.FlavorLunatic,
+	} {
+		if !all.Has(tag) {
+			t.Errorf("AllFlavorTagValues() missing %q", tag)
 		}
 	}
-
-	t.Fatal("AllFlavorTagValues() missing tbc")
 }
 
 // TestLogTypeFlavor pins the bootstrap LogType->flavor derivation.
@@ -133,6 +137,26 @@ func TestServerFlavorNoDuplicateBase(t *testing.T) {
 	got := database.ServerFlavor("vanilla", database.FlavorVanilla)
 	if len(got) != 1 || !got.Has(database.FlavorVanilla) {
 		t.Fatalf("ServerFlavor(vanilla, vanilla) = %v, want [vanilla]", got)
+	}
+}
+
+func TestWoWFlavorMerge(t *testing.T) {
+	t.Parallel()
+
+	base := database.WoWFlavor{database.FlavorWrath, database.FlavorAzerothcore}
+	additional := database.WoWFlavor{database.FlavorAzerothcore, database.FlavorAzerothcoreProgression}
+
+	got := base.Merge(additional)
+	want := database.WoWFlavor{
+		database.FlavorWrath,
+		database.FlavorAzerothcore,
+		database.FlavorAzerothcoreProgression,
+	}
+	if !slices.Equal(got, want) {
+		t.Fatalf("Merge() = %v, want %v", got, want)
+	}
+	if len(base) != 2 || len(additional) != 2 {
+		t.Fatal("Merge modified an input slice")
 	}
 }
 

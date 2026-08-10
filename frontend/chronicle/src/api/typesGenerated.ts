@@ -199,6 +199,29 @@ export interface AdminSnapshotSummary {
 
 // From chroniclesdk/rankings.go
 /**
+ * AdminTimeParseSnapshotSummary is a time-parse snapshot listed in the admin tab.
+ */
+export interface AdminTimeParseSnapshotSummary {
+    readonly id: string;
+    readonly tenant_id: string;
+    readonly tenant_name: string;
+    readonly cutoff: string;
+    readonly window_start: string | null;
+    readonly lookback_days: number;
+    readonly policy_version: number;
+    readonly query_version: number;
+    readonly clear_member_count: number;
+    readonly boss_member_count: number;
+    readonly status: string;
+    readonly source_row_count: number;
+    readonly source_watermark: string | null;
+    readonly source_fingerprint: number;
+    readonly published_at: string | null;
+    readonly created_at: string;
+}
+
+// From chroniclesdk/rankings.go
+/**
  * AdminTriggerSnapshotJobResult describes a single enqueued snapshot job.
  */
 export interface AdminTriggerSnapshotJobResult {
@@ -261,6 +284,53 @@ export interface ApplicationAdminEntry {
     readonly user_id: string;
     readonly username: string;
     readonly discord_id?: string;
+}
+
+// From chroniclesdk/armory.go
+/**
+ * ArmoryGearHistoryResponse lists a player's gear snapshots, newest first.
+ */
+export interface ArmoryGearHistoryResponse {
+    readonly snapshots: readonly ArmoryGearSnapshot[];
+}
+
+// From chroniclesdk/armory.go
+/**
+ * ArmoryGearSnapshot is the outfit a player wore as of the last combatant
+ * info seen in one log instance.
+ */
+export interface ArmoryGearSnapshot {
+    readonly instance_id: string;
+    readonly instance_name: string;
+    readonly instance_slug?: string;
+    readonly equipped_at: string;
+    /**
+     * AvgIlvl averages item_level across equipped slots (shirt and tabard
+     * excluded); nil when no equipped item had a known item level.
+     */
+    readonly avg_ilvl?: number;
+    readonly gear: PlayerOutfit;
+}
+
+// From chroniclesdk/armory.go
+export interface ArmoryLootItem {
+    readonly item_id: number;
+    readonly item_name: string;
+    readonly quality: number;
+    readonly icon?: string;
+    readonly quantity: number;
+    readonly instance_id: string;
+    readonly instance_name: string;
+    readonly instance_slug?: string;
+    readonly received_at: string;
+}
+
+// From chroniclesdk/armory.go
+/**
+ * ArmoryLootResponse lists loot a character received, newest first.
+ */
+export interface ArmoryLootResponse {
+    readonly items: readonly ArmoryLootItem[];
 }
 
 // From chroniclesdk/armory.go
@@ -350,6 +420,20 @@ export interface AzerothCorePingResponse {
     readonly status: string;
 }
 
+// From chroniclesdk/time_parses.go
+/**
+ * BossKillTimeParse is a per-boss kill-time parse.
+ */
+export interface BossKillTimeParse {
+    readonly encounter_name: string;
+    readonly duration_ms: number;
+    readonly precise_score: number;
+    readonly display_score: number;
+    readonly rank: number;
+    readonly sample_size: number;
+    readonly status: string;
+}
+
 // From chroniclesdk/tenant.go
 /**
  * Branding holds the visual identity for a tenant subdomain or the primary domain.
@@ -376,6 +460,31 @@ export interface CensusEntry {
     readonly count: number;
 }
 
+// From chroniclesdk/parse_scores.go
+/**
+ * CharacterEncounterStats aggregates one character's kills of one encounter.
+ * Duplicate uploads of the same raid night count once.
+ */
+export interface CharacterEncounterStats {
+    readonly instance_name: string;
+    readonly encounter_name: string;
+    readonly difficulty_name: string;
+    readonly max_players: number;
+    readonly kills: number;
+    readonly first_killed_at: string;
+    readonly last_killed_at: string;
+}
+
+// From chroniclesdk/parse_scores.go
+/**
+ * CharacterEncounterStatsResponse lists per-encounter kill aggregates for a
+ * character across all recorded logs (no lookback window).
+ */
+export interface CharacterEncounterStatsResponse {
+    readonly player_guid: string;
+    readonly encounters: readonly CharacterEncounterStats[];
+}
+
 // From chroniclesdk/characters.go
 /**
  * CharacterLinkInfo describes who a character is linked to (admin view).
@@ -386,6 +495,56 @@ export interface CharacterLinkInfo {
     readonly character_guid: string;
     readonly realm_id: string;
     readonly linked_at: string;
+}
+
+// From chroniclesdk/parse_scores.go
+/**
+ * CharacterParse is a single deduplicated parse result for a character.
+ */
+export interface CharacterParse {
+    readonly encounter_name: string;
+    readonly instance_name: string;
+    readonly difficulty_name: string;
+    readonly max_players: number;
+    readonly instance_id: string;
+    readonly snapshot_id?: string;
+    readonly run_id: string;
+    readonly metric: string;
+    readonly metric_value: number;
+    readonly precise_score: number;
+    readonly display_score: number;
+    readonly rank: number;
+    readonly sample_size: number;
+    readonly status: string;
+    readonly killed_at: string;
+}
+
+// From chroniclesdk/parse_scores.go
+/**
+ * CharacterParseHistoryResponse is the response for the character parse history endpoint.
+ * Returns ALL deduplicated parses over the lookback window, not just best per encounter.
+ */
+export interface CharacterParseHistoryResponse {
+    readonly player_guid: string;
+    readonly player_name: string;
+    readonly player_class: string;
+    readonly player_spec: string;
+    readonly metric: string;
+    readonly score?: CharacterScore;
+    readonly parses: readonly CharacterParse[];
+}
+
+// From chroniclesdk/parse_scores.go
+/**
+ * CharacterScore is the derived Score from best 3 parse scores per
+ * (instance_name, encounter_name) group, averaged per group, then averaged
+ * across groups.
+ */
+export interface CharacterScore {
+    readonly value: number;
+    readonly display_value: number;
+    readonly num_parses: number;
+    readonly encounter_groups: number;
 }
 
 // From chroniclesdk/events.go
@@ -439,6 +598,26 @@ export interface CohortDebugResponse {
     readonly median_value: number;
     readonly entries: readonly CohortDebugEntry[];
     readonly buckets: readonly CohortBucket[];
+}
+
+// From chroniclesdk/consumables.go
+export interface ConsumableDisambiguation {
+    readonly effect_kind: ConsumableEffectKind;
+    readonly spell_id: number;
+    readonly item_id: number;
+}
+
+// From chroniclesdk/consumables.go
+export type ConsumableEffectKind = "buff" | "direct";
+
+export const ConsumableEffectKinds: ConsumableEffectKind[] = ["buff", "direct"];
+
+// From chroniclesdk/consumables.go
+export interface ConsumableEffectPolicy {
+    readonly effect_kind: ConsumableEffectKind;
+    readonly spell_id: number;
+    readonly item_id?: number;
+    readonly ignored: boolean;
 }
 
 // From chroniclesdk/server_application.go
@@ -802,6 +981,55 @@ export interface Guild {
 }
 
 // From chroniclesdk/guild_page.go
+/**
+ * GuildBestRun is the guild's best full clear of one instance within the
+ * requested window — fastest, or highest average parse when ranked by parse.
+ * AvgParse is -1 when the run has no parses.
+ */
+export interface GuildBestRun {
+    readonly run_id: string;
+    readonly instance_id: string;
+    readonly instance_slug?: string;
+    readonly instance_name: string;
+    readonly difficulty_name: string;
+    readonly max_players: number;
+    readonly duration_ms: number;
+    readonly completed_at: string;
+    readonly avg_parse: number;
+    readonly parse_count: number;
+}
+
+// From chroniclesdk/guild_page.go
+export interface GuildBestRunsResponse {
+    readonly runs: readonly GuildBestRun[];
+}
+
+// From chroniclesdk/guild_page.go
+export interface GuildCharacterRosterResponse {
+    readonly members: readonly GuildRosterCharacter[];
+}
+
+// From chroniclesdk/guild_page.go
+/**
+ * GuildEncounterKill aggregates a guild's kills of one encounter across all
+ * time. Duplicate uploads of the same raid night count once.
+ */
+export interface GuildEncounterKill {
+    readonly instance_name: string;
+    readonly encounter_name: string;
+    readonly difficulty_name: string;
+    readonly max_players: number;
+    readonly kills: number;
+    readonly first_killed_at: string;
+    readonly last_killed_at: string;
+}
+
+// From chroniclesdk/guild_page.go
+export interface GuildEncounterKillsResponse {
+    readonly encounters: readonly GuildEncounterKill[];
+}
+
+// From chroniclesdk/guild_page.go
 export interface GuildInfo {
     readonly id: string;
     readonly name: string;
@@ -866,6 +1094,13 @@ export interface GuildPageTheme {
     readonly background_url?: string;
     readonly logo_url?: string;
     readonly description?: string;
+    /**
+     * HeaderLayout selects the header arrangement: "" or "centered" for the
+     * classic centered header; "left" for the armory-style identity with the
+     * description beside it, centered as a pair; "left_joined" for the
+     * identity with the description underneath it, left-aligned.
+     */
+    readonly header_layout?: string;
     readonly tags?: readonly GuildTag[];
     readonly socials?: Record<SocialPlatform, string>; // platform key -> URL
 }
@@ -896,10 +1131,50 @@ export interface GuildRaidClearsResponse {
 }
 
 // From chroniclesdk/guild_page.go
+/**
+ * GuildRosterCharacter is a guild character seen in raid logs. LastSeenAt is
+ * the last time a log updated the character. AvgParse is -1 when the
+ * character has no parses in the scoring window.
+ */
+export interface GuildRosterCharacter {
+    readonly id: string;
+    readonly name: string;
+    readonly class: string;
+    readonly race: string;
+    readonly level: number;
+    readonly spec?: string;
+    readonly role?: string; // "tank", "heal", or "dps"
+    readonly avg_parse: number;
+    readonly last_seen_at: string;
+    readonly realm_name: string;
+}
+
+// From chroniclesdk/guild_page.go
 export interface GuildRosterMember {
     readonly user_id: string;
     readonly username: string;
     readonly roles: readonly string[]; // "member", "leader", etc.
+}
+
+// From chroniclesdk/guild_page.go
+/**
+ * GuildRunEncounterParse is the guild's average parse for one encounter of
+ * one raid night (run). Encounters are returned in kill order; callers weight
+ * by ParseCount for a whole-run average. KillDurationMs is the fight length
+ * of the kill (0 when unknown).
+ */
+export interface GuildRunEncounterParse {
+    readonly run_id: string;
+    readonly encounter_name: string;
+    readonly avg_parse: number;
+    readonly parse_count: number;
+    readonly killed_at: string;
+    readonly kill_duration_ms: number;
+}
+
+// From chroniclesdk/guild_page.go
+export interface GuildRunParsesResponse {
+    readonly encounters: readonly GuildRunEncounterParse[];
 }
 
 // From chroniclesdk/guild_page.go
@@ -913,6 +1188,35 @@ export interface GuildSettings {
 export type GuildTag = "Casual" | "Chinese" | "Dungeons" | "English" | "French" | "German" | "Hardcore" | "Korean" | "Leveling" | "Portuguese" | "PvP" | "Questing" | "RP" | "Raiding" | "Russian" | "Social" | "Spanish" | "Taiwanese";
 
 export const GuildTags: GuildTag[] = ["Casual", "Chinese", "Dungeons", "English", "French", "German", "Hardcore", "Korean", "Leveling", "Portuguese", "PvP", "Questing", "RP", "Raiding", "Russian", "Social", "Spanish", "Taiwanese"];
+
+// From chroniclesdk/guild_page.go
+/**
+ * GuildTopParse is one ranked parse on a guild's top parses board.
+ * InstanceID/InstanceSlug identify the raid log the parse came from.
+ */
+export interface GuildTopParse {
+    readonly player_guid: string;
+    readonly player_name: string;
+    readonly player_class: string;
+    readonly player_spec: string;
+    readonly player_role: string;
+    readonly encounter_name: string;
+    readonly instance_id: string;
+    readonly instance_slug?: string;
+    readonly instance_name: string;
+    readonly difficulty_name: string;
+    readonly max_players: number;
+    readonly metric: string;
+    readonly metric_value: number;
+    readonly display_score: number;
+    readonly killed_at: string;
+}
+
+// From chroniclesdk/guild_page.go
+export interface GuildTopParsesResponse {
+    readonly metric: string;
+    readonly parses: readonly GuildTopParse[];
+}
 
 // From chroniclesdk/log.go
 /**
@@ -1109,6 +1413,39 @@ export interface InstanceReport {
      * UnknownUnits maps creature entry IDs not in the hostiles map to name and hit count.
      */
     readonly unknown_units?: Record<number, UnknownUnit>;
+}
+
+// From chroniclesdk/time_parses.go
+/**
+ * InstanceTimeParsesResponse contains time-based parse scores for a specific
+ * instance, scoring clear time and per-boss kill times against an immutable
+ * population snapshot.
+ */
+export interface InstanceTimeParsesResponse {
+    readonly available: boolean;
+    readonly reason?: string;
+    readonly snapshot_id: string;
+    readonly cutoff: string;
+    readonly lookback_days: number;
+    /**
+     * PolicyVersion and QueryVersion identify the scoring semantics used.
+     */
+    readonly policy_version: number;
+    readonly query_version: number;
+    /**
+     * ClearTime is the instance's clear-time parse against the population.
+     * Nil when the instance has no qualified clear.
+     */
+    readonly clear_time?: TimeParseScore;
+    /**
+     * BossKillTimes contains per-boss kill-time parses.
+     */
+    readonly boss_kill_times: readonly BossKillTimeParse[];
+    /**
+     * AverageBossKillParse is the arithmetic mean of available per-boss
+     * precise scores. Nil when no bosses are scored.
+     */
+    readonly average_boss_kill_parse?: TimeParseAverage;
 }
 
 // From chroniclesdk/log.go
@@ -1578,6 +1915,11 @@ export interface PlayerGear {
     readonly item_quality?: number;
     readonly item_icon?: string;
     readonly transmog_id?: number;
+    /**
+     * ItemLevel is nil for gear snapshots stored before item levels were
+     * recorded, or when the item's template metadata was not found.
+     */
+    readonly item_level?: number;
 }
 
 // From chroniclesdk/armory.go
@@ -1794,6 +2136,11 @@ export interface RecentInstance {
     readonly boss_count: number;
     readonly boss_kills: number;
     readonly duration_ms: number | null; // nullable if no encounters
+    /**
+     * CombatDurationMs is the summed boss + trash combat time from the
+     * overview metrics; nil when metrics were not computed for the instance.
+     */
+    readonly combat_duration_ms?: number;
     readonly guild_id?: string;
     readonly guild_name?: string;
     readonly encounters?: readonly RecentEncounter[];
@@ -2056,6 +2403,11 @@ export interface Session {
     readonly auth_provider: string;
 }
 
+// From chroniclesdk/consumables.go
+export interface SetConsumableDisambiguationRequest {
+    readonly item_id: number;
+}
+
 // From chroniclesdk/tenant.go
 /**
  * SetDatasetRequest assigns or removes a default dataset from a server or
@@ -2276,12 +2628,29 @@ export interface SpeedrunCohortDefinition {
 }
 
 // From chroniclesdk/log.go
+export interface SpeedrunCohortIncomingDamageAbility {
+    readonly spell_id?: number;
+    readonly name: string;
+    readonly damage: number;
+    readonly hits: number;
+    readonly runs: number;
+    readonly environment_type?: string;
+}
+
+// From chroniclesdk/log.go
+export interface SpeedrunCohortOverviewMetrics {
+    readonly runs: number;
+    readonly top_incoming_damage_abilities: readonly SpeedrunCohortIncomingDamageAbility[];
+}
+
+// From chroniclesdk/log.go
 /**
  * SpeedrunCohortResponse contains lightweight rankings-backed observations
  * comparable to one anchor instance. It never includes full instance data.
  */
 export interface SpeedrunCohortResponse {
     readonly cohort: SpeedrunCohortDefinition;
+    readonly overview: SpeedrunCohortOverviewMetrics;
     readonly runs: readonly SpeedrunCohortRun[];
 }
 
@@ -2298,8 +2667,19 @@ export interface SpeedrunCohortRun {
     readonly requirements_total: number;
     readonly guild_id?: string;
     readonly guild_name?: string;
-    readonly overview?: InstanceOverviewMetrics;
+    readonly overview?: SpeedrunCohortRunOverviewMetrics;
     readonly encounter_kill_times: readonly EncounterKillTime[];
+}
+
+// From chroniclesdk/log.go
+export interface SpeedrunCohortRunOverviewMetrics {
+    readonly requirements_complete: boolean | null;
+    readonly player_deaths: number;
+    readonly wipe_count: number;
+    readonly encounter_span_duration_ms: number;
+    readonly total_combat_duration_ms: number;
+    readonly total_boss_duration_ms: number;
+    readonly metrics_version: number;
 }
 
 // From chroniclesdk/log.go
@@ -2533,6 +2913,10 @@ export interface Tenant {
      */
     readonly available_formats: readonly string[];
     /**
+     * AdditionalFlavor augments the resolved dataset's default flavor tags.
+     */
+    readonly additional_flavor: readonly string[];
+    /**
      * ExternalLinking is the tenant's external character linking visibility.
      */
     readonly external_linking?: ExternalLinking;
@@ -2543,6 +2927,30 @@ export interface Tenant {
 // From chroniclesdk/server_application.go
 export interface ThemePayload {
     readonly theme: Record<string, string>;
+}
+
+// From chroniclesdk/time_parses.go
+/**
+ * TimeParseAverage is the average across per-boss time parses.
+ */
+export interface TimeParseAverage {
+    readonly precise_score: number;
+    readonly display_score: number;
+    readonly killed: number;
+    readonly selected: number;
+}
+
+// From chroniclesdk/time_parses.go
+/**
+ * TimeParseScore is a single time-based parse result.
+ */
+export interface TimeParseScore {
+    readonly duration_ms: number;
+    readonly precise_score: number;
+    readonly display_score: number;
+    readonly rank: number;
+    readonly sample_size: number;
+    readonly status: string;
 }
 
 // From chroniclesdk/user.go
@@ -2638,6 +3046,7 @@ export interface UpdateSiteConfigRequest {
 // From chroniclesdk/guild_page.go
 export interface UpdateTabRequest {
     readonly label: string;
+    readonly visibility?: DeviceVisibility; // "all", "desktop", or "mobile"
     readonly panels: readonly GuildPagePanel[];
 }
 
@@ -2737,6 +3146,7 @@ export interface UpsertTenantRequest {
     readonly parse_config: ParseConfig | null;
     readonly default_format: string | null;
     readonly available_formats: readonly string[];
+    readonly additional_flavor: readonly string[];
     /**
      * ExternalLinking updates the tenant's external character linking
      * visibility. Omit to keep the existing value.

@@ -22,19 +22,19 @@ DELETE FROM guild_pages WHERE guild_id = $1;
 -- name: ListGuildPageTabs :many
 SELECT * FROM guild_page_tabs
 WHERE page_id = $1
-ORDER BY sort_order, created_at;
+ORDER BY sort_order, created_at, id;
 
 -- name: GetGuildPageTab :one
 SELECT * FROM guild_page_tabs WHERE id = $1;
 
 -- name: InsertGuildPageTab :one
-INSERT INTO guild_page_tabs (page_id, label, slug, sort_order)
-VALUES ($1, $2, $3, $4)
+INSERT INTO guild_page_tabs (page_id, label, slug, sort_order, visibility)
+VALUES ($1, $2, $3, $4, $5)
 RETURNING *;
 
 -- name: UpdateGuildPageTab :one
 UPDATE guild_page_tabs
-SET label = $2, slug = $3, sort_order = $4
+SET label = $2, slug = $3, sort_order = $4, visibility = $5
 WHERE id = $1
 RETURNING *;
 
@@ -55,8 +55,8 @@ ORDER BY (position->>'y')::int, (position->>'x')::int;
 SELECT * FROM guild_page_panels WHERE id = $1;
 
 -- name: InsertGuildPagePanel :one
-INSERT INTO guild_page_panels (tab_id, panel_type, config, position)
-VALUES ($1, $2, $3, $4)
+INSERT INTO guild_page_panels (tab_id, panel_type, config, position, visibility)
+VALUES ($1, $2, $3, $4, $5)
 RETURNING *;
 
 -- name: UpdateGuildPagePanel :one

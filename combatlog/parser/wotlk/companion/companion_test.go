@@ -8,9 +8,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/Emyrk/chronicle/combatlog/parser/common/messages"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/combatant"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
-	"github.com/Emyrk/chronicle/combatlog/parser/common/messages"
 )
 
 var testTS = time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC)
@@ -167,6 +167,45 @@ func TestParseZone_ICC(t *testing.T) {
 	assert.Equal(t, "The Frozen Throne", z.SubZone)
 }
 
+func TestParseZone_OnyxiaVariants(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name           string
+		input          string
+		difficultyName string
+		maxPlayers     int
+	}{
+		{
+			name:  "classic",
+			input: `[1Z:Onyxia's Lair,raid,3,,0,0,0,0,0,]`,
+		},
+		{
+			name:           "wrath 25 player",
+			input:          `[1Z:Onyxia's Lair,raid,2,25 Player,25,0,0,0,0,]`,
+			difficultyName: "25 Player",
+			maxPlayers:     25,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			msgs, err := newTestParser().Feed(testTS, tt.input)
+			require.NoError(t, err)
+			require.Len(t, msgs, 1)
+
+			z, ok := msgs[0].(*messages.Zone)
+			require.True(t, ok)
+			assert.Equal(t, "onyxia's lair", z.Name)
+			assert.Equal(t, "raid", z.InstanceType)
+			assert.Equal(t, tt.difficultyName, z.DifficultyName)
+			assert.Equal(t, tt.maxPlayers, z.MaxPlayers)
+		})
+	}
+}
+
 func TestParseZone_City(t *testing.T) {
 	t.Parallel()
 	p := newTestParser()
@@ -202,6 +241,30 @@ func TestParseHeader(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, "0.1", v.Versions["chronicle_companion_wotlk"])
 	assert.Equal(t, "3.3.5a", v.Versions["wow"])
+}
+
+func TestParseHeaderClockInfo(t *testing.T) {
+	t.Parallel()
+	p := newTestParser()
+
+	msgs, err := p.Feed(testTS, `[0H:0.1,Icecrown,enUS,3.3.5a,12340,a8f3,1716508800,-420]`)
+	require.NoError(t, err)
+	require.Len(t, msgs, 2)
+
+	clock := p.RealmClockInfo()
+	require.NotNil(t, clock)
+	assert.Equal(t, time.Date(2024, 5, 23, 17, 0, 0, 0, time.UTC), clock.LocalTime)
+	assert.Equal(t, time.Date(2024, 5, 24, 0, 0, 0, 0, time.UTC), clock.UTCTime)
+	assert.Equal(t, 7*time.Hour, clock.Offset)
+}
+
+func TestParseLegacyHeaderHasNoClockInfo(t *testing.T) {
+	t.Parallel()
+	p := newTestParser()
+
+	_, err := p.Feed(testTS, `[0H:0.1,Icecrown,enUS,3.3.5a,12340,a8f3]`)
+	require.NoError(t, err)
+	assert.Nil(t, p.RealmClockInfo())
 }
 
 // --- Loot tests ---

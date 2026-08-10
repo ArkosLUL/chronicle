@@ -20,6 +20,11 @@ interface LogsCalendarProps {
   headerRight?: React.ReactNode;
   density?: "default" | "compact";
   fillHeight?: boolean;
+  /**
+   * "bordered" (default) renders one bordered grid with shared cell borders;
+   * "cells" renders detached rounded day cells with gaps between them.
+   */
+  variant?: "bordered" | "cells";
 }
 
 function useIsSmallScreen(): boolean {
@@ -42,9 +47,13 @@ export function LogsCalendar({
   headerRight,
   density = "default",
   fillHeight = false,
+  variant = "bordered",
 }: LogsCalendarProps) {
   const isSmall = useIsSmallScreen();
   const compact = density === "compact";
+  const cells = variant === "cells";
+  // The cells variant is themed compact throughout so the panel works small.
+  const tightHeader = compact || cells;
   const weeks = getCalendarWeeks(month);
 
   if (isSmall) {
@@ -61,16 +70,16 @@ export function LogsCalendar({
   return (
     <div className={fillHeight ? "flex h-full w-full min-h-0 flex-col" : "w-full"}>
       {/* Header */}
-      <div className={`flex flex-col sm:flex-row sm:items-center sm:justify-between ${compact ? "mb-1 gap-1" : "mb-4 gap-3"}`}>
+      <div className={`flex flex-col sm:flex-row sm:items-center sm:justify-between ${tightHeader ? "mb-1 gap-1" : "mb-4 gap-3"}`}>
         <div className="flex items-center gap-2">
-          <h2 className={compact ? "text-sm font-semibold" : "text-lg font-semibold"}>
+          <h2 className={tightHeader ? "text-sm font-semibold" : "text-lg font-semibold"}>
             {format(month, "MMMM yyyy")}
           </h2>
           <div className="flex items-center">
             <Button
               variant="ghost"
               size="icon"
-              className={compact ? "h-6 w-6" : "h-8 w-8"}
+              className={tightHeader ? "h-6 w-6" : "h-8 w-8"}
               onClick={() => onMonthChange(subMonths(month, 1))}
             >
               <ChevronLeft className="h-4 w-4" />
@@ -78,7 +87,7 @@ export function LogsCalendar({
             <Button
               variant="ghost"
               size="icon"
-              className={compact ? "h-6 w-6" : "h-8 w-8"}
+              className={tightHeader ? "h-6 w-6" : "h-8 w-8"}
               onClick={() => onMonthChange(addMonths(month, 1))}
             >
               <ChevronRight className="h-4 w-4" />
@@ -90,13 +99,15 @@ export function LogsCalendar({
 
       {/* Calendar grid - horizontal scroll on mobile */}
       <div className={`overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 ${fillHeight ? "min-h-0 flex-1" : ""}`}>
-        <div className={`border border-border rounded-lg overflow-hidden min-w-[500px] sm:min-w-0 ${fillHeight ? "flex h-full min-h-0 flex-col" : ""}`}>
+        <div
+          className={`min-w-[500px] sm:min-w-0 ${cells ? "" : "border border-border rounded-lg overflow-hidden"} ${fillHeight ? "flex h-full min-h-0 flex-col" : ""} ${cells && fillHeight ? "gap-1.5" : ""}`}
+        >
           {/* Day names header */}
-          <div className="grid grid-cols-7 bg-muted/50">
+          <div className={`grid grid-cols-7 ${cells ? "gap-1.5" : "bg-muted/50"}`}>
             {DAY_NAMES.map((day) => (
               <div
                 key={day}
-                className={`${compact ? "py-1 text-[10px]" : "py-2 text-xs"} text-center font-medium text-muted-foreground border-b border-border`}
+                className={`${cells ? "py-0.5 text-[10px] uppercase tracking-widest" : compact ? "py-1 text-[10px] border-b border-border" : "py-2 text-xs border-b border-border"} text-center font-medium text-muted-foreground`}
               >
                 {day}
               </div>
@@ -105,7 +116,10 @@ export function LogsCalendar({
 
           {/* Weeks */}
           {weeks.map((week, weekIndex) => (
-            <div key={weekIndex} className={`grid grid-cols-7 ${fillHeight ? "min-h-0 flex-1" : ""}`}>
+            <div
+              key={weekIndex}
+              className={`grid grid-cols-7 ${cells ? "gap-1.5" : ""} ${cells && !fillHeight ? "mb-1.5 last:mb-0" : ""} ${fillHeight ? "min-h-0 flex-1" : ""}`}
+            >
               {week.map((date, dayIndex) => {
                 const inCurrentMonth = isSameMonth(date, month);
                 const today = isToday(date);
@@ -114,9 +128,21 @@ export function LogsCalendar({
                   <div
                     key={dayIndex}
                     className={`
-                      ${compact ? "min-h-[48px] p-1" : "min-h-[80px] sm:min-h-[100px] p-1 sm:p-1.5"} border-b border-r border-border last:border-r-0
-                      ${!inCurrentMonth ? "bg-muted/30" : ""}
-                      ${today ? "bg-primary/5" : ""}
+                      ${
+                        cells
+                          ? compact
+                            ? "min-h-[36px] p-0.5"
+                            : "min-h-[56px] p-1"
+                          : compact
+                            ? "min-h-[48px] p-1"
+                            : "min-h-[80px] sm:min-h-[100px] p-1 sm:p-1.5"
+                      }
+                      ${
+                        cells
+                          ? `rounded-md border ${today ? "border-primary/50 bg-primary/5" : "border-border/50 bg-muted/20"} ${!inCurrentMonth ? "opacity-40" : ""}`
+                          : `border-b border-r border-border last:border-r-0 ${!inCurrentMonth ? "bg-muted/30" : ""} ${today ? "bg-primary/5" : ""}`
+                      }
+                      ${fillHeight ? "flex min-h-0 flex-col overflow-hidden" : ""}
                     `}
                   >
                     {/* Date number */}
@@ -137,8 +163,13 @@ export function LogsCalendar({
                       )}
                     </div>
 
-                    {/* Day content (instances, upload badges, etc.) */}
-                    <div className="space-y-1">{dayContent(date)}</div>
+                    {/* Day content (instances, upload badges, etc.). In
+                        fillHeight mode the row height is fixed by the panel,
+                        so overflowing content scrolls inside the cell instead
+                        of spilling into the next week. */}
+                    <div className={fillHeight ? "min-h-0 flex-1 space-y-1 overflow-y-auto" : "space-y-1"}>
+                      {dayContent(date)}
+                    </div>
                   </div>
                 );
               })}

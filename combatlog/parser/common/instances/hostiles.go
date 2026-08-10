@@ -520,8 +520,23 @@ func OnyxiaHostiles(fl database.WoWFlavor) *identifier.Identifier {
 	})
 	LoadBosses(hostile, map[uint32]string{
 		10184: "Onyxia",
-		49018: "Broodcommander Axelus",
 	})
+
+	if fl.Has(database.FlavorNightmareOfUrsol) {
+		LoadBosses(hostile, map[uint32]string{
+			49018: "Broodcommander Axelus",
+		})
+	}
+
+	if fl.Has(database.FlavorAzerothcoreProgression) {
+		LoadAdds(hostile, map[uint32]string{
+			301001: "Onyxian Whelp",
+			301002: "Onyxian Warder",
+		})
+		LoadBosses(hostile, map[uint32]string{
+			301000: "Onyxia",
+		})
+	}
 
 	if fl.Has(database.FlavorEpoch) {
 		LoadAdds(hostile, map[uint32]string{
@@ -792,7 +807,7 @@ func WindhornCanyonHostiles() map[uint32]Identity {
 	return hostile
 }
 
-func DeadminesHostiles() map[uint32]Identity {
+func DeadminesHostiles(fl database.WoWFlavor) *identifier.Identifier {
 	hostile := make(map[uint32]Identity)
 	LoadAdds(hostile, map[uint32]string{
 		61959: "Defias Chemist",
@@ -824,18 +839,48 @@ func DeadminesHostiles() map[uint32]Identity {
 		647:   "Captain Greenskin",
 		644:   "Rhahk'Zor",
 		1763:  "Gilnid",
+		3586:  "Miner Johnson",
 	})
 
 	hostile[642] = Identity{Name: "Sneed's Shredder", Affiliation: types.AffiliationHostile, EncounterName: "Sneed", Boss: true}
 
-	return hostile
+	if fl.Has(database.FlavorNightmareOfUrsol) {
+		LoadAdds(hostile, map[uint32]string{
+			61962: "Manufactured Golem",
+		})
+		LoadBosses(hostile, map[uint32]string{
+			61963: "Masterpiece Harvester",
+		})
+	}
+
+	return identifier.NewIdentifier(hostile)
 }
 
-func ShadowfangKeepHostiles() map[uint32]Identity {
+func ShadowfangKeepHostiles(fl database.WoWFlavor) *identifier.Identifier {
 	hostile := make(map[uint32]Identity)
 	LoadAdds(hostile, map[uint32]string{
+		3851: "Shadowfang Whitescalp",
+		3853: "Shadowfang Moonwalker",
+		3854: "Shadowfang Wolfguard",
+		3855: "Shadowfang Darksoul",
+		3857: "Shadowfang Glutton",
+		3861: "Bleak Worg",
+		3862: "Slavering Worg",
+		3864: "Fel Steed",
+		3865: "Shadow Charger",
+		3866: "Vile Bat",
+		3868: "Blood Seeker",
 		3872: "Deathsworn Captain",
+		3875: "Haunted Servitor",
+		3877: "Wailing Guardsman",
+		4958: "Haunting Spirit",
 	})
+
+	// Non-combat and friendly units are registered so they do not appear in the
+	// unknown-unit report or participate in encounter detection.
+	hostile[2110] = Identity{Name: "Black Rat", Affiliation: types.AffiliationUnknown}
+	hostile[3850] = Identity{Name: "Sorcerer Ashcrombe", Affiliation: types.AffiliationFriendly}
+	hostile[10000] = Identity{Name: "Arugal", Affiliation: types.AffiliationUnknown}
 
 	LoadBosses(hostile, map[uint32]string{
 		3886: "Razorclaw the Butcher",
@@ -848,7 +893,14 @@ func ShadowfangKeepHostiles() map[uint32]Identity {
 		4279: "Odo the Blindwatcher",
 	})
 
-	return hostile
+	if fl.Has(database.FlavorNightmareOfUrsol) {
+		LoadAdds(hostile, map[uint32]string{
+			61969: "Prelate Ironmane",
+			61970: "Spectral Cleric",
+		})
+	}
+
+	return identifier.NewIdentifier(hostile)
 }
 
 func EmeraldSanctumHostiles() map[uint32]Identity {

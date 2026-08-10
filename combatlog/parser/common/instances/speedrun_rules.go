@@ -30,6 +30,7 @@ func Level70Cap(fl database.WoWFlavor) *rankings.LevelRangeRequirement {
 func RagefireChasmSpeedrunRequirements() *rankings.Rankings {
 	return &rankings.Rankings{
 		Speedrun: &rankings.SpeedrunRules{
+			ReentryGap: rankings.DungeonReentryGap,
 			Requirements: []rankings.SpeedrunRequirement{
 				{Name: "Taragaman the Hungerer", EntryIDs: []uint32{11520}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
 				{Name: "Jergosh the Invoker", EntryIDs: []uint32{11518}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
@@ -44,19 +45,27 @@ func RagefireChasmSpeedrunRequirements() *rankings.Rankings {
 	}
 }
 
-func DeadminesSpeedrunRequirements() *rankings.Rankings {
+func DeadminesSpeedrunRequirements(fl database.WoWFlavor) *rankings.Rankings {
+	requirements := []rankings.SpeedrunRequirement{
+		{Name: "Cookie", EntryIDs: []uint32{645}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Rhahk'Zor", EntryIDs: []uint32{644}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Sneed's Shredder", EntryIDs: []uint32{642}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Sneed", EntryIDs: []uint32{643}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Gilnid", EntryIDs: []uint32{1763}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Mr. Smite", EntryIDs: []uint32{646}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Captain Greenskin", EntryIDs: []uint32{647}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Edwin VanCleef", EntryIDs: []uint32{639}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+	}
+	if fl.Has(database.FlavorNightmareOfUrsol) {
+		requirements = append(requirements, rankings.SpeedrunRequirement{
+			Name: "Masterpiece Harvester", EntryIDs: []uint32{61963}, Count: 1, Category: rankings.SpeedrunCategoryBosses,
+		})
+	}
+
 	return &rankings.Rankings{
 		Speedrun: &rankings.SpeedrunRules{
-			Requirements: []rankings.SpeedrunRequirement{
-				{Name: "Cookie", EntryIDs: []uint32{645}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
-				{Name: "Rhahk'Zor", EntryIDs: []uint32{644}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
-				{Name: "Sneed's Shredder", EntryIDs: []uint32{642}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
-				{Name: "Sneed", EntryIDs: []uint32{643}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
-				{Name: "Gilnid", EntryIDs: []uint32{1763}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
-				{Name: "Mr. Smite", EntryIDs: []uint32{646}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
-				{Name: "Captain Greenskin", EntryIDs: []uint32{647}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
-				{Name: "Edwin VanCleef", EntryIDs: []uint32{639}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
-			},
+			ReentryGap:   rankings.DungeonReentryGap,
+			Requirements: requirements,
 			LevelRange: &rankings.LevelRangeRequirement{
 				MinLevel: 0,
 				MaxLevel: 26,
@@ -164,7 +173,7 @@ func OnyxiasLairSpeedrunRequirements(flavor database.WoWFlavor) []rankings.Speed
 	base := []rankings.SpeedrunRequirement{
 		{Name: "Onyxia", EntryIDs: []uint32{10184, 45133}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
 	}
-	if flavor.Has(database.FlavorOctoWoW, database.FlavorTurtle, database.FlavorNightmareOfUrsol) {
+	if flavor.Has(database.FlavorNightmareOfUrsol) {
 		base = append(base, []rankings.SpeedrunRequirement{
 			{Name: "Broodcommander Axelus", EntryIDs: []uint32{49018}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
 		}...)

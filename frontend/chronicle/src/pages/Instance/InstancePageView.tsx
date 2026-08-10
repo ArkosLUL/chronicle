@@ -55,7 +55,7 @@ import { HeroicBadge } from "@/components/HeroicBadge";
 import { isHeroic } from "@/lib/wowUtils";
 import { DuplicatesBadge } from "./DuplicatesBadge";
 import { getInstanceBackground } from "@/pages/Logs/utils/instanceImages";
-import { formatClassLabel, formatRaceLabel } from "../ArmoryPage/CharacterHeader";
+import { formatClassLabel, formatRaceLabel } from "../ArmoryPage/characterDisplay";
 import { LAYOUT_ACTION_BAR_KEYS, type LayoutActionBarSlots } from "@/features/layoutBook/layoutBookStore";
 import { parsePanelLayout } from "@/features/layoutBook/parseLayout";
 import {
@@ -1929,9 +1929,13 @@ export function InstancePageView({
     });
   }, [setSearchParams]);
   
-  const handleExplainerClick = useCallback((panelType: EventsPanelType) => {
+  const handleExplainerClick = useCallback((panelType: EventsPanelType, panelOption?: string | null) => {
     setSearchParams(prev => {
       prev.set("explain", panelType);
+      // Carry the source panel's configuration (e.g. timeline series) so the
+      // explainer's live panel matches what the user was looking at.
+      if (panelOption) prev.set("explainOpt", panelOption);
+      else prev.delete("explainOpt");
       return prev;
     });
   }, [setSearchParams]);
@@ -1939,6 +1943,8 @@ export function InstancePageView({
   const handleExplainerExit = useCallback(() => {
     setSearchParams(prev => {
       prev.delete("explain");
+      prev.delete("explainOpt");
+      prev.delete("lesson");
       return prev;
     });
   }, [setSearchParams]);
@@ -3009,6 +3015,7 @@ export function InstancePageView({
     return (
       <PanelExplainerView
         panelType={explainerPanelType}
+        panelOption={searchParams.get("explainOpt")}
         context={explainerPanelContext}
         durationMs={totalDurationMs}
         onExit={handleExplainerExit}

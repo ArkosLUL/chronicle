@@ -43,6 +43,9 @@ import type {
   CreateShareResponse as CreateShareResponseGenerated,
   SharedViewResponse as SharedViewResponseGenerated,
   ArmorySearchResponse as ArmorySearchResponseGenerated,
+  ArmoryPlayer as ArmoryPlayerGenerated,
+  ArmoryGearHistoryResponse as ArmoryGearHistoryResponseGenerated,
+  ArmoryLootResponse as ArmoryLootResponseGenerated,
   ListGuildsResponse as ListGuildsResponseGenerated,
   GuildPageConfig as GuildPageConfigGenerated,
   GuildPageTheme as GuildPageThemeGenerated,
@@ -110,6 +113,9 @@ export type CreateShareRequest = CreateShareRequestGenerated;
 export type CreateShareResponse = CreateShareResponseGenerated;
 export type SharedViewResponse = SharedViewResponseGenerated;
 export type ArmorySearchResponse = ArmorySearchResponseGenerated;
+export type ArmoryPlayer = ArmoryPlayerGenerated;
+export type ArmoryGearHistoryResponse = ArmoryGearHistoryResponseGenerated;
+export type ArmoryLootResponse = ArmoryLootResponseGenerated;
 export type ListGuildsResponse = ListGuildsResponseGenerated;
 export type GuildPageConfig = GuildPageConfigGenerated;
 export type GuildPageTab = GuildPageTabGenerated;
@@ -1493,6 +1499,64 @@ export function useArmorySearch(
   });
 }
 
+export function useArmoryPlayer(realmName?: string, playerIdentifier?: string) {
+  return useQuery({
+    queryKey: ["armory", realmName, playerIdentifier],
+    queryFn: async () => {
+      const response = await fetch(
+        `/api/v1/armory/${encodeURIComponent(realmName!)}/${encodeURIComponent(playerIdentifier!)}`,
+      );
+      if (!response.ok) {
+        throw new Error(`Failed to fetch player: ${response.status}`);
+      }
+      return response.json() as Promise<ArmoryPlayer>;
+    },
+    enabled: !!realmName && !!playerIdentifier,
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  });
+}
+
+export function useArmoryGearHistory(realmName?: string, playerIdentifier?: string) {
+  return useQuery({
+    queryKey: ["armory-gear-history", realmName, playerIdentifier],
+    queryFn: async () => {
+      const response = await fetch(
+        `/api/v1/armory/${encodeURIComponent(realmName!)}/${encodeURIComponent(playerIdentifier!)}/gear-history`,
+      );
+      if (!response.ok) {
+        throw new Error(`Failed to fetch gear history: ${response.status}`);
+      }
+      return response.json() as Promise<ArmoryGearHistoryResponse>;
+    },
+    enabled: !!realmName && !!playerIdentifier,
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  });
+}
+
+export function useArmoryLoot(
+  realmName?: string,
+  playerIdentifier?: string,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: ["armory-loot", realmName, playerIdentifier],
+    queryFn: async () => {
+      const response = await fetch(
+        `/api/v1/armory/${encodeURIComponent(realmName!)}/${encodeURIComponent(playerIdentifier!)}/loot?limit=200`,
+      );
+      if (!response.ok) {
+        throw new Error(`Failed to fetch loot: ${response.status}`);
+      }
+      return response.json() as Promise<ArmoryLootResponse>;
+    },
+    enabled: enabled && !!realmName && !!playerIdentifier,
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  });
+}
+
 export function useGuildSearch(params: { search: string; offset?: number }) {
   return useQuery({
     queryKey: ["guild-search", params],
@@ -1773,8 +1837,32 @@ export function useSaveGuildPage(guildId: string | undefined) {
         }
       }
 
-      // Save each tab
-      await Promise.all(
+      // Delete tabs that were removed in the editor. The server is the
+      // source of truth for what exists; anything persisted but no longer
+      // in the list gets deleted.
+      const existingResp = await fetch(`/api/v1/guilds/${guildId}/page`, { credentials: "include" });
+      if (existingResp.ok) {
+        const existing = (await existingResp.json()) as GuildPageConfig;
+        const keptIds = new Set(tabs.map((t) => t.id));
+        const removed = (existing.tabs ?? []).filter(
+          (t) => t.id !== NIL_UUID && isValidUUID(t.id) && !keptIds.has(t.id),
+        );
+        await Promise.all(
+          removed.map(async (t) => {
+            const deleteResp = await fetch(`/api/v1/guilds/${guildId}/page/tabs/${t.id}`, {
+              method: "DELETE",
+              credentials: "include",
+            });
+            if (!deleteResp.ok) {
+              const error = await deleteResp.json().catch(() => null);
+              throw buildAPIError("Failed to delete tab", error);
+            }
+          }),
+        );
+      }
+
+      // Save each tab and retain the persisted IDs in the editor's order.
+      const tabIds = await Promise.all(
         tabs.map(async (tab) => {
           let tabId = tab.id;
 
@@ -1805,15 +1893,33 @@ export function useSaveGuildPage(guildId: string | undefined) {
           const updateResp = await fetch(`/api/v1/guilds/${guildId}/page/tabs/${tabId}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ label: tab.label, panels: cleanPanels }),
+            body: JSON.stringify({
+              label: tab.label,
+              visibility: tab.visibility ?? "all",
+              panels: cleanPanels,
+            }),
             credentials: "include",
           });
           if (!updateResp.ok) {
             const error = await updateResp.json().catch(() => null);
             throw buildAPIError("Failed to update tab", error);
           }
+
+          return tabId;
         })
       );
+
+      const reorderResp = await fetch(`/api/v1/guilds/${guildId}/page/tabs/reorder`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tab_ids: tabIds }),
+        credentials: "include",
+      });
+      if (!reorderResp.ok) {
+        const error = await reorderResp.json().catch(() => null);
+        throw buildAPIError("Failed to reorder tabs", error);
+      }
+      return tabIds;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["guild-page", guildId] });
@@ -2798,5 +2904,66 @@ export function useDeleteTalentBuild() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["my-talent-builds"] });
     },
+  });
+}
+
+export function useConsumableDisambiguations(datasetId: string | undefined) {
+  return useQuery({
+    queryKey: ["consumable-disambiguations", datasetId, "runtime"],
+    queryFn: async () => {
+      const response = await fetch(`/api/v1/wowdb/consumable-disambiguations?dataset_id=${datasetId}`);
+      if (!response.ok) throw new Error("Failed to fetch consumable disambiguations");
+      return response.json() as Promise<import("./typesGenerated").ConsumableDisambiguation[]>;
+    },
+    enabled: !!datasetId,
+  });
+}
+
+export function useConsumableEffectPolicies(datasetId: string | undefined, enabled = true) {
+  return useQuery({
+    queryKey: ["consumable-disambiguations", datasetId, "admin"],
+    queryFn: async () => {
+      const response = await fetch(`/api/v1/game-data/datasets/${datasetId}/consumable-disambiguations`);
+      if (!response.ok) throw new Error("Failed to fetch consumable effect policies");
+      return response.json() as Promise<import("./typesGenerated").ConsumableEffectPolicy[]>;
+    },
+    enabled: enabled && !!datasetId,
+  });
+}
+
+export function useSetConsumableDisambiguation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ datasetId, effectKind, spellId, itemId }: { datasetId: string; effectKind: import("./typesGenerated").ConsumableEffectKind; spellId: number; itemId: number }) => {
+      const response = await fetch(`/api/v1/game-data/datasets/${datasetId}/consumable-disambiguations/${effectKind}/${spellId}`, {
+        method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ item_id: itemId }),
+      });
+      if (!response.ok) { const body = await response.json().catch(() => null); throw new Error(body?.message ?? `Failed to save mapping (${response.status})`); }
+      return response.json() as Promise<import("./typesGenerated").ConsumableEffectPolicy>;
+    },
+    onSuccess: (_data, variables) => queryClient.invalidateQueries({ queryKey: ["consumable-disambiguations", variables.datasetId] }),
+  });
+}
+
+export function useIgnoreConsumableEffect() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ datasetId, effectKind, spellId }: { datasetId: string; effectKind: import("./typesGenerated").ConsumableEffectKind; spellId: number }) => {
+      const response = await fetch(`/api/v1/game-data/datasets/${datasetId}/consumable-disambiguations/${effectKind}/${spellId}/ignore`, { method: "PUT" });
+      if (!response.ok) { const body = await response.json().catch(() => null); throw new Error(body?.message ?? `Failed to ignore effect (${response.status})`); }
+      return response.json() as Promise<import("./typesGenerated").ConsumableEffectPolicy>;
+    },
+    onSuccess: (_data, variables) => queryClient.invalidateQueries({ queryKey: ["consumable-disambiguations", variables.datasetId] }),
+  });
+}
+
+export function useDeleteConsumableDisambiguation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ datasetId, effectKind, spellId }: { datasetId: string; effectKind: import("./typesGenerated").ConsumableEffectKind; spellId: number }) => {
+      const response = await fetch(`/api/v1/game-data/datasets/${datasetId}/consumable-disambiguations/${effectKind}/${spellId}`, { method: "DELETE" });
+      if (!response.ok) { const body = await response.json().catch(() => null); throw new Error(body?.message ?? `Failed to reset mapping (${response.status})`); }
+    },
+    onSuccess: (_data, variables) => queryClient.invalidateQueries({ queryKey: ["consumable-disambiguations", variables.datasetId] }),
   });
 }

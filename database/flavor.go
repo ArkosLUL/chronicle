@@ -38,12 +38,17 @@ const (
 	// FlavorAzerothcore is AzerothCore-specific behavior (server-side or
 	// client-side; distinguish the two via LogFormat, not this tag).
 	FlavorAzerothcore FlavorTag = "azerothcore"
+	// FlavorAzerothcoreProgression enables progression-server behavior where
+	// multiple expansion versions of the same instance can coexist.
+	FlavorAzerothcoreProgression FlavorTag = "azerothcore-progression"
 	// FlavorVanillaPlus is VanillaPlus-specific behavior.
 	FlavorVanillaPlus FlavorTag = "vanillaplus"
 	// FlavorOctoWoW is OctoWoW-specific behavior.
 	FlavorOctoWoW FlavorTag = "octowow"
 	// FlavorAscension is Ascension-specific behavior.
 	FlavorAscension FlavorTag = "ascension"
+	// FlavorLunatic is Lunatic-specific behavior.
+	FlavorLunatic FlavorTag = "lunatic"
 	// FlavorNightmareOfUrsol is the "Nightmare of Ursol" custom content shared
 	// by Turtle and OctoWoW.
 	FlavorNightmareOfUrsol FlavorTag = "nightmare-of-ursol"
@@ -60,9 +65,11 @@ func AllFlavorTagValues() []FlavorTag {
 		FlavorKronos,
 		FlavorEpoch,
 		FlavorAzerothcore,
+		FlavorAzerothcoreProgression,
 		FlavorVanillaPlus,
 		FlavorOctoWoW,
 		FlavorAscension,
+		FlavorLunatic,
 		FlavorNightmareOfUrsol,
 	}
 }
@@ -137,6 +144,18 @@ func (f WoWFlavor) Has(tags ...FlavorTag) bool {
 	}
 
 	return false
+}
+
+// Merge returns a deduplicated flavor containing f followed by tags from
+// additional that are not already present. Neither input slice is modified.
+func (f WoWFlavor) Merge(additional WoWFlavor) WoWFlavor {
+	merged := make(WoWFlavor, 0, len(f)+len(additional))
+	for _, tag := range append(append(WoWFlavor(nil), f...), additional...) {
+		if !merged.Has(tag) {
+			merged = append(merged, tag)
+		}
+	}
+	return merged
 }
 
 // CanonicalKey returns a stable string key for a flavor set by sorting and

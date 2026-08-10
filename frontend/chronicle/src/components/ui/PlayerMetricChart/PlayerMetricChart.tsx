@@ -81,6 +81,12 @@ interface PlayerMetricChartProps extends React.ComponentProps<"div"> {
   valueSuffix?: string
   /** Parse pill data keyed by playerID. When provided, shows a colored score pill on each matching row. */
   parsePills?: Map<string, ParsePillData>
+  /** Initial pinned breakout positions, primarily for stories, screenshots, and guided demos. */
+  initialPinnedPositions?: ReadonlyMap<string, { x: number; y: number }>
+  /** Controlled pinned-breakout positions (e.g. scripted demos); overrides drag state. */
+  pinnedPositionsOverride?: ReadonlyMap<string, { x: number; y: number }>
+  /** Base URL for class icon assets. Defaults to the Chronicle application path. */
+  classIconBasePath?: string
   /** Animate bar geometry changes. Disable for high-frequency replay updates. */
   animateValues?: boolean
 }
@@ -100,6 +106,9 @@ export function PlayerMetricChart({
   onRowCtrlClick,
   valueSuffix,
   parsePills,
+  initialPinnedPositions,
+  pinnedPositionsOverride,
+  classIconBasePath = '/c/icons',
   animateValues = true,
   // Exclude dir from divProps to avoid type conflict with ScrollArea
   dir: _dir,
@@ -107,7 +116,9 @@ export function PlayerMetricChart({
 }: PlayerMetricChartProps) {
   void _dir;
   // Track which rows have pinned tooltips (multiple allowed)
-  const [pinnedPlayerIds, setPinnedPlayerIds] = useState<Set<string>>(new Set())
+  const [pinnedPlayerIds, setPinnedPlayerIds] = useState<Set<string>>(
+    () => new Set(initialPinnedPositions?.keys() ?? []),
+  )
 
   const { chartData, maximumValue, summedValue } = useMemo(
     () => createPlayerMetricChartModel(data, perSecond, duration_millis),
@@ -132,7 +143,10 @@ export function PlayerMetricChart({
       className={cn("h-full min-h-0 flex-1", className)}
       {...divProps}
     >
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', padding: '4px' }}>
+      <div
+        style={{ display: 'flex', flexDirection: 'column', gap: '2px', padding: '4px' }}
+        data-lesson-target="read-chart"
+      >
         {chartData.map((player, index) => {
           return <PlayerMetricRow 
             key={player.playerID}
@@ -145,6 +159,8 @@ export function PlayerMetricChart({
             suffix={valueSuffix ?? (perSecond ? '/s' : '')}
             decimals={perSecond ? 1 : 0}
             isPinned={pinnedPlayerIds.has(player.playerID)}
+            initialPinnedPosition={initialPinnedPositions?.get(player.playerID)}
+            pinnedPositionOverride={pinnedPositionsOverride?.get(player.playerID)}
             onTogglePin={() => handleTogglePin(player.playerID)}
             panelTitle={panelTitle}
             breakout={disableInteractions ? undefined : breakout}
@@ -152,6 +168,7 @@ export function PlayerMetricChart({
             isFirstRow={index === 0}
             onCtrlClick={onRowCtrlClick ? (e) => onRowCtrlClick(player.playerID, e) : undefined}
             parsePill={parsePills?.get(player.playerID)}
+            classIconBasePath={classIconBasePath}
             animateValues={animateValues}
           />
         })}
@@ -170,6 +187,9 @@ export interface PlayerMetricRowProps {
   suffix?: string
   decimals?: number
   isPinned?: boolean
+  initialPinnedPosition?: { x: number; y: number }
+  /** Controlled breakout position; overrides internal drag state. */
+  pinnedPositionOverride?: { x: number; y: number }
   onTogglePin?: () => void
   panelTitle?: string
   breakout?: BreakoutFn
@@ -180,6 +200,7 @@ export interface PlayerMetricRowProps {
   onCtrlClick?: (event: React.MouseEvent) => void
   /** Optional parse score pill to show at the bar's right edge */
   parsePill?: ParsePillData
+  classIconBasePath?: string
   animateValues?: boolean
 }
 
@@ -187,12 +208,14 @@ export interface PlayerMetricRowProps {
 interface DraggablePinnedTooltipProps {
   player: PlayerMetricChartData & { color: string }
   initialPosition: { x: number; y: number }
+  /** Controlled position; overrides internal drag state while set. */
+  positionOverride?: { x: number; y: number }
   onClose: () => void
   panelTitle?: string
   breakout?: BreakoutFn
 }
 
-function DraggablePinnedTooltip({ player, initialPosition, onClose, panelTitle, breakout }: DraggablePinnedTooltipProps) {
+function DraggablePinnedTooltip({ player, initialPosition, positionOverride, onClose, panelTitle, breakout }: DraggablePinnedTooltipProps) {
   const isMobile = useIsMobile()
   const portalContainer = usePortalContainer()
   const portalDocument = portalContainer?.ownerDocument
@@ -294,8 +317,8 @@ function DraggablePinnedTooltip({ player, initialPosition, onClose, panelTitle, 
       data-breakout-panel
       className="fixed z-[200] min-w-[340px] max-w-[90vw] rounded-md bg-popover text-foreground shadow-md"
       style={{
-        left: position.x,
-        top: position.y,
+        left: (positionOverride ?? position).x,
+        top: (positionOverride ?? position).y,
         cursor: isDragging ? 'grabbing' : 'default',
         border: `1px solid color-mix(in oklch, ${player.color} 60%, transparent)`,
       }}
@@ -342,6 +365,8 @@ export function PlayerMetricRow({
   suffix,
   decimals,
   isPinned = false,
+  initialPinnedPosition,
+  pinnedPositionOverride,
   onTogglePin,
   panelTitle,
   breakout,
@@ -349,12 +374,15 @@ export function PlayerMetricRow({
   isFirstRow = false,
   onCtrlClick: onCtrlClickProp,
   parsePill,
+  classIconBasePath = '/c/icons',
   animateValues = true,
 }: PlayerMetricRowProps) {
   const { ref, x, y } = useMouse<HTMLDivElement>();
   const rowRef = useRef<HTMLDivElement>(null)
   const isDimmed = player.dimmed ?? false;
-  const [pinnedPosition, setPinnedPosition] = useState<{ x: number; y: number } | null>(null)
+  const [pinnedPosition, setPinnedPosition] = useState<{ x: number; y: number } | null>(
+    initialPinnedPosition ?? null,
+  )
   const [tooltipOpen, setTooltipOpen] = useState(false)
   
   const handleClick = useCallback((e: React.MouseEvent) => {
@@ -447,6 +475,7 @@ export function PlayerMetricRow({
               lineHeight: '1.3',
             }}
             onClick={(e) => e.stopPropagation()}
+            data-lesson-target="parse-scores"
           >
             {parsePill.displayScore}
           </span>
@@ -468,6 +497,7 @@ export function PlayerMetricRow({
       ref={setRefs}
       onClick={handleClick}
       data-panel-row={isFirstRow ? true : undefined}
+      data-lesson-target={hasBreakout ? "pin-breakout" : undefined}
       style={{
         display: 'flex',
         alignItems: 'center',
@@ -594,7 +624,7 @@ export function PlayerMetricRow({
         {/* Icon */}
         <img
           // src={`/c/icons/spec_${player.className.toLowerCase()}_${player.specialization.toLowerCase().replace(/\s+/g, '')}.png`}
-          src={`/c/icons/class_${player.className.toLowerCase()}.png`}
+          src={`${classIconBasePath}/class_${player.className.toLowerCase()}.png`}
           alt={player.specialization}
           style={{
             width: '20px',
@@ -605,8 +635,8 @@ export function PlayerMetricRow({
           onError={(e) => {
             // Fallback to class icon if spec icon not found, then to unknown
             const target = e.currentTarget;
-            const classIcon = `/c/icons/class_${player.className.toLowerCase()}.png`;
-            const unknownIcon = '/c/icons/class_unknown.png';
+            const classIcon = `${classIconBasePath}/class_${player.className.toLowerCase()}.png`;
+            const unknownIcon = `${classIconBasePath}/class_unknown.png`;
             if (target.src.endsWith(unknownIcon)) {
               // Already at fallback, hide the image
               target.style.display = 'none';
@@ -740,6 +770,7 @@ export function PlayerMetricRow({
       <DraggablePinnedTooltip
         player={player}
         initialPosition={pinnedPosition}
+        positionOverride={pinnedPositionOverride}
         onClose={handleClose}
         panelTitle={panelTitle}
         breakout={breakout}
@@ -757,7 +788,6 @@ function formatValue(type: ChartType, player: PlayerMetricChartRow, suffix?: str
     padding: '2px 8px',
     borderRadius: '4px',
     marginRight: '12px',
-    minWidth: '88px',
     textAlign: 'right',
     fontFamily: 'var(--font-mono)',
     fontVariantNumeric: 'tabular-nums',

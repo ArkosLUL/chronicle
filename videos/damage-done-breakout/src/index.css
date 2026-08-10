@@ -1,0 +1,14 @@
+@import "tailwindcss";
+@import "../../../frontend/chronicle/src/custom.css";
+@source "../../../frontend/chronicle/src/**/*.{ts,tsx}";
+@source "./**/*.{ts,tsx}";
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  overflow: hidden;
+}

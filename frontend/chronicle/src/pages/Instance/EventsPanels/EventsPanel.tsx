@@ -41,6 +41,7 @@ import { createHealingDonePanel } from "./HealingDone/HealingDone";
 import { createExtraAttacksPanel } from "./ExtraAttacks/ExtraAttacks";
 import { createConsumablesPanel } from "./Consumables/Consumables";
 import { createConsumablesTotalPanel } from "./Consumables/ConsumablesTotal";
+import { createConsumablesLedgerPanel } from "./Consumables/ConsumablesLedger";
 import { createHealingTakenPanel } from "./HealingTaken/HealingTaken";
 import { createDeathsPanel } from "./Deaths/Deaths";
 import { createDeathLogPanel } from "./Deaths/DeathLog";
@@ -96,6 +97,7 @@ export const PANELS: Record<string, PanelDefinition<any, any>> = {
   extra_attacks: createExtraAttacksPanel(),
   consumables: createConsumablesPanel(),
   consumables_total: createConsumablesTotalPanel(),
+  consumables_ledger: createConsumablesLedgerPanel(),
   deaths: createDeathsPanel(),
   death_log: createDeathLogPanel(),
   mitigation: createMitigationPanel(),
@@ -379,7 +381,7 @@ export interface EventsPanelProps {
   /** Stable layout item ID (e.g. "panel-1") */
   panelId?: string;
   /** Callback when user clicks the explainer button (? icon) */
-  onExplainerClick?: (panelType: EventsPanelType) => void;
+  onExplainerClick?: (panelType: EventsPanelType, panelOption?: string | null) => void;
   /** Whether to show helpful hints (explainer button). Defaults to true. */
   showHints?: boolean;
   /** Panel-specific option (e.g., selected aura name) */
@@ -520,6 +522,18 @@ export function EventsPanel({
     if (petMode && !tokens.some((t) => t.startsWith("p:"))) tokens.push(`p:${petMode}`);
     return buildPanelOptionFromTokens(tokens);
   }, [customToggleTokens, grouping, petMode]);
+
+  // Aggregation only sees tokens that can change processing. Render-only
+  // tokens (declared per panel, e.g. a selected-player token) are stripped so
+  // flipping them reuses the cached worker result instead of re-processing.
+  const aggregationPanelOption = useMemo(() => {
+    const renderOnly = panel.renderOnlyOptionTokens;
+    if (!renderOnly || renderOnly.length === 0) return effectivePanelOption;
+    const tokens = parsePanelOptionTokens(effectivePanelOption).filter(
+      (token) => !renderOnly.some((entry) => entry.endsWith(":") ? token.startsWith(entry) : token === entry),
+    );
+    return buildPanelOptionFromTokens(tokens);
+  }, [effectivePanelOption, panel.renderOnlyOptionTokens]);
 
   // -- ChartDataRegistry: register/unregister for cross-panel comparison ------
   const { register: chartRegister, unregister: chartUnregister } = useChartDataActions();
@@ -794,7 +808,7 @@ export function EventsPanel({
   } = usePanelAggregation({
     panel,
     context,
-    panelOption: effectivePanelOption,
+    panelOption: aggregationPanelOption,
     panelContext,
     panelContextKey: panelContextVersion,
     panelIndex,
@@ -878,6 +892,7 @@ export function EventsPanel({
                       onClick={(e) => {
                         setFilterContextMenu({ x: e.clientX, y: e.clientY });
                       }}
+                      data-lesson-target="filters"
                     >
                       <Filter className="h-3.5 w-3.5" />
                     </span>
@@ -906,7 +921,7 @@ export function EventsPanel({
                         variant="ghost"
                         size="sm"
                         className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
-                        onClick={() => onExplainerClick(panelType)}
+                        onClick={() => onExplainerClick(panelType, panelOption)}
                         data-help-panel-explainer
                       >
                         <HelpCircle className="h-3.5 w-3.5" />
@@ -936,6 +951,7 @@ export function EventsPanel({
                   className="flex items-center gap-1.5 cursor-pointer text-xs text-muted-foreground hover:text-foreground pr-2"
                   data-per-second-toggle
                   data-help-per-second-toggle
+                  data-lesson-target={perSecondToggle ? "total-vs-dps" : undefined}
                 >
                   {checkboxLabel}
                   <Switch

@@ -1,4 +1,4 @@
-import { Plus, X, Monitor, Smartphone, PanelLeftClose, List } from "lucide-react";
+import { ChevronDown, ChevronUp, Plus, X, Monitor, Smartphone, PanelLeftClose, List } from "lucide-react";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 import type { GuildPageTab, DeviceVisibility } from "@/api/typesGenerated";
@@ -14,7 +14,9 @@ interface TabBarProps {
   onTabChange: (slug: string) => void;
   onTabAdd?: () => void;
   onTabDelete?: (tabId: string) => void;
+  onTabRename?: (tabId: string, label: string) => void;
   onTabVisibilityChange?: (tabId: string, visibility: DeviceVisibility) => void;
+  onTabMove?: (tabId: string, direction: "up" | "down") => void;
 }
 
 // Visibility icon indicator
@@ -70,12 +72,15 @@ function TabSidebar({
   onTabChange,
   onTabAdd,
   onTabDelete,
+  onTabRename,
   onTabVisibilityChange,
+  onTabMove,
 }: Omit<TabBarProps, "sidebarOpen" | "onSidebarToggle"> & { onCollapse: () => void }) {
   return (
     <div
       className={cn(
-        "pt-1 w-48 shrink-0 border-r border-border pr-4 overflow-y-auto styled-scrollbar",
+        "pt-1 shrink-0 border-r border-border pr-4 overflow-y-auto styled-scrollbar",
+        isEditing ? "w-64" : "w-48",
         !isMobile && "sticky top-4 max-h-[calc(100vh-2rem)]",
         isMobile && "fixed inset-y-0 left-0 z-50 bg-background border-r shadow-lg pl-4 pt-4"
       )}
@@ -94,7 +99,7 @@ function TabSidebar({
       </div>
 
       <div className="space-y-1">
-        {tabs.map((tab) => {
+        {tabs.map((tab, index) => {
           const isActive = activeTab === tab.slug;
           return (
             <div
@@ -124,7 +129,50 @@ function TabSidebar({
                 <VisibilityIcon visibility={tab.visibility} />
               )}
 
-              <span className="truncate flex-1 font-medium">{tab.label}</span>
+              {isEditing ? (
+                <input
+                  type="text"
+                  value={tab.label}
+                  onChange={(e) => onTabRename?.(tab.id, e.target.value)}
+                  onClick={(e) => e.stopPropagation()}
+                  placeholder="Tab name"
+                  title="Rename tab"
+                  className="min-w-0 flex-1 truncate bg-transparent text-sm font-medium border-b border-transparent hover:border-border focus:border-primary focus:outline-none"
+                />
+              ) : (
+                <span className="truncate flex-1 font-medium">{tab.label}</span>
+              )}
+
+              {isEditing && tabs.length > 1 && (
+                <div className="flex shrink-0 flex-col">
+                  <button
+                    type="button"
+                    disabled={index === 0}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onTabMove?.(tab.id, "up");
+                    }}
+                    className="rounded text-muted-foreground hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-20"
+                    title={`Move ${tab.label} up`}
+                    aria-label={`Move ${tab.label} up`}
+                  >
+                    <ChevronUp className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    disabled={index === tabs.length - 1}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onTabMove?.(tab.id, "down");
+                    }}
+                    className="rounded text-muted-foreground hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-20"
+                    title={`Move ${tab.label} down`}
+                    aria-label={`Move ${tab.label} down`}
+                  >
+                    <ChevronDown className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              )}
 
               {isEditing && tabs.length > 1 && (
                 <button
@@ -165,7 +213,9 @@ export function TabBar({
   onTabChange,
   onTabAdd,
   onTabDelete,
+  onTabRename,
   onTabVisibilityChange,
+  onTabMove,
 }: TabBarProps) {
   return (
     <>
@@ -188,7 +238,9 @@ export function TabBar({
           onTabChange={onTabChange}
           onTabAdd={onTabAdd}
           onTabDelete={onTabDelete}
+          onTabRename={onTabRename}
           onTabVisibilityChange={onTabVisibilityChange}
+          onTabMove={onTabMove}
         />
       )}
 

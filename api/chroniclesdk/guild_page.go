@@ -32,8 +32,13 @@ type GuildPageTheme struct {
 	BackgroundURL string            `json:"background_url,omitempty"`
 	LogoURL       string            `json:"logo_url,omitempty"`
 	Description   string            `json:"description,omitempty"`
-	Tags          []GuildTag               `json:"tags,omitempty"`
-	Socials       map[SocialPlatform]string `json:"socials,omitempty"` // platform key -> URL
+	// HeaderLayout selects the header arrangement: "" or "centered" for the
+	// classic centered header; "left" for the armory-style identity with the
+	// description beside it, centered as a pair; "left_joined" for the
+	// identity with the description underneath it, left-aligned.
+	HeaderLayout string                    `json:"header_layout,omitempty"`
+	Tags         []GuildTag                `json:"tags,omitempty"`
+	Socials      map[SocialPlatform]string `json:"socials,omitempty"` // platform key -> URL
 }
 
 const MaxDescriptionLength = 500
@@ -94,8 +99,9 @@ type CreateTabRequest struct {
 }
 
 type UpdateTabRequest struct {
-	Label  string           `json:"label"`
-	Panels []GuildPagePanel `json:"panels"`
+	Label      string           `json:"label"`
+	Visibility DeviceVisibility `json:"visibility,omitempty"` // "all", "desktop", or "mobile"
+	Panels     []GuildPagePanel `json:"panels"`
 }
 
 type ReorderTabsRequest struct {
@@ -168,4 +174,112 @@ type GuildRaidClear struct {
 
 type GuildRaidClearsResponse struct {
 	Clears []GuildRaidClear `json:"clears"`
+}
+
+// Guild character roster (guild page "Roster" panel)
+
+// GuildRosterCharacter is a guild character seen in raid logs. LastSeenAt is
+// the last time a log updated the character. AvgParse is -1 when the
+// character has no parses in the scoring window.
+type GuildRosterCharacter struct {
+	ID         GUIDString `json:"id"`
+	Name       string     `json:"name"`
+	Class      string     `json:"class"`
+	Race       string     `json:"race"`
+	Level      int32      `json:"level"`
+	Spec       string     `json:"spec,omitempty"`
+	Role       string     `json:"role,omitempty"` // "tank", "heal", or "dps"
+	AvgParse   float64    `json:"avg_parse"`
+	LastSeenAt time.Time  `json:"last_seen_at"`
+	RealmName  string     `json:"realm_name"`
+}
+
+type GuildCharacterRosterResponse struct {
+	Members []GuildRosterCharacter `json:"members"`
+}
+
+// Guild top parses (guild page "Top Parses" panel)
+
+// GuildTopParse is one ranked parse on a guild's top parses board.
+// InstanceID/InstanceSlug identify the raid log the parse came from.
+type GuildTopParse struct {
+	PlayerGUID     string    `json:"player_guid"`
+	PlayerName     string    `json:"player_name"`
+	PlayerClass    string    `json:"player_class"`
+	PlayerSpec     string    `json:"player_spec"`
+	PlayerRole     string    `json:"player_role"`
+	EncounterName  string    `json:"encounter_name"`
+	InstanceID     uuid.UUID `json:"instance_id"`
+	InstanceSlug   string    `json:"instance_slug,omitempty"`
+	InstanceName   string    `json:"instance_name"`
+	DifficultyName string    `json:"difficulty_name"`
+	MaxPlayers     int16     `json:"max_players"`
+	Metric         string    `json:"metric"`
+	MetricValue    float64   `json:"metric_value"`
+	DisplayScore   int       `json:"display_score"`
+	KilledAt       time.Time `json:"killed_at"`
+}
+
+type GuildTopParsesResponse struct {
+	Metric string          `json:"metric"`
+	Parses []GuildTopParse `json:"parses"`
+}
+
+// Guild best runs (guild page "Best Performance" panel)
+
+// GuildBestRun is the guild's best full clear of one instance within the
+// requested window — fastest, or highest average parse when ranked by parse.
+// AvgParse is -1 when the run has no parses.
+type GuildBestRun struct {
+	RunID          uuid.UUID `json:"run_id"`
+	InstanceID     uuid.UUID `json:"instance_id"`
+	InstanceSlug   string    `json:"instance_slug,omitempty"`
+	InstanceName   string    `json:"instance_name"`
+	DifficultyName string    `json:"difficulty_name"`
+	MaxPlayers     int32     `json:"max_players"`
+	DurationMs     int64     `json:"duration_ms"`
+	CompletedAt    time.Time `json:"completed_at"`
+	AvgParse       float64   `json:"avg_parse"`
+	ParseCount     int64     `json:"parse_count"`
+}
+
+type GuildBestRunsResponse struct {
+	Runs []GuildBestRun `json:"runs"`
+}
+
+// Guild encounter kills (guild page "Progression" panel)
+
+// GuildEncounterKill aggregates a guild's kills of one encounter across all
+// time. Duplicate uploads of the same raid night count once.
+type GuildEncounterKill struct {
+	InstanceName   string    `json:"instance_name"`
+	EncounterName  string    `json:"encounter_name"`
+	DifficultyName string    `json:"difficulty_name"`
+	MaxPlayers     int32     `json:"max_players"`
+	Kills          int32     `json:"kills"`
+	FirstKilledAt  time.Time `json:"first_killed_at"`
+	LastKilledAt   time.Time `json:"last_killed_at"`
+}
+
+type GuildEncounterKillsResponse struct {
+	Encounters []GuildEncounterKill `json:"encounters"`
+}
+
+// Guild per-run parse averages (guild page "Recent" panel)
+
+// GuildRunEncounterParse is the guild's average parse for one encounter of
+// one raid night (run). Encounters are returned in kill order; callers weight
+// by ParseCount for a whole-run average. KillDurationMs is the fight length
+// of the kill (0 when unknown).
+type GuildRunEncounterParse struct {
+	RunID          uuid.UUID `json:"run_id"`
+	EncounterName  string    `json:"encounter_name"`
+	AvgParse       float64   `json:"avg_parse"`
+	ParseCount     int64     `json:"parse_count"`
+	KilledAt       time.Time `json:"killed_at"`
+	KillDurationMs int64     `json:"kill_duration_ms"`
+}
+
+type GuildRunParsesResponse struct {
+	Encounters []GuildRunEncounterParse `json:"encounters"`
 }

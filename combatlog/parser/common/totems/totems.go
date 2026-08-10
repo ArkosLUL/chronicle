@@ -190,6 +190,18 @@ func init() {
 	register("Lava Spout Totem", 0,
 		variant{id: 6017, duration: 20 * time.Second},
 	)
+
+	register("Fire Elemental Totem", 0,
+		variant{id: 15439, duration: 120 * time.Second},
+	)
+
+	register("Water Elemental Totem", 0,
+		variant{id: 22236, duration: 5 * time.Minute},
+	)
+
+	register("Earth Elemental Totem", 0,
+		variant{id: 15430, duration: 2 * time.Minute},
+	)
 }
 
 // Variants are like different ranks for example

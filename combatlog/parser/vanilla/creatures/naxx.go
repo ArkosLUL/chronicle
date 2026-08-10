@@ -24,6 +24,13 @@ func NewMaexxna(id guid.GUID, all *characters.Characters) (characters.Character,
 	)(id, all)
 }
 
+func NewNothThePlaguebringer(id guid.GUID, all *characters.Characters) (characters.Character, bool) {
+	return characters.NewAdsGoWithBoss(
+		15954, // Noth
+		16984, // Plagued Warrior
+	)(id, all)
+}
+
 // NewGrobbulus -- Explodes on death
 func NewGrobbulus(id guid.GUID, all *characters.Characters) (characters.Character, bool) {
 	if !id.IsCreature() {

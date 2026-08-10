@@ -67,6 +67,7 @@ func VanillaCharacterFactories(flavor database.WoWFlavor) []characters.Character
 		NewCthun,
 		NewTentacles,
 		// Naxx
+		NewNothThePlaguebringer,
 		NewMaexxna,
 		NewGluth,
 		NewGrobbulus,

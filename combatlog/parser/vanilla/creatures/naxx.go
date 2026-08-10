@@ -6,14 +6,21 @@ import (
 
 	"github.com/Emyrk/chronicle/combatlog/parser/common/characters"
 
-	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/messages"
+	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 )
 
 func NewGluth(id guid.GUID, all *characters.Characters) (characters.Character, bool) {
 	return characters.NewAdsGoWithBoss(
 		15932, // Gluth
 		16360, // Zombie Chow
+	)(id, all)
+}
+
+func NewMaexxna(id guid.GUID, all *characters.Characters) (characters.Character, bool) {
+	return characters.NewAdsGoWithBoss(
+		15952, // Maexxna
+		17055, // Maexxna Spiderling
 	)(id, all)
 }
 

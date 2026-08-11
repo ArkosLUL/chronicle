@@ -48,9 +48,25 @@ func NewBroodlordLashlayer(id guid.GUID, all *characters.Characters) (characters
 	)(id, all)
 }
 
-func NewBlackwingMarksman(flavor database.WoWFlavor) func(id guid.GUID, all *characters.Characters) (characters.Character, bool) {
+type RazorAdCharacter struct {
+	*characters.Common
+	all *characters.Characters
+}
+
+func NewRazorAdCharacter(flavor database.WoWFlavor) func(id guid.GUID, all *characters.Characters) (characters.Character, bool) {
 	return func(id guid.GUID, all *characters.Characters) (characters.Character, bool) {
-		if entry, ok := id.GetEntry(); !ok || entry != 50142 {
+		entry, ok := id.GetEntry()
+		if !ok {
+			return nil, false
+		}
+		switch entry {
+		case 12416, // Blackwing Legionnaire
+			12420, // Blackwing Mage
+			12422, // Death Talon Dragonspawn
+			14456, // Blackwing Guardsman
+			50142, // Blackwing Marksman
+			52153: // Death Talon Scorcher
+		default:
 			return nil, false
 		}
 
@@ -58,7 +74,34 @@ func NewBlackwingMarksman(flavor database.WoWFlavor) func(id guid.GUID, all *cha
 		if flavor.Has(database.FlavorNightmareOfUrsol) {
 			base.WithTimeoutAsDeath()
 		}
-		return base, true
+		return &RazorAdCharacter{Common: base, all: all}, true
+	}
+}
+
+func (c *RazorAdCharacter) Process(m messages.Message) error {
+	cur, ok := c.Activity.Current()
+	if ok {
+		cur.HandleTimeout(m.Date())
+	}
+	return characters.ProcessCommonActivity(c, m)
+}
+
+func (c *RazorAdCharacter) Start(reason string, m messages.Message) {
+	c.Common.Start(reason, m)
+	c.bumpRazorgore(m)
+}
+
+func (c *RazorAdCharacter) Bump(reason string, m messages.Message) {
+	c.Common.Bump(reason, m)
+	c.bumpRazorgore(m)
+}
+
+func (c *RazorAdCharacter) bumpRazorgore(m messages.Message) {
+	for _, razor := range c.all.ByEntry[12435] {
+		boss, ok := razor.(characters.CharacterBase)
+		if ok && boss.IsActive() {
+			boss.Bump("razorgore_add_activity", m)
+		}
 	}
 }
 

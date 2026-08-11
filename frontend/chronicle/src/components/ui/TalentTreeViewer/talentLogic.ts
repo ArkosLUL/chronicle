@@ -38,6 +38,7 @@ export interface ClassTalentData {
 
 export interface TalentTreeJSON {
   classes: Record<string, ClassTalentData>;
+  pets?: Record<string, ClassTalentData>;
   /** Resolved dataset for this data (tenant-aware). */
   dataset_id?: string;
   /** Icon CDN base for the resolved dataset. */
@@ -112,8 +113,8 @@ export function prerequisiteArrows(talents: TalentEntry[]): TalentPrereqArrow[] 
 
 // ─── Talent point requirements ────────────────────────────────────
 
-export function rowPointRequirement(talent: Pick<TalentEntry, "tierID">) {
-  return talent.tierID * 5;
+export function rowPointRequirement(talent: Pick<TalentEntry, "tierID">, pointsPerRow = 5) {
+  return talent.tierID * pointsPerRow;
 }
 
 function pointsSpentBeforeRow(talents: TalentEntry[], ranks: TalentRanks, tierID: number) {
@@ -132,12 +133,12 @@ function prerequisitesMet(talent: TalentEntry, talents: TalentEntry[], ranks: Ta
   });
 }
 
-export function canUseTalent(talent: TalentEntry, talents: TalentEntry[], ranks: TalentRanks) {
-  return pointsSpentBeforeRow(talents, ranks, talent.tierID) >= rowPointRequirement(talent) && prerequisitesMet(talent, talents, ranks);
+export function canUseTalent(talent: TalentEntry, talents: TalentEntry[], ranks: TalentRanks, pointsPerRow = 5) {
+  return pointsSpentBeforeRow(talents, ranks, talent.tierID) >= rowPointRequirement(talent, pointsPerRow) && prerequisitesMet(talent, talents, ranks);
 }
 
-function spentTalentsStillValid(talents: TalentEntry[], ranks: TalentRanks) {
-  return talents.every((talent) => (ranks[talent.id] ?? 0) === 0 || canUseTalent(talent, talents, ranks));
+function spentTalentsStillValid(talents: TalentEntry[], ranks: TalentRanks, pointsPerRow: number) {
+  return talents.every((talent) => (ranks[talent.id] ?? 0) === 0 || canUseTalent(talent, talents, ranks, pointsPerRow));
 }
 
 export function talentTabPoints(tab: Pick<TalentTabData, "talents">, ranks: TalentRanks) {
@@ -146,6 +147,16 @@ export function talentTabPoints(tab: Pick<TalentTabData, "talents">, ranks: Tale
 
 export function populatedTalentTabs<T extends Pick<TalentTabData, "talents">>(tabs: T[], ranks: TalentRanks) {
   return tabs.filter((tab) => talentTabPoints(tab, ranks) > 0);
+}
+
+export function restrictTalentRanksToFirstPopulatedTab(tabs: TalentEntry[][], ranks: TalentRanks) {
+  const activeTab = tabs.find((talents) => talents.some((talent) => (ranks[talent.id] ?? 0) > 0));
+  if (!activeTab) return ranks;
+
+  const activeTalentIds = new Set(activeTab.map((talent) => talent.id));
+  return Object.fromEntries(
+    Object.entries(ranks).filter(([talentId]) => activeTalentIds.has(Number(talentId))),
+  );
 }
 
 export function totalTalentPoints(ranks: TalentRanks) {
@@ -172,7 +183,7 @@ export function updateTalentRank(
   requestedRank: number,
   talents: TalentEntry[],
   ranks: TalentRanks,
-  options: { maxPoints?: number } = {},
+  options: { maxPoints?: number; pointsPerRow?: number } = {},
 ): TalentRanks {
   const currentRank = ranks[talent.id] ?? 0;
   let nextRank = Math.max(0, Math.min(talent.maxRank, requestedRank));
@@ -183,10 +194,11 @@ export function updateTalentRank(
     nextRank = Math.min(nextRank, currentRank + remaining);
   }
   if (nextRank === currentRank) return ranks;
-  if (nextRank > currentRank && !canUseTalent(talent, talents, ranks)) return ranks;
+  const pointsPerRow = options.pointsPerRow ?? 5;
+  if (nextRank > currentRank && !canUseTalent(talent, talents, ranks, pointsPerRow)) return ranks;
 
   const nextRanks = { ...ranks, [talent.id]: nextRank };
-  if (nextRank < currentRank && !spentTalentsStillValid(talents, nextRanks)) return ranks;
+  if (nextRank < currentRank && !spentTalentsStillValid(talents, nextRanks, pointsPerRow)) return ranks;
   return nextRanks;
 }
 
@@ -257,7 +269,12 @@ function decodeBuildNumber(value: string, radix: number) {
 
 // ─── Normalization and reset ──────────────────────────────────────
 
-export function normalizeTalentRanks(tabs: TalentEntry[][], rawRanks: TalentRanks, maxPoints = Number.POSITIVE_INFINITY): TalentRanks {
+export function normalizeTalentRanks(
+  tabs: TalentEntry[][],
+  rawRanks: TalentRanks,
+  maxPoints = Number.POSITIVE_INFINITY,
+  pointsPerRow = 5,
+): TalentRanks {
   let ranks: TalentRanks = {};
   for (const talents of tabs) {
     const ordered = [...talents].sort((left, right) => left.tierID - right.tierID || left.columnIndex - right.columnIndex || left.id - right.id);
@@ -272,7 +289,7 @@ export function normalizeTalentRanks(tabs: TalentEntry[][], rawRanks: TalentRank
       for (const talent of ordered) {
         const requested = Math.min(rawRanks[talent.id] ?? 0, talent.maxRank);
         for (let rank = (ranks[talent.id] ?? 0) + 1; rank <= requested; rank += 1) {
-          const next = updateTalentRank(talent, rank, talents, ranks, { maxPoints });
+          const next = updateTalentRank(talent, rank, talents, ranks, { maxPoints, pointsPerRow });
           if (next === ranks) break;
           ranks = next;
           progressed = true;
@@ -283,10 +300,16 @@ export function normalizeTalentRanks(tabs: TalentEntry[][], rawRanks: TalentRank
   return cleanRanks(ranks);
 }
 
-export function resetTalentTabRanks(tabs: TalentEntry[][], ranks: TalentRanks, resetTalents: TalentEntry[], maxPoints = Number.POSITIVE_INFINITY): TalentRanks {
+export function resetTalentTabRanks(
+  tabs: TalentEntry[][],
+  ranks: TalentRanks,
+  resetTalents: TalentEntry[],
+  maxPoints = Number.POSITIVE_INFINITY,
+  pointsPerRow = 5,
+): TalentRanks {
   const resetIds = new Set(resetTalents.map((talent) => talent.id));
   const nextRanks = Object.fromEntries(Object.entries(ranks).filter(([id]) => !resetIds.has(Number(id))));
-  return normalizeTalentRanks(tabs, nextRanks, maxPoints);
+  return normalizeTalentRanks(tabs, nextRanks, maxPoints, pointsPerRow);
 }
 
 // ─── URL helpers ──────────────────────────────────────────────────
@@ -721,12 +744,18 @@ export function isTalentBackgroundVisible(backgroundUrl: string | null, failedBa
 
 // ─── Lock reasons (for tooltip) ───────────────────────────────────
 
-export function lockedTalentReasons(talent: TalentEntry, talents: TalentEntry[], ranks: TalentRanks, pointsExhausted = false) {
+export function lockedTalentReasons(
+  talent: TalentEntry,
+  talents: TalentEntry[],
+  ranks: TalentRanks,
+  pointsExhausted = false,
+  pointsPerRow = 5,
+) {
   const reasons: string[] = [];
   if (pointsExhausted) {
     reasons.push("No talent points remaining.");
   }
-  const requiredPoints = rowPointRequirement(talent);
+  const requiredPoints = rowPointRequirement(talent, pointsPerRow);
   if (pointsSpentBeforeRow(talents, ranks, talent.tierID) < requiredPoints) {
     reasons.push(`Spend ${requiredPoints} points in this tree to unlock this row.`);
   }

@@ -180,6 +180,10 @@ func NaxxramasHostiles(fl database.WoWFlavor) *identifier.Identifier {
 	hostile := instances.NaxxramasHostiles(fl)
 	// WotLK replaces Highlord Mograine with Baron Rivendare in the Four Horsemen
 	delete(hostile, 16062)
+	delete(hostile, 15977)
+	instances.LoadAdds(hostile, map[uint32]string{
+		15977: "Poisonous Skitterer",
+	})
 	instances.LoadBosses(hostile, map[uint32]string{
 		30549: "Four Horsemen", // Baron Rivendare
 	})

@@ -110,6 +110,23 @@ definition talent_build {
   permission delete = owner + chronicle->administer
 }
 
+// Saved raid compositions from the raid planner. Viewing is public by
+// default (share links) via the public_viewer wildcard, which the owner can
+// revoke. Editors can change the composition; only the owner (or site
+// admins) can delete it or manage sharing.
+definition raid_composition {
+  relation chronicle: chronicle
+  relation owner: user
+  relation editor: user
+  relation viewer: user
+  relation public_viewer: user:*
+
+  permission view = owner + editor + viewer + public_viewer + chronicle->administer
+  permission edit = owner + editor + chronicle->administer
+  permission delete = owner + chronicle->administer
+  permission manage_sharing = owner + chronicle->administer
+}
+
 definition river_queue {
   relation chronicle: chronicle
 

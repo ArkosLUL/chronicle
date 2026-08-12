@@ -379,3 +379,43 @@ func (z *interceptor) InsertUserAuthSession(ctx context.Context, arg database.In
 
 	return session, nil
 }
+
+func (z *interceptor) CreateRaidComposition(ctx context.Context, arg database.CreateRaidCompositionParams) (database.RaidComposition, error) {
+	if arg.ID == uuid.Nil {
+		arg.ID = uuid.New()
+	}
+	if arg.UserID == uuid.Nil {
+		return database.RaidComposition{}, fmt.Errorf("create raid composition missing user id")
+	}
+
+	b := policy.New()
+	comp := b.Raid_composition(arg.ID).
+		Owner(b.User(arg.UserID)).
+		Chronicle(b.GlobalChronicle())
+	if arg.PublicView {
+		comp.Public_viewerWildcard()
+	}
+
+	_, err := z.Write(ctx, *b.Txn())
+	if err != nil {
+		return database.RaidComposition{}, err
+	}
+
+	return z.Store.CreateRaidComposition(ctx, arg)
+}
+
+func (z *interceptor) DeleteRaidCompositionByID(ctx context.Context, id uuid.UUID) (int64, error) {
+	// Delete the row first; callers gate this behind the SpiceDB delete
+	// permission, and a failed row delete must not remove authz relations.
+	deleted, err := z.Store.DeleteRaidCompositionByID(ctx, id)
+	if err != nil || deleted == 0 {
+		return deleted, err
+	}
+
+	obj := policy.New().Raid_composition(id).Object()
+	f := rel.NewFilter(obj.Typ, obj.ID, "")
+	if err := z.Delete(ctx, rel.NewPreconditionedFilter(f)); err != nil {
+		return deleted, fmt.Errorf("delete authz relations: %w", err)
+	}
+	return deleted, nil
+}

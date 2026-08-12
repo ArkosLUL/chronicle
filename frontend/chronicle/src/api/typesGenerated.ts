@@ -713,6 +713,13 @@ export interface CreateModificationRequestPayload {
     readonly payload: Record<string, string>;
 }
 
+// From chroniclesdk/raid_compositions.go
+export interface CreateRaidCompositionRequest {
+    readonly name: string;
+    readonly guild_id?: string;
+    readonly data: RaidCompData;
+}
+
 // From chroniclesdk/server_application.go
 export interface CreateRealmRequest {
     readonly name: string;
@@ -2045,6 +2052,15 @@ export interface ListGuildsResponse {
     readonly total: number;
 }
 
+// From chroniclesdk/raid_compositions.go
+export interface ListRaidCompositionsResponse {
+    readonly compositions: readonly RaidComposition[];
+    /**
+     * Limit is the maximum number of compositions a user may save (per tenant).
+     */
+    readonly limit: number;
+}
+
 // From chroniclesdk/panel_layout.go
 export interface ListUserPanelLayoutsResponse {
     readonly layouts: readonly UserPanelLayout[];
@@ -2278,6 +2294,92 @@ export interface Preferences {
      * after upload. nil means keep forever.
      */
     readonly raw_log_retention_hours: number | null;
+}
+
+// From chroniclesdk/raid_compositions.go
+/**
+ * RaidCompData is the typed payload of a saved raid composition. The board
+ * is sparse: slots without a placement are empty.
+ */
+export interface RaidCompData {
+    /**
+     * Groups is the group count; every group has five slots.
+     */
+    readonly groups: number;
+    readonly placements: readonly RaidCompPlacement[];
+    readonly bench: readonly RaidCompEntry[];
+    /**
+     * GroupNotes align by index with the groups; missing/short is allowed.
+     */
+    readonly group_notes?: readonly string[];
+}
+
+// From chroniclesdk/raid_compositions.go
+/**
+ * RaidCompEntry is one occupant of a raid composition slot or bench spot.
+ */
+export interface RaidCompEntry {
+    readonly kind: RaidCompEntryKind;
+    /**
+     * CharacterID is the game_players id when the entry is a guild roster
+     * character. Empty for placeholders and standalone imports (e.g.
+     * raid-helper sign-ups that matched no roster character).
+     */
+    readonly character_id?: string;
+    /**
+     * Name is the display name. Empty for placeholders.
+     */
+    readonly name?: string;
+    /**
+     * Class is the WoWHeroClasses enum value ("WARRIOR").
+     */
+    readonly class: string;
+    /**
+     * Spec is the planned spec display name; empty means unset/any.
+     */
+    readonly spec?: string;
+    readonly note?: string;
+}
+
+// From chroniclesdk/raid_compositions.go
+export type RaidCompEntryKind = "placeholder" | "player";
+
+export const RaidCompEntryKinds: RaidCompEntryKind[] = ["placeholder", "player"];
+
+// From chroniclesdk/raid_compositions.go
+/**
+ * RaidCompPlacement pins an entry to a specific board slot.
+ */
+export interface RaidCompPlacement {
+    /**
+     * Group is the 0-based group index.
+     */
+    readonly group: number;
+    /**
+     * Slot is the 0-based slot index within the group (0–4).
+     */
+    readonly slot: number;
+    readonly entry: RaidCompEntry;
+}
+
+// From chroniclesdk/raid_compositions.go
+/**
+ * RaidComposition is a saved raid planner composition. Viewing defaults to
+ * public (share links); editing is gated by SpiceDB (owner + granted
+ * editors).
+ */
+export interface RaidComposition {
+    readonly id: string;
+    readonly user_id: string;
+    readonly guild_id?: string;
+    readonly name: string;
+    readonly data: RaidCompData;
+    /**
+     * PublicView mirrors the SpiceDB public_viewer wildcard for display.
+     */
+    readonly public_view: boolean;
+    readonly created_at: string;
+    readonly updated_at: string;
 }
 
 // From chroniclesdk/rankings.go
@@ -3362,6 +3464,23 @@ export interface UpdatePreferencesRequest {
      * RawLogRetentionHours controls raw log file retention. nil = no change, 0 = keep forever.
      */
     readonly raw_log_retention_hours: number | null;
+}
+
+// From chroniclesdk/raid_compositions.go
+export interface UpdateRaidCompositionRequest {
+    readonly name?: string;
+    readonly guild_id?: string;
+    readonly data?: RaidCompData;
+}
+
+// From chroniclesdk/raid_compositions.go
+/**
+ * UpdateRaidCompositionSharingRequest declaratively sets the sharing state:
+ * the editor list replaces all existing editor grants.
+ */
+export interface UpdateRaidCompositionSharingRequest {
+    readonly public_view: boolean;
+    readonly editor_user_ids: readonly string[];
 }
 
 // From chroniclesdk/regression.go

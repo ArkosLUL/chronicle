@@ -1549,6 +1549,18 @@ type ParsedLogGroup struct {
 	ID uuid.UUID `db:"id" json:"id"`
 }
 
+type RaidComposition struct {
+	ID         uuid.UUID          `db:"id" json:"id"`
+	UserID     uuid.UUID          `db:"user_id" json:"user_id"`
+	TenantID   uuid.UUID          `db:"tenant_id" json:"tenant_id"`
+	GuildID    uuid.NullUUID      `db:"guild_id" json:"guild_id"`
+	Name       string             `db:"name" json:"name"`
+	Data       []byte             `db:"data" json:"data"`
+	PublicView bool               `db:"public_view" json:"public_view"`
+	CreatedAt  pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt  pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
 type RankingSnapshot struct {
 	ID                  uuid.UUID          `db:"id" json:"id"`
 	TenantID            uuid.UUID          `db:"tenant_id" json:"tenant_id"`

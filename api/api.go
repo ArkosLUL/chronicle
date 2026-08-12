@@ -203,6 +203,12 @@ func (api *API) Routes() chi.Router {
 				r.Post("/me/talent-builds", api.CreateMyTalentBuild)
 				r.Patch("/me/talent-builds/{buildID}", api.UpdateMyTalentBuild)
 				r.Delete("/me/talent-builds/{buildID}", api.DeleteMyTalentBuild)
+
+				r.Get("/me/raid-comps", api.ListMyRaidCompositions)
+				r.Post("/me/raid-comps", api.CreateMyRaidComposition)
+				r.Patch("/raid-comps/{compID}", api.UpdateRaidComposition)
+				r.Delete("/raid-comps/{compID}", api.DeleteRaidComposition)
+				r.Put("/raid-comps/{compID}/sharing", api.UpdateRaidCompositionSharing)
 				r.Post("/share", api.CreateShare)
 			})
 			r.Mount("/panel-layout", panellayoutapi.New(api.Opts.Zed, api.Auth).Routes())
@@ -411,6 +417,8 @@ func (api *API) Routes() chi.Router {
 
 			// Public guild page route
 			r.Get("/g/{guildID}", api.GetPublicGuildPage)
+			// Public raid composition route (share links; SpiceDB gates view)
+			r.Get("/raid-comps/{compID}", api.GetRaidComposition)
 			// Public armory routes
 			r.Get("/armory/search", api.SearchArmoryPlayers)
 			r.Get("/armory/{realm}/{player}", api.GetArmoryPlayer)

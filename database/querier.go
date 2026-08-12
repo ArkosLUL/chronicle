@@ -39,6 +39,7 @@ type sqlcQuerier interface {
 	CountActiveRegressionJobs(ctx context.Context) (int64, error)
 	CountAllWoWLogGroups(ctx context.Context, arg CountAllWoWLogGroupsParams) (int32, error)
 	CountGuilds(ctx context.Context, dollar_1 string) (int64, error)
+	CountRaidCompositionsByUser(ctx context.Context, arg CountRaidCompositionsByUserParams) (int64, error)
 	// Return the number of members in a snapshot.
 	CountSnapshotMembers(ctx context.Context, snapshotID uuid.UUID) (int64, error)
 	CountTimeParseSnapshotBossKillMembers(ctx context.Context, snapshotID uuid.UUID) (int64, error)
@@ -62,6 +63,7 @@ type sqlcQuerier interface {
 	CreateGearStatWeight(ctx context.Context, arg CreateGearStatWeightParams) (GearStatWeight, error)
 	// Guild Join Requests
 	CreateGuildJoinRequest(ctx context.Context, arg CreateGuildJoinRequestParams) (GuildJoinRequest, error)
+	CreateRaidComposition(ctx context.Context, arg CreateRaidCompositionParams) (RaidComposition, error)
 	CreateSharedView(ctx context.Context, arg CreateSharedViewParams) (SharedView, error)
 	CreateUserPanelLayout(ctx context.Context, arg CreateUserPanelLayoutParams) (UserPanelLayout, error)
 	CreateUserTalentBuild(ctx context.Context, arg CreateUserTalentBuildParams) (UserTalentBuild, error)
@@ -87,6 +89,7 @@ type sqlcQuerier interface {
 	// Remove parse score results for a tenant+instance (before re-computation).
 	// Scoped to tenant_id so one tenant's recompute cannot erase another's projections.
 	DeleteParseScoreResultsForTenantInstance(ctx context.Context, arg DeleteParseScoreResultsForTenantInstanceParams) error
+	DeleteRaidCompositionByID(ctx context.Context, id uuid.UUID) (int64, error)
 	// Delete a snapshot by ID. Members are cascade-deleted via the FK
 	// ranking_snapshot_members.snapshot_id → ranking_snapshots.id ON DELETE CASCADE
 	// (migration 000143). Deleting a day's snapshot makes raids from that day
@@ -273,6 +276,7 @@ type sqlcQuerier interface {
 	// Check if a published time-parse snapshot exists for this exact cutoff+key.
 	// Used by the idempotency guard.
 	GetPublishedTimeParseSnapshotForCutoff(ctx context.Context, arg GetPublishedTimeParseSnapshotForCutoffParams) (TimeParseSnapshot, error)
+	GetRaidCompositionByID(ctx context.Context, id uuid.UUID) (RaidComposition, error)
 	GetRankingSnapshot(ctx context.Context, id uuid.UUID) (RankingSnapshot, error)
 	// Returns all realm IDs that have an applicable retention policy
 	// (either directly or through their server).
@@ -547,6 +551,7 @@ type sqlcQuerier interface {
 	ListParseScoreResultsForContract(ctx context.Context, arg ListParseScoreResultsForContractParams) ([]ParseScoreResult, error)
 	// Return published snapshots for a tenant, most recent first.
 	ListPublishedSnapshots(ctx context.Context, tenantID uuid.UUID) ([]ListPublishedSnapshotsRow, error)
+	ListRaidCompositionsByUser(ctx context.Context, arg ListRaidCompositionsByUserParams) ([]RaidComposition, error)
 	// Load ranking rows for a specific instance directly from encounter_dps_rankings.
 	// Used by the parses handler to get the viewed instance's own metric values
 	// independent of snapshot membership (the instance may not be a member of the
@@ -737,6 +742,10 @@ type sqlcQuerier interface {
 	UpdateLogFileAfterAppend(ctx context.Context, arg UpdateLogFileAfterAppendParams) error
 	UpdateModificationRequestPayload(ctx context.Context, arg UpdateModificationRequestPayloadParams) error
 	UpdateModificationRequestStatus(ctx context.Context, arg UpdateModificationRequestStatusParams) error
+	// Ownership is NOT filtered here: SpiceDB gates edit access so granted
+	// editors can update too. Handlers must check the edit permission first.
+	UpdateRaidCompositionByID(ctx context.Context, arg UpdateRaidCompositionByIDParams) (RaidComposition, error)
+	UpdateRaidCompositionSharing(ctx context.Context, arg UpdateRaidCompositionSharingParams) (RaidComposition, error)
 	UpdateRegressionFixtureNote(ctx context.Context, arg UpdateRegressionFixtureNoteParams) error
 	UpdateRetentionPolicyStats(ctx context.Context, arg UpdateRetentionPolicyStatsParams) error
 	UpdateSiteConfig(ctx context.Context, arg UpdateSiteConfigParams) (SiteConfig, error)

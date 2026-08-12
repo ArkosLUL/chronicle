@@ -310,3 +310,61 @@ func (z *Authz) RemoveTenantApplicationAdmin(ctx context.Context, applicationID,
 	f.WithSubjectFilter("user", userID.String(), "")
 	return z.Delete(ctx, rel.NewPreconditionedFilter(f))
 }
+
+// RaidCompPermission names a checkable raid_composition permission.
+type RaidCompPermission string
+
+const (
+	RaidCompView          RaidCompPermission = "view"
+	RaidCompEdit          RaidCompPermission = "edit"
+	RaidCompDelete        RaidCompPermission = "delete"
+	RaidCompManageSharing RaidCompPermission = "manage_sharing"
+)
+
+// CheckRaidComposition checks a permission on a raid composition for a user.
+// Anonymous viewers pass uuid.Nil: the public_viewer wildcard matches any
+// user subject, so public compositions stay viewable without an account.
+func (z *Authz) CheckRaidComposition(ctx context.Context, compID, userID uuid.UUID, permission RaidCompPermission) (bool, error) {
+	b := policy.New()
+	comp := b.Raid_composition(compID)
+	actor := b.User(userID)
+	switch permission {
+	case RaidCompView:
+		return z.CheckOne(ctx, nil, comp.CanView_User(actor))
+	case RaidCompEdit:
+		return z.CheckOne(ctx, nil, comp.CanEdit_User(actor))
+	case RaidCompDelete:
+		return z.CheckOne(ctx, nil, comp.CanDelete_User(actor))
+	case RaidCompManageSharing:
+		return z.CheckOne(ctx, nil, comp.CanManage_sharing_User(actor))
+	default:
+		return false, fmt.Errorf("unknown raid composition permission %q", permission)
+	}
+}
+
+// SetRaidCompositionSharing declaratively replaces a composition's sharing
+// state: the public_viewer wildcard and the full set of editor grants.
+func (z *Authz) SetRaidCompositionSharing(ctx context.Context, compID uuid.UUID, publicView bool, editors []uuid.UUID) error {
+	obj := policy.New().Raid_composition(compID).Object()
+	for _, relation := range []string{"editor", "public_viewer"} {
+		f := rel.NewFilter(obj.Typ, obj.ID, relation)
+		if err := z.Delete(ctx, rel.NewPreconditionedFilter(f)); err != nil {
+			return fmt.Errorf("clear %s relations: %w", relation, err)
+		}
+	}
+
+	if !publicView && len(editors) == 0 {
+		return nil
+	}
+
+	b := policy.New()
+	comp := b.Raid_composition(compID)
+	if publicView {
+		comp.Public_viewerWildcard()
+	}
+	for _, editor := range editors {
+		comp.Editor(b.User(editor))
+	}
+	_, err := z.Write(ctx, *b.Txn())
+	return err
+}

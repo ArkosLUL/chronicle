@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData, type UseQueryOptions } from "@tanstack/react-query";
 import type { WoWSpell } from "./wowdb";
-import type { WoWServer, WoWServerRealm, UploadKey, CreateWoWServerRequest, CreateWoWServerRealmRequest, CreateUploadKeyRequest, RetentionPolicy, RetentionPreviewResponse, RetentionPreviewRequest, SupportedInstance, CensusEntry, Tenant, UpsertTenantRequest, ServerApplication, CreateServerApplicationRequest, CreateModificationRequestPayload, ApplicationAdminEntry, GuildCharacterRosterResponse } from "./typesGenerated";
+import type { WoWServer, WoWServerRealm, UploadKey, CreateWoWServerRequest, CreateWoWServerRealmRequest, CreateUploadKeyRequest, RetentionPolicy, RetentionPreviewResponse, RetentionPreviewRequest, SupportedInstance, CensusEntry, Tenant, UpsertTenantRequest, ServerApplication, CreateServerApplicationRequest, CreateModificationRequestPayload, ApplicationAdminEntry, GuildCharacterRosterResponse, ListRaidCompositionsResponse, RaidComposition, CreateRaidCompositionRequest, UpdateRaidCompositionRequest, UpdateRaidCompositionSharingRequest } from "./typesGenerated";
 import type { 
   WoWLogGroup as WoWLogGroupGenerated, 
   WoWLogFile as WoWLogFileGenerated,
@@ -2937,6 +2937,151 @@ export function useDeleteTalentBuild() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["my-talent-builds"] });
+    },
+  });
+}
+
+// ─── Saved raid compositions ──────────────────────────────────────
+
+export function useMyRaidCompositions(enabled = true) {
+  return useQuery({
+    queryKey: ["my-raid-comps"],
+    queryFn: async () => {
+      const response = await fetch("/api/v1/me/raid-comps", {
+        credentials: "include",
+      });
+      if (!response.ok)
+        throw buildAPIError(
+          "Failed to load compositions",
+          await response.json().catch(() => null)
+        );
+      return response.json() as Promise<ListRaidCompositionsResponse>;
+    },
+    enabled,
+    retry: false,
+  });
+}
+
+/** Fetch a composition by id. Public compositions need no auth (share links). */
+export function useRaidComposition(compID: string | undefined) {
+  return useQuery({
+    queryKey: ["raid-comp", compID],
+    queryFn: async () => {
+      const response = await fetch(`/api/v1/raid-comps/${compID}`, {
+        credentials: "include",
+      });
+      if (!response.ok)
+        throw buildAPIError(
+          "Failed to load composition",
+          await response.json().catch(() => null)
+        );
+      return response.json() as Promise<RaidComposition>;
+    },
+    enabled: !!compID,
+    retry: false,
+  });
+}
+
+export function useCreateRaidComposition() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (request: CreateRaidCompositionRequest) => {
+      const response = await fetch("/api/v1/me/raid-comps", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(request),
+        credentials: "include",
+      });
+      if (!response.ok)
+        throw buildAPIError(
+          "Failed to save composition",
+          await response.json().catch(() => null)
+        );
+      return response.json() as Promise<RaidComposition>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["my-raid-comps"] });
+    },
+  });
+}
+
+export function useUpdateRaidComposition() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      compID,
+      request,
+    }: {
+      compID: string;
+      request: UpdateRaidCompositionRequest;
+    }) => {
+      const response = await fetch(`/api/v1/raid-comps/${compID}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(request),
+        credentials: "include",
+      });
+      if (!response.ok)
+        throw buildAPIError(
+          "Failed to save composition",
+          await response.json().catch(() => null)
+        );
+      return response.json() as Promise<RaidComposition>;
+    },
+    onSuccess: (comp) => {
+      queryClient.invalidateQueries({ queryKey: ["my-raid-comps"] });
+      queryClient.invalidateQueries({ queryKey: ["raid-comp", comp.id] });
+    },
+  });
+}
+
+export function useDeleteRaidComposition() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (compID: string) => {
+      const response = await fetch(`/api/v1/raid-comps/${compID}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!response.ok)
+        throw buildAPIError(
+          "Failed to delete composition",
+          await response.json().catch(() => null)
+        );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["my-raid-comps"] });
+    },
+  });
+}
+
+/** Declaratively set a composition's sharing: public view + editor list. */
+export function useUpdateRaidCompositionSharing() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      compID,
+      request,
+    }: {
+      compID: string;
+      request: UpdateRaidCompositionSharingRequest;
+    }) => {
+      const response = await fetch(`/api/v1/raid-comps/${compID}/sharing`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(request),
+        credentials: "include",
+      });
+      if (!response.ok)
+        throw buildAPIError(
+          "Failed to update sharing",
+          await response.json().catch(() => null)
+        );
+      return response.json() as Promise<RaidComposition>;
+    },
+    onSuccess: (comp) => {
+      queryClient.invalidateQueries({ queryKey: ["my-raid-comps"] });
+      queryClient.invalidateQueries({ queryKey: ["raid-comp", comp.id] });
     },
   });
 }

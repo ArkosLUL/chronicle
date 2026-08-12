@@ -1133,6 +1133,20 @@ CREATE TABLE parsed_log_group (
 
 COMMENT ON TABLE parsed_log_group IS 'A parsed_log_group is a wow_log_group that has been processed and contains parsed logs. A duplicate allows deleting this one row to clear all parsed logs for a given wow_log_group.';
 
+CREATE TABLE raid_compositions (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid NOT NULL,
+    tenant_id uuid DEFAULT '00000000-0000-0000-0000-000000000000'::uuid NOT NULL,
+    guild_id uuid,
+    name text NOT NULL,
+    data jsonb NOT NULL,
+    public_view boolean DEFAULT true NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT raid_compositions_data_size_chk CHECK ((pg_column_size(data) <= 131072)),
+    CONSTRAINT raid_compositions_name_length_chk CHECK (((char_length(name) >= 1) AND (char_length(name) <= 100)))
+);
+
 CREATE TABLE ranking_snapshot_members (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     snapshot_id uuid NOT NULL,
@@ -1964,6 +1978,9 @@ ALTER TABLE ONLY parse_score_results
 ALTER TABLE ONLY parsed_log_group
     ADD CONSTRAINT parsed_log_group_pkey PRIMARY KEY (id);
 
+ALTER TABLE ONLY raid_compositions
+    ADD CONSTRAINT raid_compositions_pkey PRIMARY KEY (id);
+
 ALTER TABLE ONLY ranking_snapshot_members
     ADD CONSTRAINT ranking_snapshot_members_pkey PRIMARY KEY (id);
 
@@ -2307,6 +2324,8 @@ CREATE UNIQUE INDEX log_instance_youtube_timestamped_slug_idx ON log_instance_yo
 
 CREATE UNIQUE INDEX log_instances_hashed_slug_idx ON log_instances USING btree (hashed_slug) WHERE (hashed_slug IS NOT NULL);
 
+CREATE INDEX raid_compositions_user_tenant_idx ON raid_compositions USING btree (user_id, tenant_id);
+
 CREATE UNIQUE INDEX ranking_snapshots_published_key_idx ON ranking_snapshots USING btree (tenant_id, cutoff, lookback_days, cohort_mode, policy_version, query_version) WHERE (status = 'published'::text);
 
 CREATE INDEX river_job_args_index ON river_job USING gin (args);
@@ -2581,6 +2600,12 @@ ALTER TABLE ONLY parse_score_results
 ALTER TABLE ONLY parsed_log_group
     ADD CONSTRAINT parsed_log_group_id_fkey FOREIGN KEY (id) REFERENCES wow_log_groups(id) ON DELETE CASCADE;
 
+ALTER TABLE ONLY raid_compositions
+    ADD CONSTRAINT raid_compositions_guild_id_fkey FOREIGN KEY (guild_id) REFERENCES guilds(id) ON DELETE SET NULL;
+
+ALTER TABLE ONLY raid_compositions
+    ADD CONSTRAINT raid_compositions_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+
 ALTER TABLE ONLY ranking_snapshot_members
     ADD CONSTRAINT ranking_snapshot_members_ranking_id_fkey FOREIGN KEY (ranking_id) REFERENCES encounter_dps_rankings(id) ON DELETE CASCADE;
 
@@ -2759,3 +2784,5 @@ CREATE POLICY tenant_realm_isolation ON wow_server_realms USING ((server_id IN (
 ALTER TABLE wow_server_realms ENABLE ROW LEVEL SECURITY;
 
 ALTER TABLE wow_servers ENABLE ROW LEVEL SECURITY;
+
+

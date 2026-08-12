@@ -1,7 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Keyboard, Pencil } from "lucide-react";
-import { useGuildCharacters } from "@/api/queries";
-import type { GuildInfo } from "@/api/typesGenerated";
+import { useSearchParams } from "react-router-dom";
+import { Keyboard, Loader2, Pencil } from "lucide-react";
+import { toast } from "sonner";
+import {
+  useCreateRaidComposition,
+  useGuildCharacters,
+  useRaidComposition,
+  useSession,
+  useUpdateRaidComposition,
+} from "@/api/queries";
+import type { GuildInfo, RaidComposition } from "@/api/typesGenerated";
 import { serverCapabilities } from "@/config/serverCapabilities";
 import { gearClassesForFlavor } from "@/pages/Gear/classInfo";
 import { CLASS_CSS_VAR, CLASS_DISPLAY } from "@/pages/Rankings/classDisplay";
@@ -9,6 +17,7 @@ import type { Board, DragPayload, HoverTarget, SlotEntry, SlotLocation } from ".
 import { GROUP_SIZE, MAX_GROUPS, emptyBoard, entryName, playerEntry } from "./types";
 import type { ParsedSignUp, RaidHelperEvent } from "./raidHelper";
 import { RaidHelperImportModal } from "./RaidHelperImportModal";
+import { compositionToData, dataToComposition } from "./compSerde";
 import { GuildSelector } from "./GuildSelector";
 import { RosterDrawer } from "./RosterDrawer";
 import { GroupCard } from "./GroupCard";
@@ -51,6 +60,7 @@ function placedIds(comp: Composition): Set<string> {
 const HISTORY_LIMIT = 200;
 
 export function RaidPlannerPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [phase, setPhase] = useState<Phase>("picking");
   const [pendingGroups, setPendingGroups] = useState(8);
   const [title, setTitle] = useState("");
@@ -63,6 +73,9 @@ export function RaidPlannerPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [keybindsOpen, setKeybindsOpen] = useState(false);
   const [importSource, setImportSource] = useState<string | null>(null);
+  /** The saved composition this board is bound to (updates go to it). */
+  const [savedComp, setSavedComp] = useState<RaidComposition | null>(null);
+  const [hydratedCompId, setHydratedCompId] = useState<string | null>(null);
   /** Slots ("gi:si") a multi-selection drag would land in, previewed live. */
   const [multiPreview, setMultiPreview] = useState<Set<string>>(new Set());
   const dragRef = useRef<DragPayload | null>(null);
@@ -73,6 +86,13 @@ export function RaidPlannerPage() {
 
   const classes = useMemo(() => gearClassesForFlavor(serverCapabilities.defaultFlavor), []);
   const { data: rosterData, isLoading: rosterLoading } = useGuildCharacters(guild?.id);
+  const { data: session } = useSession();
+  const createCompMutation = useCreateRaidComposition();
+  const updateCompMutation = useUpdateRaidComposition();
+  const urlCompId = searchParams.get("comp");
+  const { data: loadedComp, error: loadCompError } = useRaidComposition(
+    urlCompId && urlCompId !== hydratedCompId ? urlCompId : undefined,
+  );
 
   const placedPlayerIds = useMemo(() => placedIds(comp), [comp]);
 
@@ -89,6 +109,32 @@ export function RaidPlannerPage() {
     () => (rosterData?.members ?? []).map(playerEntry),
     [rosterData],
   );
+
+  // Hydrate a composition loaded from the ?comp= share link — state
+  // adjustment during render, not in an effect.
+  if (loadedComp && loadedComp.id !== hydratedCompId) {
+    setHydratedCompId(loadedComp.id);
+    setSavedComp(loadedComp);
+    const restored = dataToComposition(loadedComp.data, allRosterEntries);
+    setComp({ board: restored.board, bench: restored.bench });
+    setGroupNotes(restored.groupNotes);
+    setTitle(loadedComp.name);
+    setPendingGroups(loadedComp.data.groups);
+    setEditing(null);
+    setPhase("set");
+  }
+
+  // A newly hydrated composition starts with fresh undo history.
+  useEffect(() => {
+    pastRef.current = [];
+    futureRef.current = [];
+  }, [hydratedCompId]);
+
+  useEffect(() => {
+    if (loadCompError && urlCompId) {
+      toast.error("Could not load that composition — it may be private or deleted.");
+    }
+  }, [loadCompError, urlCompId]);
 
   // ---------------------------------------------------------------------------
   // Composition updates flow through here so every change is undoable.
@@ -479,6 +525,55 @@ export function RaidPlannerPage() {
   };
 
   // ---------------------------------------------------------------------------
+  // Saving
+  // ---------------------------------------------------------------------------
+
+  const saving = createCompMutation.isPending || updateCompMutation.isPending;
+
+  const handleSave = () => {
+    const name = title.trim() || "Untitled composition";
+    const data = compositionToData(comp.board, comp.bench, groupNotes);
+    const ownsSaved = !!savedComp && !!session && savedComp.user_id === session.user_id;
+
+    if (savedComp && ownsSaved) {
+      updateCompMutation.mutate(
+        { compID: savedComp.id, request: { name, guild_id: guild?.id, data } },
+        {
+          onSuccess: (saved) => {
+            setSavedComp(saved);
+            toast.success("Composition saved");
+          },
+          onError: (err) =>
+            toast.error(err instanceof Error ? err.message : "Failed to save composition"),
+        },
+      );
+      return;
+    }
+
+    // First save, or saving a copy of someone else's shared composition.
+    createCompMutation.mutate(
+      { name, guild_id: guild?.id, data },
+      {
+        onSuccess: (saved) => {
+          const copied = !!savedComp;
+          setSavedComp(saved);
+          setHydratedCompId(saved.id);
+          const next = new URLSearchParams(searchParams);
+          next.set("comp", saved.id);
+          setSearchParams(next, { replace: true });
+          toast.success(
+            copied
+              ? "Saved a copy to your account"
+              : "Composition saved — the page URL is now its share link",
+          );
+        },
+        onError: (err) =>
+          toast.error(err instanceof Error ? err.message : "Failed to save composition"),
+      },
+    );
+  };
+
+  // ---------------------------------------------------------------------------
   // Keybinds: hover a player, press a key. Re-attached each render so the
   // handler always sees fresh state.
   // ---------------------------------------------------------------------------
@@ -611,10 +706,12 @@ export function RaidPlannerPage() {
         <div className="ml-auto flex gap-2">
           <ImportMenu onPick={(source) => setImportSource(source)} />
           <button
-            disabled
-            title="Not wired up yet"
-            className="px-3 py-1.5 rounded-md bg-muted text-xs font-medium text-muted-foreground/50 cursor-not-allowed"
+            onClick={handleSave}
+            disabled={phase !== "set" || groupCount === 0 || saving}
+            title={savedComp ? "Save changes" : "Save to your account"}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:opacity-90 disabled:opacity-40 transition-opacity"
           >
+            {saving && <Loader2 className="h-3 w-3 animate-spin" />}
             Save
           </button>
         </div>

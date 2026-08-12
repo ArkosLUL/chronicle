@@ -9134,6 +9134,214 @@ func (q *sqlQuerier) PublishRankingSnapshot(ctx context.Context, id uuid.UUID) (
 	return i, err
 }
 
+const countRaidCompositionsByUser = `-- name: CountRaidCompositionsByUser :one
+SELECT COUNT(*)
+FROM raid_compositions
+WHERE user_id = $1 AND tenant_id = $2
+`
+
+type CountRaidCompositionsByUserParams struct {
+	UserID   uuid.UUID `db:"user_id" json:"user_id"`
+	TenantID uuid.UUID `db:"tenant_id" json:"tenant_id"`
+}
+
+func (q *sqlQuerier) CountRaidCompositionsByUser(ctx context.Context, arg CountRaidCompositionsByUserParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countRaidCompositionsByUser, arg.UserID, arg.TenantID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const createRaidComposition = `-- name: CreateRaidComposition :one
+INSERT INTO raid_compositions (id, user_id, tenant_id, guild_id, name, data, public_view)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
+RETURNING id, user_id, tenant_id, guild_id, name, data, public_view, created_at, updated_at
+`
+
+type CreateRaidCompositionParams struct {
+	ID         uuid.UUID     `db:"id" json:"id"`
+	UserID     uuid.UUID     `db:"user_id" json:"user_id"`
+	TenantID   uuid.UUID     `db:"tenant_id" json:"tenant_id"`
+	GuildID    uuid.NullUUID `db:"guild_id" json:"guild_id"`
+	Name       string        `db:"name" json:"name"`
+	Data       []byte        `db:"data" json:"data"`
+	PublicView bool          `db:"public_view" json:"public_view"`
+}
+
+func (q *sqlQuerier) CreateRaidComposition(ctx context.Context, arg CreateRaidCompositionParams) (RaidComposition, error) {
+	row := q.db.QueryRow(ctx, createRaidComposition,
+		arg.ID,
+		arg.UserID,
+		arg.TenantID,
+		arg.GuildID,
+		arg.Name,
+		arg.Data,
+		arg.PublicView,
+	)
+	var i RaidComposition
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.TenantID,
+		&i.GuildID,
+		&i.Name,
+		&i.Data,
+		&i.PublicView,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const deleteRaidCompositionByID = `-- name: DeleteRaidCompositionByID :execrows
+DELETE FROM raid_compositions
+WHERE id = $1
+`
+
+func (q *sqlQuerier) DeleteRaidCompositionByID(ctx context.Context, id uuid.UUID) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteRaidCompositionByID, id)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const getRaidCompositionByID = `-- name: GetRaidCompositionByID :one
+SELECT id, user_id, tenant_id, guild_id, name, data, public_view, created_at, updated_at
+FROM raid_compositions
+WHERE id = $1
+`
+
+func (q *sqlQuerier) GetRaidCompositionByID(ctx context.Context, id uuid.UUID) (RaidComposition, error) {
+	row := q.db.QueryRow(ctx, getRaidCompositionByID, id)
+	var i RaidComposition
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.TenantID,
+		&i.GuildID,
+		&i.Name,
+		&i.Data,
+		&i.PublicView,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const listRaidCompositionsByUser = `-- name: ListRaidCompositionsByUser :many
+SELECT id, user_id, tenant_id, guild_id, name, data, public_view, created_at, updated_at
+FROM raid_compositions
+WHERE user_id = $1 AND tenant_id = $2
+ORDER BY updated_at DESC
+`
+
+type ListRaidCompositionsByUserParams struct {
+	UserID   uuid.UUID `db:"user_id" json:"user_id"`
+	TenantID uuid.UUID `db:"tenant_id" json:"tenant_id"`
+}
+
+func (q *sqlQuerier) ListRaidCompositionsByUser(ctx context.Context, arg ListRaidCompositionsByUserParams) ([]RaidComposition, error) {
+	rows, err := q.db.Query(ctx, listRaidCompositionsByUser, arg.UserID, arg.TenantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []RaidComposition
+	for rows.Next() {
+		var i RaidComposition
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.TenantID,
+			&i.GuildID,
+			&i.Name,
+			&i.Data,
+			&i.PublicView,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const updateRaidCompositionByID = `-- name: UpdateRaidCompositionByID :one
+UPDATE raid_compositions
+SET
+  name = COALESCE($1, name),
+  guild_id = COALESCE($2, guild_id),
+  data = COALESCE($3, data),
+  updated_at = now()
+WHERE id = $4
+RETURNING id, user_id, tenant_id, guild_id, name, data, public_view, created_at, updated_at
+`
+
+type UpdateRaidCompositionByIDParams struct {
+	Name    pgtype.Text   `db:"name" json:"name"`
+	GuildID uuid.NullUUID `db:"guild_id" json:"guild_id"`
+	Data    []byte        `db:"data" json:"data"`
+	ID      uuid.UUID     `db:"id" json:"id"`
+}
+
+// Ownership is NOT filtered here: SpiceDB gates edit access so granted
+// editors can update too. Handlers must check the edit permission first.
+func (q *sqlQuerier) UpdateRaidCompositionByID(ctx context.Context, arg UpdateRaidCompositionByIDParams) (RaidComposition, error) {
+	row := q.db.QueryRow(ctx, updateRaidCompositionByID,
+		arg.Name,
+		arg.GuildID,
+		arg.Data,
+		arg.ID,
+	)
+	var i RaidComposition
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.TenantID,
+		&i.GuildID,
+		&i.Name,
+		&i.Data,
+		&i.PublicView,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const updateRaidCompositionSharing = `-- name: UpdateRaidCompositionSharing :one
+UPDATE raid_compositions
+SET public_view = $2, updated_at = now()
+WHERE id = $1
+RETURNING id, user_id, tenant_id, guild_id, name, data, public_view, created_at, updated_at
+`
+
+type UpdateRaidCompositionSharingParams struct {
+	ID         uuid.UUID `db:"id" json:"id"`
+	PublicView bool      `db:"public_view" json:"public_view"`
+}
+
+func (q *sqlQuerier) UpdateRaidCompositionSharing(ctx context.Context, arg UpdateRaidCompositionSharingParams) (RaidComposition, error) {
+	row := q.db.QueryRow(ctx, updateRaidCompositionSharing, arg.ID, arg.PublicView)
+	var i RaidComposition
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.TenantID,
+		&i.GuildID,
+		&i.Name,
+		&i.Data,
+		&i.PublicView,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getCharacterEncounterStats = `-- name: GetCharacterEncounterStats :many
 SELECT
   edr.instance_name,

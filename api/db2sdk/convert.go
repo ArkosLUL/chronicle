@@ -879,3 +879,34 @@ func UserTalentBuilds(rows []database.UserTalentBuild) []chroniclesdk.UserTalent
 	}
 	return out
 }
+
+// RaidComposition converts a stored raid composition, decoding its typed
+// JSONB payload.
+func RaidComposition(row database.RaidComposition) (chroniclesdk.RaidComposition, error) {
+	var data chroniclesdk.RaidCompData
+	if err := json.Unmarshal(row.Data, &data); err != nil {
+		return chroniclesdk.RaidComposition{}, err
+	}
+	return chroniclesdk.RaidComposition{
+		ID:         row.ID,
+		UserID:     row.UserID,
+		GuildID:    nullUUIDPtr(row.GuildID),
+		Name:       row.Name,
+		Data:       data,
+		PublicView: row.PublicView,
+		CreatedAt:  row.CreatedAt.Time,
+		UpdatedAt:  row.UpdatedAt.Time,
+	}, nil
+}
+
+func RaidCompositions(rows []database.RaidComposition) ([]chroniclesdk.RaidComposition, error) {
+	out := make([]chroniclesdk.RaidComposition, 0, len(rows))
+	for _, row := range rows {
+		comp, err := RaidComposition(row)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, comp)
+	}
+	return out, nil
+}

@@ -18,6 +18,7 @@ import { GROUP_SIZE, MAX_GROUPS, emptyBoard, entryName, playerEntry } from "./ty
 import type { ParsedSignUp, RaidHelperEvent } from "./raidHelper";
 import { RaidHelperImportModal } from "./RaidHelperImportModal";
 import { compositionToData, dataToComposition } from "./compSerde";
+import { SavedCompsList } from "./SavedCompsList";
 import { GuildSelector } from "./GuildSelector";
 import { RosterDrawer } from "./RosterDrawer";
 import { GroupCard } from "./GroupCard";
@@ -110,18 +111,22 @@ export function RaidPlannerPage() {
     [rosterData],
   );
 
+  const applyLoadedComp = (loaded: RaidComposition) => {
+    setHydratedCompId(loaded.id);
+    setSavedComp(loaded);
+    const restored = dataToComposition(loaded.data, allRosterEntries);
+    setComp({ board: restored.board, bench: restored.bench });
+    setGroupNotes(restored.groupNotes);
+    setTitle(loaded.name);
+    setPendingGroups(loaded.data.groups);
+    setEditing(null);
+    setPhase("set");
+  };
+
   // Hydrate a composition loaded from the ?comp= share link — state
   // adjustment during render, not in an effect.
   if (loadedComp && loadedComp.id !== hydratedCompId) {
-    setHydratedCompId(loadedComp.id);
-    setSavedComp(loadedComp);
-    const restored = dataToComposition(loadedComp.data, allRosterEntries);
-    setComp({ board: restored.board, bench: restored.bench });
-    setGroupNotes(restored.groupNotes);
-    setTitle(loadedComp.name);
-    setPendingGroups(loadedComp.data.groups);
-    setEditing(null);
-    setPhase("set");
+    applyLoadedComp(loadedComp);
   }
 
   // A newly hydrated composition starts with fresh undo history.
@@ -719,12 +724,23 @@ export function RaidPlannerPage() {
 
       {/* Size picker */}
       {phase === "picking" && (
-        <SizePicker
-          pending={pendingGroups}
-          onPendingChange={setPendingGroups}
-          onConfirm={confirmSize}
-          onCancel={groupCount > 0 ? () => setPhase("set") : undefined}
-        />
+        <>
+          <SizePicker
+            pending={pendingGroups}
+            onPendingChange={setPendingGroups}
+            onConfirm={confirmSize}
+            onCancel={groupCount > 0 ? () => setPhase("set") : undefined}
+          />
+          <SavedCompsList
+            enabled={!!session}
+            onOpen={(saved) => {
+              applyLoadedComp(saved);
+              const next = new URLSearchParams(searchParams);
+              next.set("comp", saved.id);
+              setSearchParams(next, { replace: true });
+            }}
+          />
+        </>
       )}
 
       {/* Board */}

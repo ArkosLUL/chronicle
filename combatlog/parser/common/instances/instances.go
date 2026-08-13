@@ -280,7 +280,9 @@ var (
 
 	NaxxramasFactory = &CommonFactory{
 		Name: "Naxxramas",
-		ZoneNames: []string{"naxxramas", "the upper necropolis",
+		ZoneNames: []string{
+			"naxxramas",
+			"the upper necropolis",
 			"纳克萨玛斯", // Naxxramas
 			"上层大墓地", // Upper Necropolis
 		},

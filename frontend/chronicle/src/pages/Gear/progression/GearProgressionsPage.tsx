@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -12,9 +12,8 @@ import {
   useMyGearProgressions,
 } from "@/api/gearProgressionQueries";
 import { gearClassesForFlavor } from "../classInfo";
-import { LoginBanner } from "../LoginBanner";
 import { ProgressionCard } from "./ProgressionCard";
-import { PROGRESSION_PAYLOAD_VERSION, levelCapForFlavor } from "./progressionModel";
+import { PROGRESSION_PAYLOAD_VERSION } from "./progressionModel";
 
 function CreateProgressionForm({ onDone }: { onDone: () => void }) {
   const navigate = useNavigate();
@@ -110,11 +109,27 @@ function CreateProgressionForm({ onDone }: { onDone: () => void }) {
   );
 }
 
+function SignedOutState() {
+  const location = useLocation();
+  const loginUrl = `/login?from=${encodeURIComponent(location.pathname + location.search)}`;
+  return (
+    <div className="flex flex-col items-center rounded-md border border-dashed border-zinc-800 px-6 py-12 text-center">
+      <div className="text-sm font-semibold text-zinc-200">
+        Sign in to build gear progressions
+      </div>
+      <p className="mt-1 text-sm text-zinc-500">
+        Plan a sequence of gear stages for your characters.
+      </p>
+      <Link to={loginUrl} className="mt-4">
+        <Button size="sm">Sign in</Button>
+      </Link>
+    </div>
+  );
+}
+
 /** "My progressions" — the index for the Progression tab. */
 export function GearProgressionsPage() {
   const { isAuthenticated } = useAuth();
-  const { data: siteConfig } = useSiteConfig();
-  const levelCap = levelCapForFlavor(siteConfig?.dataset_flavor ?? []);
   const [creating, setCreating] = useState(false);
   const mine = useMyGearProgressions(isAuthenticated);
   const remove = useDeleteGearProgression();
@@ -123,25 +138,24 @@ export function GearProgressionsPage() {
     <div className="space-y-8">
       <section className="space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-400">
-            My progressions
-          </h2>
+          <div className="flex items-baseline gap-3">
+            <h2 className="font-wow text-lg text-zinc-100">My progressions</h2>
+            {isAuthenticated && !mine.isLoading && (
+              <span className="text-xs text-zinc-500">
+                {(mine.data ?? []).length} saved
+              </span>
+            )}
+          </div>
           {isAuthenticated && (
             <Button size="sm" onClick={() => setCreating(true)}>
               <Plus className="mr-1 h-4 w-4" />
-              New progression
+              New
             </Button>
           )}
         </div>
-        <p className="text-xs text-zinc-500">
-          Build a sequence of gear stages for level {levelCap} characters.
-        </p>
         {creating && <CreateProgressionForm onDone={() => setCreating(false)} />}
         {!isAuthenticated ? (
-          <LoginBanner
-            title="Log in to build gear progressions"
-            subtitle={`Plan a sequence of gear stages for level ${levelCap} characters.`}
-          />
+          <SignedOutState />
         ) : mine.isLoading ? (
           <p className="text-sm text-zinc-500">Loading…</p>
         ) : (mine.data ?? []).length === 0 ? (

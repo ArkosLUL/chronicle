@@ -383,7 +383,7 @@ export function StatWeightsPage() {
               }}
             >
               <Plus className="h-4 w-4 mr-1" />
-              New profile
+              New
             </Button>
           )}
         </div>

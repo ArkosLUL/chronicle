@@ -1271,7 +1271,7 @@ func BlackwingLairHostiles(fl database.WoWFlavor) *identifier.Identifier {
 		hostile[25123] = Identity{
 			Affiliation:   types.AffiliationHostile,
 			Name:          "Vaelastrasz the Chained",
-			EncounterName: "",
+			EncounterName: "Nefarian",
 			Boss:          true,
 		}
 		hostile[25100] = Identity{

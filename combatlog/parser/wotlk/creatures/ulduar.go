@@ -11,5 +11,8 @@ func NewFlameLeviathan(id guid.GUID, all *characters.Characters) (characters.Cha
 		return nil, false
 	}
 
-	return characters.NewAdsGoWithBoss(entry, 33236, 34113)(id, all)
+	return characters.NewAdsGoWithBoss(entry,
+		33236, // Steel forged defender
+		34113, // Steel forged defender
+	)(id, all)
 }

@@ -64,8 +64,7 @@ func NewCharacterFactories(flavor database.WoWFlavor) []characters.CharacterFact
 			NewScionOfEternity,
 			NewPowerSpark,
 
-			// Ulduar
-			NewFlameLeviathan,
+			// Ulduar,
 			NewIgnisIronConstruct,
 			NewAlgalon,
 			NewAssemblyOfIronCharacter,
@@ -81,7 +80,7 @@ func NewCharacterFactories(flavor database.WoWFlavor) []characters.CharacterFact
 		)
 		// Mechanolift, Vortex, Kologarn, Mimiron's machines, and Yogg-Saron can use
 		// vehicle GUIDs, so they must not rely solely on the CreatureFactories wrappers.
-		wrath = append(wrath, NewMechanolift, NewVortex, NewKologarnEncounterCharacter, NewMimironEncounterCharacter, NewYoggSaronEncounterCharacter)
+		wrath = append(wrath, NewFlameLeviathan, NewMechanolift, NewVortex, NewKologarnEncounterCharacter, NewMimironEncounterCharacter, NewYoggSaronEncounterCharacter)
 		cres = append(wrath, cres...)
 	}
 

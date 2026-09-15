@@ -431,6 +431,115 @@ func TestParserMessages(t *testing.T) {
 	// })
 }
 
+func TestParseRaidGroupLegacy(t *testing.T) {
+	t.Parallel()
+
+	fields := make([]string, messages.RaidGroupCount*messages.RaidGroupSize)
+	fields[0] = "B"
+	fields[4] = "C"
+	fields[5] = "D"
+	fields[39] = "60000000008DCCC"
+	line := "1778208220441|RG|" + strings.Join(fields, ",")
+
+	ctx := context.Background()
+	p, err := New(ctx, slog.Default(), strings.NewReader(line), &stubGameDB{}, nil)
+	require.NoError(t, err)
+
+	msgs, err := p.Advance(ctx)
+	require.NoError(t, err)
+	require.Len(t, msgs, 1)
+
+	raidGroup, ok := msgs[0].(*messages.RaidGroup)
+	require.True(t, ok)
+	require.Equal(t, time.UnixMilli(1778208220441), raidGroup.Date())
+	require.Equal(t, guid.GUID(0xB), raidGroup.Groups[0][0])
+	require.Equal(t, guid.GUID(0xC), raidGroup.Groups[0][4])
+	require.Equal(t, guid.GUID(0xD), raidGroup.Groups[1][0])
+	require.Equal(t, guid.GUID(0x060000000008DCCC), raidGroup.Groups[7][4])
+	require.Equal(t, []guid.GUID{0xB, 0xC, 0xD, 0x060000000008DCCC}, raidGroup.Affects())
+	require.True(t, p.SawRaidGroup())
+}
+
+func TestParseRaidComposition(t *testing.T) {
+	t.Parallel()
+
+	const line = "1778208220441|RAID_COMPOSITION|RAID_ROSTER_UPDATE|4|0x000000000000000B,1,1,2;0x000000000000000C,2,3,0;0x000000000000000D,5,1,0;0x060000000008DCCC,6,2,1"
+	ctx := context.Background()
+	p, err := New(ctx, slog.Default(), strings.NewReader(line), &stubGameDB{}, nil)
+	require.NoError(t, err)
+
+	msgs, err := p.Advance(ctx)
+	require.NoError(t, err)
+	require.Len(t, msgs, 1)
+
+	raidGroup, ok := msgs[0].(*messages.RaidGroup)
+	require.True(t, ok)
+	require.Equal(t, guid.GUID(0xB), raidGroup.Groups[0][0])
+	require.Equal(t, guid.GUID(0xD), raidGroup.Groups[0][1])
+	require.Equal(t, guid.GUID(0x060000000008DCCC), raidGroup.Groups[1][0])
+	require.Equal(t, guid.GUID(0xC), raidGroup.Groups[2][0])
+	require.Equal(t, []guid.GUID{0xB, 0xD, 0x060000000008DCCC, 0xC}, raidGroup.Affects())
+	require.True(t, p.SawRaidGroup())
+}
+
+func TestParseRaidCompositionDisband(t *testing.T) {
+	t.Parallel()
+
+	const line = "1778208220441|RAID_COMPOSITION|PARTY_MEMBERS_CHANGED|0|"
+	ctx := context.Background()
+	p, err := New(ctx, slog.Default(), strings.NewReader(line), &stubGameDB{}, nil)
+	require.NoError(t, err)
+
+	msgs, err := p.Advance(ctx)
+	require.NoError(t, err)
+	require.Len(t, msgs, 1)
+	require.Empty(t, msgs[0].(*messages.RaidGroup).Affects())
+	require.True(t, p.SawRaidGroup())
+}
+
+func TestParseRaidGroupRejectsMalformedPayloads(t *testing.T) {
+	t.Parallel()
+
+	validFields := make([]string, messages.RaidGroupCount*messages.RaidGroupSize)
+	validFields[0] = "B"
+
+	tests := []string{
+		strings.Join(validFields[:len(validFields)-1], ","),
+		strings.Join(append([]string{"not-a-guid"}, validFields[1:]...), ","),
+		strings.Join(append([]string{"0"}, validFields[1:]...), ","),
+	}
+	for _, payload := range tests {
+		p := &Parser{}
+		_, err := p.raidGroup(context.Background(), time.UnixMilli(1778208220441), &Matched{parts: []string{payload}})
+		require.Error(t, err, payload)
+		require.False(t, p.SawRaidGroup())
+	}
+}
+
+func TestParseRaidCompositionRejectsMalformedPayloads(t *testing.T) {
+	t.Parallel()
+
+	tests := [][]string{
+		{"RAID_ROSTER_UPDATE", "41", ""},
+		{"RAID_ROSTER_UPDATE", "2", "0x000000000000000B,1,1,2"},
+		{"RAID_ROSTER_UPDATE", "1", "not-a-guid,1,1,2"},
+		{"RAID_ROSTER_UPDATE", "1", "0x000000000000000B,0,1,2"},
+		{"RAID_ROSTER_UPDATE", "1", "0x000000000000000B,41,1,2"},
+		{"RAID_ROSTER_UPDATE", "1", "0x000000000000000B,1,0,2"},
+		{"RAID_ROSTER_UPDATE", "1", "0x000000000000000B,1,9,2"},
+		{"RAID_ROSTER_UPDATE", "1", "0x000000000000000B,1,1,3"},
+		{"RAID_ROSTER_UPDATE", "2", "0x000000000000000B,1,1,2;0x000000000000000C,1,1,0"},
+		{"RAID_ROSTER_UPDATE", "2", "0x000000000000000B,2,1,2;0x000000000000000C,1,1,0"},
+		{"RAID_ROSTER_UPDATE", "6", "0x0000000000000001,1,1,0;0x0000000000000002,2,1,0;0x0000000000000003,3,1,0;0x0000000000000004,4,1,0;0x0000000000000005,5,1,0;0x0000000000000006,6,1,0"},
+	}
+	for _, parts := range tests {
+		p := &Parser{}
+		_, err := p.raidComposition(context.Background(), time.UnixMilli(1778208220441), &Matched{parts: parts})
+		require.Error(t, err, parts)
+		require.False(t, p.SawRaidGroup())
+	}
+}
+
 func TestJudgementOfLightCreditsTarget(t *testing.T) {
 	t.Parallel()
 

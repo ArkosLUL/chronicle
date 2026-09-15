@@ -238,6 +238,9 @@ func (w *WorkerLogParse) validateRealmTenant(
 
 	server, sErr := db.GetWoWServer(bypassCtx, realmRow.ServerID)
 	if sErr != nil || !server.TenantID.Valid || server.TenantID.UUID != tenantID {
+		if realmRow.Name == "Unknown" && realm.Name != "Unknown" {
+			return false, w.realmRejectionMessage(bypassCtx, db, realm.Name, uuid.Nil, format, logGroupID)
+		}
 		return false, w.realmRejectionMessage(bypassCtx, db, realmRow.Name, realmRow.ServerID, format, logGroupID)
 	}
 

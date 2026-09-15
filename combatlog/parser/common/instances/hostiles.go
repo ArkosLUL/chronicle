@@ -179,7 +179,6 @@ func VanillaPlusSMRaidHostiles() map[uint32]Identity {
 		25221: "Brother Michael",
 		25229: "Brigitte Abbendis",
 		25222: "Fairbanks",
-		25243: "Beltheris",
 		25223: "Doan",
 		25224: "Vishas",
 		25225: "Loksey",

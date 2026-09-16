@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mergeAdjacentAuraSegments, summarizeAuraSources } from "./sourceSummary";
+import { mergeAdjacentAuraSegments, summarizeAuraSources, uniqueAuraAppliers } from "./sourceSummary";
 
 const segment = (
   sourceGuid: string | null,
@@ -18,6 +18,26 @@ describe("summarizeAuraSources", () => {
       { guid: "caster", name: "Brannor", uptimeMs: 4000, windows: 2 },
       { guid: null, name: null, uptimeMs: 500, windows: 1 },
     ]);
+  });
+
+  it("lists each known applier once in first-seen order", () => {
+    expect(uniqueAuraAppliers([
+      segment("brannor", "Brannor", 0, 1000),
+      segment("brannor", "Brannor", 1000, 2000),
+      segment(null, null, 2000, 3000),
+      segment("thessaly", "Thessaly", 3000, 4000),
+      segment("brannor", "Brannor", 4000, 5000),
+    ])).toEqual([
+      { guid: "brannor", name: "Brannor" },
+      { guid: "thessaly", name: "Thessaly" },
+    ]);
+  });
+
+  it("omits unknown-only attribution from the applier list", () => {
+    expect(uniqueAuraAppliers([
+      segment(null, null, 0, 1000),
+      segment(null, null, 1000, 2000),
+    ])).toEqual([]);
   });
 
   it("merges touching refresh segments from the same source", () => {

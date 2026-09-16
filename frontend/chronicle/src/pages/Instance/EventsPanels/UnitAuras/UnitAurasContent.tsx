@@ -6,6 +6,7 @@ import { SpellIdTooltip } from "@/components/ui/SpellIdTooltip";
 import { usePlayerSpecializations } from "@/components/ui/PlayerMetricChart/PlayerSpecializationContext";
 import { HintTooltip, TooltipContent, TooltipTrigger } from "@/components/ui/Tooltip/tooltip";
 import { ScrollArea } from "@/components/ui/ScrollArea/ScrollArea";
+import { getClassColorVar } from "@/pages/ArmoryPage/types";
 import { cn } from "@/lib/utils";
 import {
   materializeActiveUnitAuras,
@@ -15,11 +16,10 @@ import {
 } from "./unitAuras.processor";
 import {
   compactAuraColors,
-  compactAuraKind,
   compactAuraPercent,
   formatCompactAuraPercent,
 } from "./compactAura";
-import { mergeAdjacentAuraSegments, summarizeAuraSources } from "./sourceSummary";
+import { mergeAdjacentAuraSegments, summarizeAuraSources, uniqueAuraAppliers } from "./sourceSummary";
 import { parseSelectedUnits, serializeSelectedUnits } from "./unitSelection";
 import { UnitIcon } from "./UnitIcon";
 import { UnitSearch, type UnitSearchOption } from "./UnitSearch";
@@ -121,13 +121,17 @@ function AuraTimeline({
                 }}
               />
             </TooltipTrigger>
-            <TooltipContent side="top" hideArrow className="text-xs">
-              <div className="font-medium">{name}</div>
-              <div className="text-muted-foreground">
+            <TooltipContent
+              side="top"
+              hideArrow
+              className="border border-zinc-700 bg-[#111118] text-xs text-zinc-100 shadow-xl"
+            >
+              <div className="font-medium text-zinc-100">{name}</div>
+              <div className="text-zinc-400">
                 {formatTime(segment.startMs)}–{formatTime(segment.endMs)}
               </div>
               {encounterNames.get(segment.encounterId) && (
-                <div className="max-w-48 truncate text-muted-foreground/70">
+                <div className="max-w-48 truncate text-zinc-500">
                   {encounterNames.get(segment.encounterId)}
                 </div>
               )}
@@ -168,9 +172,39 @@ function SourceSummary({
   );
 }
 
-function CompactAuraTile({ row, durationMs }: { row: AuraRow; durationMs: number }) {
+function CompactAuraTile({
+  row,
+  durationMs,
+  players,
+  units,
+}: {
+  row: AuraRow;
+  durationMs: number;
+  players: PanelRenderProps<UnitAurasResult>["context"]["instance"]["players"];
+  units: PanelRenderProps<UnitAurasResult>["context"]["instance"]["units"];
+}) {
   const percent = compactAuraPercent(row.totalUptimeMs, durationMs);
   const colors = compactAuraColors(percent);
+  const appliers = uniqueAuraAppliers(row.segments).map((source) => ({
+    guid: source.guid,
+    name: resolveSourceName(source.guid, source.name, players, units),
+    className: players?.[source.guid]?.class,
+  }));
+  const tooltipFooter = appliers.length > 0 ? (
+    <div className="mt-2 border-t border-zinc-700 pt-2 text-xs text-zinc-200">
+      <div className="mb-1 font-semibold text-zinc-400">Applied by</div>
+      <div className="space-y-0.5">
+        {appliers.map((applier) => (
+          <div
+            key={applier.guid}
+            style={applier.className ? { color: getClassColorVar(applier.className) } : undefined}
+          >
+            {applier.name}
+          </div>
+        ))}
+      </div>
+    </div>
+  ) : undefined;
 
   return (
     <div
@@ -178,7 +212,6 @@ function CompactAuraTile({ row, durationMs }: { row: AuraRow; durationMs: number
       style={{
         background: `conic-gradient(${colors.ring} ${percent * 3.6}deg, rgba(82, 82, 82, 0.5) 0deg)`,
       }}
-      title={`${row.spellName} · ${compactAuraKind(row.isBuff)} · ${formatPercent(row.totalUptimeMs, durationMs)} uptime`}
     >
       <div
         className="relative flex size-full items-center justify-center overflow-hidden rounded-[7px] border border-black/30 shadow-inner"
@@ -189,6 +222,7 @@ function CompactAuraTile({ row, durationMs }: { row: AuraRow; durationMs: number
           spellId={row.spellId}
           name={row.spellName}
           size={40}
+          tooltipFooter={tooltipFooter}
           className={cn(
             "relative z-10 flex size-full items-center justify-center overflow-hidden text-[0px]",
             "[&_img]:size-full [&_img]:rounded-[6px] [&_img]:border-0 [&_img]:object-cover",
@@ -215,14 +249,24 @@ function CompactAuraTile({ row, durationMs }: { row: AuraRow; durationMs: number
 function CompactAuraGrid({
   rows,
   durationMs,
+  players,
+  units,
 }: {
   rows: AuraRow[];
   durationMs: number;
+  players: PanelRenderProps<UnitAurasResult>["context"]["instance"]["players"];
+  units: PanelRenderProps<UnitAurasResult>["context"]["instance"]["units"];
 }) {
   return (
     <div className="flex flex-wrap content-start gap-3 p-3">
       {rows.map((row) => (
-        <CompactAuraTile key={row.auraKey} row={row} durationMs={durationMs} />
+        <CompactAuraTile
+          key={row.auraKey}
+          row={row}
+          durationMs={durationMs}
+          players={players}
+          units={units}
+        />
       ))}
     </div>
   );
@@ -444,7 +488,12 @@ export function UnitAurasContent(props: PanelRenderProps<UnitAurasResult>) {
                         {rows.buffs.length} buffs · {rows.debuffs.length} debuffs
                       </span>
                     </div>
-                    <CompactAuraGrid rows={[...rows.buffs, ...rows.debuffs]} durationMs={durationMs} />
+                    <CompactAuraGrid
+                      rows={[...rows.buffs, ...rows.debuffs]}
+                      durationMs={durationMs}
+                      players={context.instance.players}
+                      units={context.instance.units}
+                    />
                   </section>
                 );
               })}

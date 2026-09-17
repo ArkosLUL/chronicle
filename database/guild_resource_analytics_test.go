@@ -1,0 +1,159 @@
+package database_test
+
+import (
+	"testing"
+
+	"github.com/Emyrk/chronicle/database"
+	"github.com/Emyrk/chronicle/internal/testutil"
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/stretchr/testify/require"
+)
+
+func TestGuildResourceAnalytics(t *testing.T) {
+	t.Parallel()
+	fixture := setupGuildPanelsTest(t)
+	ctx := testutil.Context(t, testutil.WaitShort)
+
+	visitorA := uuid.New()
+	visitorB := uuid.New()
+	record := func(kind, key string, visitorID uuid.UUID) {
+		t.Helper()
+		require.NoError(t, fixture.store.RecordGuildResourceView(ctx, database.RecordGuildResourceViewParams{
+			GuildID:      fixture.guildID,
+			ResourceKind: kind,
+			ResourceKey:  key,
+			VisitorID:    visitorID,
+		}))
+	}
+
+	record("instance", "stable-instance-slug", visitorA)
+	record("instance", "stable-instance-slug", visitorA)
+	record("instance", "stable-instance-slug", visitorB)
+	record("guild_page", fixture.guildID.String(), visitorA)
+
+	rows, err := fixture.store.GuildResourceAnalytics(ctx, database.GuildResourceAnalyticsParams{
+		GuildID:      fixture.guildID,
+		LookbackDays: 30,
+	})
+	require.NoError(t, err)
+	require.Len(t, rows, 2)
+
+	byKind := make(map[string]database.GuildResourceAnalyticsRow, len(rows))
+	for _, row := range rows {
+		byKind[row.ResourceKind] = row
+	}
+	require.Equal(t, int64(1), byKind["guild_page"].Views)
+	require.Equal(t, int64(1), byKind["guild_page"].UniqueVisitors)
+	require.Equal(t, int64(3), byKind["instance"].Views)
+	require.Equal(t, int64(2), byKind["instance"].UniqueVisitors)
+	require.Equal(t, "stable-instance-slug", byKind["instance"].ResourceName)
+}
+
+func TestGuildInstanceViewsMergeDuplicateGroup(t *testing.T) {
+	t.Parallel()
+	fixture := setupGuildPanelsTest(t)
+	ctx := testutil.Context(t, testutil.WaitShort)
+
+	canonicalSlug := "canonical-" + fixture.instanceID.String()[:8]
+	_, err := fixture.pool.Exec(ctx, `
+		UPDATE log_instances
+		SET guild_id = $1, hashed_slug = $2
+		WHERE id = $3
+	`, fixture.guildID, canonicalSlug, fixture.instanceID)
+	require.NoError(t, err)
+
+	duplicateID := uuid.New()
+	duplicateSlug := "duplicate-" + duplicateID.String()[:8]
+	_, err = fixture.store.InsertInstance(ctx, database.InsertInstanceParams{
+		ID:             duplicateID,
+		RealmID:        fixture.realmID,
+		LogGroupID:     fixture.logGroupID,
+		Name:           "Molten Core",
+		HashedSlug:     pgtype.Text{String: duplicateSlug, Valid: true},
+		GuildID:        uuid.NullUUID{UUID: fixture.guildID, Valid: true},
+		Capabilities:   []string{},
+		DifficultyName: "Normal",
+		MaxPlayers:     40,
+	})
+	require.NoError(t, err)
+	require.NoError(t, fixture.store.SetDuplicateGroupIDs(ctx, database.SetDuplicateGroupIDsParams{
+		DuplicateGroupID: uuid.NullUUID{UUID: fixture.instanceID, Valid: true},
+		Ids:              []uuid.UUID{fixture.instanceID, duplicateID},
+	}))
+
+	for _, instanceID := range []uuid.UUID{fixture.instanceID, duplicateID} {
+		groupKey, err := fixture.store.InstanceAnalyticsGroupKey(ctx, instanceID)
+		require.NoError(t, err)
+		require.Equal(t, canonicalSlug, groupKey)
+	}
+
+	visitorA := uuid.New()
+	visitorB := uuid.New()
+	record := func(memberKey string, visitorID uuid.UUID) {
+		t.Helper()
+		require.NoError(t, fixture.store.RecordGuildInstanceView(ctx, database.RecordGuildInstanceViewParams{
+			GuildID:   fixture.guildID,
+			GroupKey:  canonicalSlug,
+			MemberKey: memberKey,
+			VisitorID: visitorID,
+		}))
+	}
+
+	record(canonicalSlug, visitorA)
+	record(canonicalSlug, visitorA)
+	record(duplicateSlug, visitorA)
+	record(duplicateSlug, visitorB)
+
+	rows, err := fixture.store.GuildResourceAnalytics(ctx, database.GuildResourceAnalyticsParams{
+		GuildID:      fixture.guildID,
+		LookbackDays: 30,
+	})
+	require.NoError(t, err)
+	require.Len(t, rows, 3)
+
+	var wantInstanceDate pgtype.Date
+	require.NoError(t, fixture.pool.QueryRow(ctx, `
+		SELECT start_time::date FROM log_instances WHERE id = $1
+	`, fixture.instanceID).Scan(&wantInstanceDate))
+
+	byKey := make(map[string]database.GuildResourceAnalyticsRow, len(rows))
+	for _, row := range rows {
+		byKey[row.ResourceKind+":"+row.ResourceKey] = row
+		require.Equal(t, canonicalSlug, row.ResourceGroupKey)
+		require.Equal(t, wantInstanceDate, row.InstanceDate)
+	}
+
+	group := byKey["instance:"+canonicalSlug]
+	require.Equal(t, int64(4), group.Views)
+	require.Equal(t, int64(2), group.UniqueVisitors)
+
+	canonical := byKey["instance_member:"+canonicalSlug]
+	require.Equal(t, int64(2), canonical.Views)
+	require.Equal(t, int64(1), canonical.UniqueVisitors)
+
+	duplicate := byKey["instance_member:"+duplicateSlug]
+	require.Equal(t, int64(2), duplicate.Views)
+	require.Equal(t, int64(2), duplicate.UniqueVisitors)
+}
+
+func TestDeleteExpiredGuildResourceVisitors(t *testing.T) {
+	t.Parallel()
+	fixture := setupGuildPanelsTest(t)
+	ctx := testutil.Context(t, testutil.WaitShort)
+
+	_, err := fixture.pool.Exec(ctx, `
+		INSERT INTO guild_resource_recent_visitors
+			(guild_id, resource_kind, resource_key, visitor_id, viewed_on)
+		VALUES ($1, 'guild_page', $2, $3, (now() AT TIME ZONE 'UTC')::date - 2)
+	`, fixture.guildID, fixture.guildID.String(), uuid.New())
+	require.NoError(t, err)
+
+	require.NoError(t, fixture.store.DeleteExpiredGuildResourceVisitors(ctx))
+
+	var count int
+	require.NoError(t, fixture.pool.QueryRow(ctx, `
+		SELECT COUNT(*) FROM guild_resource_recent_visitors WHERE guild_id = $1
+	`, fixture.guildID).Scan(&count))
+	require.Zero(t, count)
+}

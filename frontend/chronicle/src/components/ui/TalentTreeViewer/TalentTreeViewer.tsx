@@ -14,6 +14,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/DropdownMenu/DropdownMenu";
 import { iconUrl, talentBackgroundUrl } from "@/config/iconUrl";
+import {
+  CLASS_NAMES,
+  specializationIconUrlForClassID,
+} from "@/config/specializationIcon";
 import { useIconBaseUrl } from "@/hooks/useDatasetId";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useQueries, useQueryClient } from "@tanstack/react-query";
@@ -53,6 +57,7 @@ import {
   populatedTalentTabs,
   rankDescriptionsForTooltip,
   resetTalentTabRanks,
+  restrictTalentRanksToFirstPopulatedTab,
   searchParamsWithTalentBuild,
   searchParamsWithTalentLock,
   talentBuildExportName,
@@ -81,13 +86,21 @@ export interface TalentAllocation {
 }
 
 export interface TalentTreeViewerProps {
+  /** Numeric WoW class ID. Required when API talent data omits data.id. */
+  classId?: number;
   data: ClassTalentData;
   /** Pre-set talent allocations (from combat log). Converted to TalentRanks. */
   allocations?: TalentAllocation[];
+  /** When true, spending in one tab disables every other tab. */
+  exclusiveTabs?: boolean;
+  /** Points required in each preceding row to unlock the next (default: 5). */
+  pointsPerRow?: number;
   /** Maximum talent points allowed (default: 51). */
   maxTalentPoints?: number;
   /** Maximum player level (default: 60). */
   maxLevel?: number;
+  /** When false, hides the player-level summary for non-player talent trees. */
+  showRequiredLevel?: boolean;
   /** When true, hides interactive controls (default: false). */
   readOnly?: boolean;
   /** When true, renders a more compact layout suitable for panels with limited space. */
@@ -105,18 +118,14 @@ export interface TalentTreeViewerProps {
 
 // ─── Class data lookups ───────────────────────────────────────────
 
-const CLASS_NAMES: Record<number, string> = {
-  1: "Warrior",
-  2: "Paladin",
-  3: "Hunter",
-  4: "Rogue",
-  5: "Priest",
-  6: "Death Knight",
-  7: "Shaman",
-  8: "Mage",
-  9: "Warlock",
-  11: "Druid",
-};
+function talentTabIconUrl(
+  classID: number,
+  tab: TalentTabData,
+  iconBaseUrl?: string,
+): string {
+  return specializationIconUrlForClassID(classID, tab.name)
+    ?? iconUrl(tab.iconTexture, iconBaseUrl);
+}
 
 // ─── Tooltip internals ────────────────────────────────────────────
 
@@ -269,12 +278,15 @@ function TalentPrereqArrows({ arrows, ranks, height, talents, buttonSize }: { ar
 
 // ─── Talent button ────────────────────────────────────────────────
 
-function TalentButton({ talent, rank, locked, pointsExhausted, talents, ranks, onChange, readOnly, debug, mobile, quickActive, onActivate, popularity, diff }: {
+function TalentButton({ talent, rank, locked, lockedReason, pointsExhausted, pointsPerRow, talents, ranks, onChange, readOnly, debug, mobile, quickActive, onActivate, popularity, diff }: {
   talent: TalentEntry;
   rank: number;
   locked: boolean;
+  /** Optional explanation for a lock imposed by the containing tree. */
+  lockedReason?: string;
   /** True when no more points can be spent (max reached or build locked). */
   pointsExhausted?: boolean;
+  pointsPerRow: number;
   talents: TalentEntry[];
   ranks: TalentRanks;
   onChange: (rank: number) => void;
@@ -293,7 +305,7 @@ function TalentButton({ talent, rank, locked, pointsExhausted, talents, ranks, o
 }) {
   const iconBaseUrl = useIconBaseUrl();
   const maxed = rank >= talent.maxRank;
-  const visualState = talentVisualState(rank, talent.maxRank, locked);
+  const visualState = talentVisualState(rank, talent.maxRank, locked, readOnly);
   const tooltipId = `talent-tooltip-${talent.id}`;
   const buttonRef = useRef<HTMLButtonElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -394,7 +406,9 @@ function TalentButton({ talent, rank, locked, pointsExhausted, talents, ranks, o
   const loadingSpellDetails = Boolean(
     tooltipPosition && talent.spellRanks.length > 0 && (rankSpellQueries.some((q) => q.isPending) || refQueries.some((q) => q.isPending))
   );
-  const lockReasons = locked ? lockedTalentReasons(talent, talents, ranks, pointsExhausted) : [];
+  const lockReasons = locked
+    ? lockedReason ? [lockedReason] : lockedTalentReasons(talent, talents, ranks, pointsExhausted, pointsPerRow)
+    : [];
 
 
   const showTooltip = () => {
@@ -529,8 +543,8 @@ function TalentButton({ talent, rank, locked, pointsExhausted, talents, ranks, o
         visualState === "maxed" && "talent-state-maxed border-amber-300 shadow-amber-400/25 ring-2 ring-amber-300/55 before:border before:border-amber-200/50 before:shadow-[0_0_14px_rgba(251,191,36,0.28)] hover:scale-105 hover:border-amber-200",
       )}
     >
-      <img src={iconUrl(talent.iconTexture, iconBaseUrl)} alt="" className={cn("h-full w-full rounded object-cover", locked && "talent-locked-icon-readable grayscale opacity-70 contrast-110")} />
-      {locked && <span className="talent-locked-icon-veil absolute inset-0 rounded bg-black/25" />}
+      <img src={iconUrl(talent.iconTexture, iconBaseUrl)} alt="" className={cn("h-full w-full rounded object-cover", visualState === "locked" && "talent-locked-icon-readable grayscale opacity-70 contrast-110")} />
+      {visualState === "locked" && <span className="talent-locked-icon-veil absolute inset-0 rounded bg-black/25" />}
       {maxed && <span className="pointer-events-none absolute inset-0 rounded bg-amber-300/10 shadow-[inset_0_0_12px_rgba(251,191,36,0.38)]" />}
       {visualState === "available" && <span className="pointer-events-none absolute inset-0 rounded bg-primary/10 shadow-[inset_0_0_10px_rgba(20,184,166,0.22)]" />}
       {visualState === "selected" && <span className="pointer-events-none absolute inset-0 rounded bg-emerald-300/10 shadow-[inset_0_0_10px_rgba(16,185,129,0.28)]" />}
@@ -650,6 +664,7 @@ function TalentButton({ talent, rank, locked, pointsExhausted, talents, ranks, o
 // ─── Talent tab (single tree) ─────────────────────────────────────
 
 function TalentTab({
+  classID,
   tab,
   ranks,
   readOnly,
@@ -658,13 +673,16 @@ function TalentTab({
   debug,
   compact,
   pointsExhausted,
+  pointsPerRow,
   buildLocked,
+  disabledByExclusiveTab,
   mobile,
   quickActiveTalentId,
   onQuickActivate,
   popularity,
   diff,
 }: {
+  classID: number;
   tab: TalentTabData;
   ranks: TalentRanks;
   readOnly: boolean;
@@ -672,10 +690,13 @@ function TalentTab({
   onReset: () => void;
   debug?: boolean;
   compact?: boolean;
+  pointsPerRow: number;
   /** True when no more points can be spent (max reached or build locked). */
   pointsExhausted?: boolean;
   /** True when the build is manually locked — all changes (add/remove) are blocked. */
   buildLocked?: boolean;
+  /** True when another mutually exclusive tree already has points. */
+  disabledByExclusiveTab?: boolean;
   /** Touch layout: full-bleed card with an upscaled grid. */
   mobile?: boolean;
   /** Mobile: id of the last talent tapped anywhere in the viewer. */
@@ -729,7 +750,8 @@ function TalentTab({
     <section id={mobile ? `talent-tree-${tab.id}` : undefined} className={cn(
       "talent-tree-card relative max-w-full self-start overflow-hidden rounded-lg border border-amber-400/20 bg-[radial-gradient(circle_at_top_left,rgba(20,184,166,0.14),transparent_32%),linear-gradient(180deg,rgba(120,83,38,0.16),rgba(9,9,11,0.58))] shadow-2xl shadow-black/30",
       compact ? "p-2" : mobile ? "scroll-mt-12 rounded-none border-x-0 px-0 py-3" : "p-4",
-    )} aria-label={`${tab.name} talent tree`}>
+      disabledByExclusiveTab && "grayscale opacity-55",
+    )} aria-label={`${tab.name} talent tree`} aria-disabled={disabledByExclusiveTab || undefined}>
       {showBackground && backgroundUrl && (
         <img
           src={backgroundUrl}
@@ -750,11 +772,11 @@ function TalentTab({
         <div className={cn("flex min-w-0 items-center", compact ? "gap-2" : "gap-3")}>
           {!compact && (
             <span className="rounded-lg border border-amber-300/35 bg-black/45 p-1 shadow-lg shadow-black/35">
-              <img src={iconUrl(tab.iconTexture, iconBaseUrl)} alt="" className="h-10 w-10 rounded border border-primary/25 object-cover" />
+              <img src={talentTabIconUrl(classID, tab, iconBaseUrl)} alt="" className="h-10 w-10 rounded border border-primary/25 object-cover" />
             </span>
           )}
           {compact && (
-            <img src={iconUrl(tab.iconTexture, iconBaseUrl)} alt="" className="h-6 w-6 rounded border border-primary/25 object-cover" />
+            <img src={talentTabIconUrl(classID, tab, iconBaseUrl)} alt="" className="h-6 w-6 rounded border border-primary/25 object-cover" />
           )}
           <div className="min-w-0">
             <h3 className={cn("truncate font-bold text-white", compact ? "text-xs" : "text-xl")}>{tab.name}</h3>
@@ -834,8 +856,10 @@ function TalentTab({
                         <TalentButton
                           talent={t}
                           rank={ranks[t.id] ?? 0}
-                          locked={(ranks[t.id] ?? 0) === 0 && (Boolean(pointsExhausted) || !canUseTalent(t, tab.talents, ranks))}
+                          locked={(ranks[t.id] ?? 0) === 0 && (Boolean(disabledByExclusiveTab) || Boolean(pointsExhausted) || !canUseTalent(t, tab.talents, ranks, pointsPerRow))}
+                          lockedReason={disabledByExclusiveTab ? "Reset the selected pet tree before choosing another." : undefined}
                           pointsExhausted={pointsExhausted}
+                          pointsPerRow={pointsPerRow}
                           talents={tab.talents}
                           ranks={ranks}
                           readOnly={readOnly}
@@ -863,7 +887,8 @@ function TalentTab({
 // ─── Mobile sticky tree tabs ──────────────────────────────────────
 
 /** Sticky chip bar on mobile: jump-scroll between the stacked trees. */
-function MobileTreeTabs({ tabs, ranks, visibleTabId, onJump }: {
+function MobileTreeTabs({ classID, tabs, ranks, visibleTabId, onJump }: {
+  classID: number;
   tabs: TalentTabData[];
   ranks: TalentRanks;
   visibleTabId: number | null;
@@ -887,7 +912,7 @@ function MobileTreeTabs({ tabs, ranks, visibleTabId, onJump }: {
                 : "border-transparent bg-zinc-900/60 text-zinc-400",
             )}
           >
-            <img src={iconUrl(tab.iconTexture, iconBaseUrl)} alt="" className="h-4 w-4 shrink-0 rounded" />
+            <img src={talentTabIconUrl(classID, tab, iconBaseUrl)} alt="" className="h-4 w-4 shrink-0 rounded" />
             <span className="truncate">{tab.name}</span>
             <span className={cn("shrink-0 tabular-nums", active ? "text-amber-200/90" : "text-zinc-500")}>{points}</span>
           </button>
@@ -921,6 +946,17 @@ function allocationsToRanks(tabs: TalentTabData[], allocations: TalentAllocation
   return ranks;
 }
 
+function normalizeViewerTalentRanks(
+  tabs: TalentEntry[][],
+  rawRanks: TalentRanks,
+  maxPoints: number,
+  exclusiveTabs: boolean,
+  pointsPerRow: number,
+) {
+  const normalized = normalizeTalentRanks(tabs, rawRanks, maxPoints, pointsPerRow);
+  return exclusiveTabs ? restrictTalentRanksToFirstPopulatedTab(tabs, normalized) : normalized;
+}
+
 // ─── PNG export watermark ─────────────────────────────────────────
 
 const EXPORT_LOGO_URL = "/c/chronicle/ChronicleLogoCenter.svg";
@@ -950,9 +986,13 @@ async function drawExportWatermark(canvas: HTMLCanvasElement, pixelRatio: number
 
 export function TalentTreeViewer({
   data,
+  classId,
   allocations,
+  exclusiveTabs = false,
+  pointsPerRow = 5,
   maxTalentPoints = 51,
   maxLevel = 60,
+  showRequiredLevel = true,
   readOnly = false,
   compact = false,
   extraActions,
@@ -961,6 +1001,7 @@ export function TalentTreeViewer({
   diff,
   className,
 }: TalentTreeViewerProps) {
+  const resolvedClassId = classId ?? data.id;
   const isMobile = useIsMobile();
   const [searchParams, setSearchParams] = useSearchParams();
   const tabTalentLists = useMemo(() => data.tabs.map((tab) => tab.talents), [data.tabs]);
@@ -982,10 +1023,22 @@ export function TalentTreeViewer({
   // rendered with the vanilla default cap.
   const initialRanks = useMemo(() => {
     if (allocations && allocations.length > 0) {
-      return normalizeTalentRanks(tabTalentLists, allocationsToRanks(data.tabs, allocations));
+      return normalizeViewerTalentRanks(
+        tabTalentLists,
+        allocationsToRanks(data.tabs, allocations),
+        Number.POSITIVE_INFINITY,
+        exclusiveTabs,
+        pointsPerRow,
+      );
     }
-    return normalizeTalentRanks(tabTalentLists, decodeTalentBuild(searchParams.get(TALENT_BUILD_PARAM), tabTalentLists), maxPoints);
-  }, [allocations, data.tabs, maxPoints, searchParams, tabTalentLists]);
+    return normalizeViewerTalentRanks(
+      tabTalentLists,
+      decodeTalentBuild(searchParams.get(TALENT_BUILD_PARAM), tabTalentLists),
+      maxPoints,
+      exclusiveTabs,
+      pointsPerRow,
+    );
+  }, [allocations, data.tabs, exclusiveTabs, maxPoints, pointsPerRow, searchParams, tabTalentLists]);
 
   const [ranks, setRanks] = useState<TalentRanks>(initialRanks);
   // Mobile: last talent tapped anywhere; its -/+ quick buttons stay visible
@@ -1033,6 +1086,10 @@ export function TalentTreeViewer({
     return () => document.removeEventListener("pointerdown", clearOnOutsideTap);
   }, [quickActiveTalentId]);
   const total = useMemo(() => totalTalentPoints(ranks), [ranks]);
+  const exclusiveTabId = useMemo(() => {
+    if (!exclusiveTabs) return null;
+    return data.tabs.find((tab) => talentTabPoints(tab, ranks) > 0)?.id ?? null;
+  }, [data.tabs, exclusiveTabs, ranks]);
   const requiredLevel = useMemo(() => calculateRequiredPlayerLevel(total, flavor), [flavor, total]);
 
   // Manual lock (stored in the URL): blacks out unspent talents early, e.g.
@@ -1050,11 +1107,23 @@ export function TalentTreeViewer({
   useEffect(() => {
     if (allocations && allocations.length > 0) {
       // Backend-provided allocations are not capped at maxPoints (see initialRanks).
-      setRanks(normalizeTalentRanks(tabTalentLists, allocationsToRanks(data.tabs, allocations)));
+      setRanks(normalizeViewerTalentRanks(
+        tabTalentLists,
+        allocationsToRanks(data.tabs, allocations),
+        Number.POSITIVE_INFINITY,
+        exclusiveTabs,
+        pointsPerRow,
+      ));
     } else {
-      setRanks(normalizeTalentRanks(tabTalentLists, decodeTalentBuild(searchParams.get(TALENT_BUILD_PARAM), tabTalentLists), maxPoints));
+      setRanks(normalizeViewerTalentRanks(
+        tabTalentLists,
+        decodeTalentBuild(searchParams.get(TALENT_BUILD_PARAM), tabTalentLists),
+        maxPoints,
+        exclusiveTabs,
+        pointsPerRow,
+      ));
     }
-  }, [data.id, maxPoints, searchParams, tabTalentLists, allocations, data.tabs]);
+  }, [data.id, maxPoints, pointsPerRow, searchParams, tabTalentLists, allocations, data.tabs, exclusiveTabs]);
 
   function commitRanks(nextRanks: TalentRanks) {
     setRanks(nextRanks);
@@ -1148,11 +1217,15 @@ export function TalentTreeViewer({
           <div className="relative">
             {mobileHeader && <div className="border-b border-white/10 p-4">{mobileHeader}</div>}
             <div className="flex items-center gap-4 px-4 py-3">
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-100/60">Level</p>
-                <p className="text-lg font-bold leading-tight text-white">{requiredLevel}</p>
-              </div>
-              <div className="h-8 w-px bg-amber-200/15" />
+              {showRequiredLevel && (
+                <>
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-100/60">Level</p>
+                    <p className="text-lg font-bold leading-tight text-white">{requiredLevel}</p>
+                  </div>
+                  <div className="h-8 w-px bg-amber-200/15" />
+                </>
+              )}
               {/* Points doubles as the lock toggle, like the desktop chip. */}
               <button type="button" aria-pressed={manuallyLocked} onClick={toggleLock} className="text-left">
                 <p className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-100/60">
@@ -1185,18 +1258,21 @@ export function TalentTreeViewer({
             </div>
           </div>
         </div>
-        <MobileTreeTabs tabs={data.tabs} ranks={ranks} visibleTabId={visibleTabId} onJump={jumpToTree} />
+        <MobileTreeTabs classID={resolvedClassId} tabs={data.tabs} ranks={ranks} visibleTabId={visibleTabId} onJump={jumpToTree} />
         <div ref={exportRef} className={tabGridClassName} style={exportGridStyle}>
           {exportedTabs.map((tab) => (
             <TalentTab
               key={tab.id}
+              classID={resolvedClassId}
               tab={tab}
               ranks={ranks}
               readOnly={readOnly}
               compact={compact}
               debug={searchParams.get("debug") === "true"}
               pointsExhausted={pointsExhausted}
+              pointsPerRow={pointsPerRow}
               buildLocked={manuallyLocked}
+              disabledByExclusiveTab={exclusiveTabId !== null && exclusiveTabId !== tab.id}
               mobile={mobileLayout}
               quickActiveTalentId={quickActiveTalentId}
               onQuickActivate={setQuickActiveTalentId}
@@ -1207,14 +1283,14 @@ export function TalentTreeViewer({
                   notifyBuildLocked();
                   return;
                 }
-                commitRanks(updateTalentRank(talent, rank, tab.talents, ranks, { maxPoints }));
+                commitRanks(updateTalentRank(talent, rank, tab.talents, ranks, { maxPoints, pointsPerRow }));
               }}
               onReset={() => {
                 if (manuallyLocked) {
                   notifyBuildLocked();
                   return;
                 }
-                commitRanks(resetTalentTabRanks(tabTalentLists, ranks, tab.talents, maxPoints));
+                commitRanks(resetTalentTabRanks(tabTalentLists, ranks, tab.talents, maxPoints, pointsPerRow));
               }}
             />
           ))}
@@ -1229,9 +1305,11 @@ export function TalentTreeViewer({
       {!(readOnly && allocations) && (
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-2">
-            <div className="rounded-md border border-amber-400/30 bg-amber-400/10 px-2.5 py-1 text-sm font-bold text-white">
-              Level {requiredLevel}
-            </div>
+            {showRequiredLevel && (
+              <div className="rounded-md border border-amber-400/30 bg-amber-400/10 px-2.5 py-1 text-sm font-bold text-white">
+                Level {requiredLevel}
+              </div>
+            )}
             {!readOnly && (
               <>
                 {isMobile ? (
@@ -1320,18 +1398,21 @@ export function TalentTreeViewer({
         </p>
       )}
       {/* Mobile: sticky mini-tabs to jump between the stacked trees */}
-      {mobileLayout && <MobileTreeTabs tabs={data.tabs} ranks={ranks} visibleTabId={visibleTabId} onJump={jumpToTree} />}
+      {mobileLayout && <MobileTreeTabs classID={resolvedClassId} tabs={data.tabs} ranks={ranks} visibleTabId={visibleTabId} onJump={jumpToTree} />}
       <div ref={exportRef} className={tabGridClassName} style={exportGridStyle}>
         {exportedTabs.map((tab) => (
           <TalentTab
             key={tab.id}
+            classID={resolvedClassId}
             tab={tab}
             ranks={ranks}
             readOnly={readOnly}
             compact={compact}
             debug={searchParams.get("debug") === "true"}
             pointsExhausted={pointsExhausted}
+            pointsPerRow={pointsPerRow}
             buildLocked={manuallyLocked}
+            disabledByExclusiveTab={exclusiveTabId !== null && exclusiveTabId !== tab.id}
             mobile={mobileLayout}
             quickActiveTalentId={quickActiveTalentId}
             onQuickActivate={setQuickActiveTalentId}
@@ -1343,14 +1424,14 @@ export function TalentTreeViewer({
                 notifyBuildLocked();
                 return;
               }
-              commitRanks(updateTalentRank(talent, rank, tab.talents, ranks, { maxPoints }));
+              commitRanks(updateTalentRank(talent, rank, tab.talents, ranks, { maxPoints, pointsPerRow }));
             }}
             onReset={() => {
               if (manuallyLocked) {
                 notifyBuildLocked();
                 return;
               }
-              commitRanks(resetTalentTabRanks(tabTalentLists, ranks, tab.talents, maxPoints));
+              commitRanks(resetTalentTabRanks(tabTalentLists, ranks, tab.talents, maxPoints, pointsPerRow));
             }}
           />
         ))}
@@ -1419,6 +1500,7 @@ export function TalentTreeViewerLegacy({
 
   return (
     <TalentTreeViewer
+      classId={classId}
       data={classData}
       allocations={allocations}
       readOnly

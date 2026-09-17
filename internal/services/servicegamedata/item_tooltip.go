@@ -73,6 +73,46 @@ func (s *Service) handleItemTooltip(w http.ResponseWriter, r *http.Request) {
 	httpapi.Write(ctx, w, http.StatusOK, tooltip)
 }
 
+func (s *Service) handleGemTooltip(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	db := servicedbstore.DatabaseStore(s.broker)
+
+	enchantID, err := strconv.ParseInt(chi.URLParam(r, "enchant_id"), 10, 32)
+	if err != nil {
+		httpapi.Write(ctx, w, http.StatusBadRequest, map[string]string{"error": "invalid enchant_id"})
+		return
+	}
+
+	dsID := datasetIDFromContext(ctx)
+	itemID, err := db.GetGemItemIDByEnchantID(ctx, database.GetGemItemIDByEnchantIDParams{
+		DatasetID: dsID,
+		EnchantID: int32(enchantID),
+	})
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			httpapi.Write(ctx, w, http.StatusNotFound, map[string]string{"error": "gem not found"})
+			return
+		}
+		httpapi.InternalServerError(w, err)
+		return
+	}
+	item, err := db.GetItemTemplateByEntry(ctx, database.GetItemTemplateByEntryParams{DatasetID: dsID, Entry: itemID})
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			httpapi.Write(ctx, w, http.StatusNotFound, map[string]string{"error": "gem item not found"})
+			return
+		}
+		httpapi.InternalServerError(w, err)
+		return
+	}
+
+	tooltip := buildBaseTooltip(ctx, db, item, dsID)
+	applyEnchantment(ctx, db, &tooltip, int32(enchantID), dsID)
+
+	w.Header().Set("Cache-Control", "public, max-age=259200")
+	httpapi.Write(ctx, w, http.StatusOK, tooltip)
+}
+
 func buildBaseTooltip(ctx context.Context, db database.Store, item database.WorldItemTemplate, dsID uuid.UUID) chroniclesdk.ItemTooltip {
 	tooltip := chroniclesdk.ItemTooltip{
 		Entry:         item.Entry,
@@ -179,7 +219,7 @@ func buildBaseTooltip(ctx context.Context, db database.Store, item database.Worl
 		}
 	}
 	if item.SocketBonus != 0 {
-		tooltip.SocketBonus = &chroniclesdk.SocketBonus{SpellID: item.SocketBonus}
+		applySocketBonus(ctx, db, &tooltip, item.SocketBonus, dsID)
 	}
 
 	return tooltip
@@ -275,6 +315,18 @@ func applyItemSet(ctx context.Context, db database.Store, tooltip *chroniclesdk.
 	}
 
 	tooltip.Set = info
+}
+
+// applySocketBonus resolves Item.socket_bonus as a SpellItemEnchantment ID.
+func applySocketBonus(ctx context.Context, db database.Store, tooltip *chroniclesdk.ItemTooltip, enchID int32, dsID uuid.UUID) {
+	ench, err := db.GetSpellItemEnchantmentByID(ctx, database.GetSpellItemEnchantmentByIDParams{DatasetID: dsID, ID: enchID})
+	if err != nil || ench.NameLang == "" {
+		return
+	}
+	tooltip.SocketBonus = &chroniclesdk.SocketBonus{
+		EnchantmentID: enchID,
+		Name:          ench.NameLang,
+	}
 }
 
 // applyEnchantment resolves a player-applied enchantment and adds its display name to the tooltip.

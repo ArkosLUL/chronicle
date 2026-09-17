@@ -11,7 +11,9 @@ import (
 	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/database/authz"
 	"github.com/Emyrk/chronicle/database/authz/policy"
+	"github.com/Emyrk/chronicle/internal/services"
 	"github.com/Emyrk/chronicle/internal/services/servicetenant"
+	"github.com/Gophercraft/core/vsn"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -35,7 +37,7 @@ func (a *API) AdminListUsers(w http.ResponseWriter, r *http.Request) {
 		Users: make([]chroniclesdk.User, len(users)),
 	}
 	for i, u := range users {
-		roles, err := a.Opts.Zed.UserChronicleRoles(r.Context(), u.ID)
+		roles, err := a.Opts.Zed.UserChronicleRoles(r.Context(), u.ChronicleUser.ID)
 		if err != nil {
 			httpapi.InternalServerError(w, err)
 			return
@@ -352,6 +354,7 @@ const (
 // @Param sort_order query string false "Sort order: asc, desc (default: desc)"
 // @Param user_id query string false "Filter by user ID (UUID)"
 // @Param instance_name query string false "Filter by instance name"
+// @Param without_instance query bool false "Filter to logs without an instance"
 // @Success 200 {object} chroniclesdk.AdminLogsResponse
 // @Router /api/v1/admin/logs [get]
 func (a *API) AdminListLogs(w http.ResponseWriter, r *http.Request) {
@@ -402,11 +405,13 @@ func (a *API) AdminListLogs(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	filterInstanceName := r.URL.Query().Get("instance_name")
+	filterWithoutInstance := r.URL.Query().Get("without_instance") == "true"
 
 	// Fetch total count for pagination (with filters applied)
 	totalCount, err := a.Opts.Zed.CountAllWoWLogGroups(ctx, database.CountAllWoWLogGroupsParams{
-		FilterUserID:       filterUserID,
-		FilterInstanceName: filterInstanceName,
+		FilterUserID:          filterUserID,
+		FilterInstanceName:    filterInstanceName,
+		FilterWithoutInstance: filterWithoutInstance,
 	})
 	if err != nil {
 		httpapi.InternalServerError(w, err)
@@ -415,12 +420,13 @@ func (a *API) AdminListLogs(w http.ResponseWriter, r *http.Request) {
 
 	// Fetch logs with +1 to detect hasMore
 	logs, err := a.Opts.Zed.ListAllWoWLogGroupsWithOwnerPaginated(ctx, database.ListAllWoWLogGroupsWithOwnerPaginatedParams{
-		FilterUserID:       filterUserID,
-		FilterInstanceName: filterInstanceName,
-		SortBy:             sortBy,
-		SortOrder:          sortOrder,
-		LimitCount:         int32(limit + 1),
-		OffsetCount:        int32(offset),
+		FilterUserID:          filterUserID,
+		FilterInstanceName:    filterInstanceName,
+		FilterWithoutInstance: filterWithoutInstance,
+		SortBy:                sortBy,
+		SortOrder:             sortOrder,
+		LimitCount:            int32(limit + 1),
+		OffsetCount:           int32(offset),
 	})
 	if err != nil {
 		httpapi.InternalServerError(w, err)
@@ -737,13 +743,24 @@ func (a *API) AdminGetSiteConfig(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Resolve the tenant's default dataset flavor so the frontend can
-	// derive per-flavor settings (e.g. talent calculator max level).
+	// derive per-flavor settings (e.g. talent calculator max level,
+	// gear-weight presets).
 	if t != nil && t.DefaultDatasetID.Valid {
 		ds, err := a.Opts.Dataset.GetDataset(ctx, t.DefaultDatasetID.UUID)
 		if err == nil {
 			resp.DatasetFlavor = database.FlavorFromStrings(ds.DefaultFlavor).
 				Merge(database.FlavorFromStrings(t.AdditionalFlavor)).Strings()
 		}
+	}
+	if len(resp.DatasetFlavor) == 0 {
+		// No tenant default dataset (or an unflavored dataset row):
+		// fall back to the compiled-in server identity so per-flavor UI
+		// never mistakes a wrath deployment for vanilla.
+		base := database.FlavorVanilla
+		if services.ServerBuild == vsn.V3_3_5a {
+			base = database.FlavorWrath
+		}
+		resp.DatasetFlavor = database.ServerFlavor(services.ServerName, base).Strings()
 	}
 
 	w.Header().Set("Cache-Control", "private, max-age=300") // 5 min; varies per tenant

@@ -8,11 +8,14 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/common/armory"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/encounter"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/identifier"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/instances/instancehook"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/instances/overviewmetrics"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/instances/rankings"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/loot"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/participants"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/raidgroups"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/unitdb"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/vehicles"
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/realm"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
@@ -40,10 +43,27 @@ type FinalizedInstance struct {
 	RankingRules *rankings.Rankings
 	// UnknownUnits maps creature entry IDs not in the hostiles map to their name and hit count.
 	UnknownUnits map[uint32]UnknownUnit
+	// PersistedUnits contains observed units that requested instance metadata
+	// persistence without participating in encounter activity.
+	PersistedUnits     []guid.GUID
+	VehicleMetadata    vehicles.Metadata
+	RaidGroupSnapshots []raidgroups.InstanceSnapshot
+}
+
+type InstanceCategory string
+
+const (
+	InstanceCategoryDungeon InstanceCategory = "dungeon"
+	InstanceCategoryRaid    InstanceCategory = "raid"
+)
+
+func (c InstanceCategory) Valid() bool {
+	return c == InstanceCategoryDungeon || c == InstanceCategoryRaid
 }
 
 type CommonFactory struct {
 	Name      string
+	Category  InstanceCategory
 	MultiZone bool
 
 	// NameFromZone allows changing the instance name from metadata available on
@@ -56,11 +76,18 @@ type CommonFactory struct {
 	// DerivedRankings maps derived instance names to their ranking configuration.
 	// When set alongside DerivedName, each sub-instance gets its own independent
 	// speedrun tracker. Keys must match the names used in DerivedName.
-	DerivedRankings  map[string]func(database.WoWFlavor) *rankings.Rankings
-	ZoneNames        []string
-	MapIDs           []uint32
-	Hostiles         func(flavor database.WoWFlavor) *identifier.Identifier
-	FlavoredRankings func(flavor database.WoWFlavor) *rankings.Rankings
+	DerivedRankings map[string]func(database.WoWFlavor) *rankings.Rankings
+	// BossCount overrides the encounter count inferred from speedrun requirements.
+	BossCount func(flavor database.WoWFlavor) *int
+	// ProgressionBosses returns the ordered boss encounters used for progression.
+	// When nil, canonical bosses are inferred from speedrun requirements.
+	ProgressionBosses func(flavor database.WoWFlavor) []string
+	ZoneNames         []string
+	MapIDs            []uint32
+	Hostiles          func(flavor database.WoWFlavor) *identifier.Identifier
+	FlavoredRankings  func(flavor database.WoWFlavor) *rankings.Rankings
+	// Preprocessors creates fresh message preprocessors for each parsed instance.
+	Preprocessors func() []instancehook.Preprocessor
 }
 
 // MatchZone returns true if z matches any of the factory's zone names

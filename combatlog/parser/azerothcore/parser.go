@@ -432,7 +432,7 @@ func (p *Parser) parseEncounterStart(ts time.Time, m *wotlk.Matched, _ string) (
 	}
 
 	return []messages.Message{
-		&messages.EncounterBoundary{
+		&messages.ChronicleEncounterBoundary{
 			MessageBase:    messages.Base(ts),
 			Start:          true,
 			EncounterIndex: index,
@@ -456,7 +456,7 @@ func (p *Parser) parseEncounterEnd(ts time.Time, m *wotlk.Matched, _ string) ([]
 	}
 
 	return []messages.Message{
-		&messages.EncounterBoundary{
+		&messages.ChronicleEncounterBoundary{
 			MessageBase:    messages.Base(ts),
 			Start:          false,
 			EncounterIndex: index,

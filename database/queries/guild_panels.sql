@@ -4,9 +4,12 @@
 -- Returns the guild's characters from raid logs for the guild page "Roster"
 -- panel. updated_at is the character's de-facto "last seen"; @seen_within_days
 -- hides characters that have gone idle (0 = no filter).
--- Spec/role come from the character's most recent parse; avg_parse averages
--- the best parse per encounter over the last @parse_window_days, using hps
--- for healers and dps for everyone else (-1 when the character has no parses).
+-- player_spec/player_role come from the character's most recent parse;
+-- spec_roles_json lists every distinct spec+role combo observed across the
+-- character's 3 most recent parsed instances (players often swap specs raid
+-- to raid), most recent first. avg_parse averages the best parse per
+-- encounter over the last @parse_window_days, using hps for healers and dps
+-- for everyone else (-1 when the character has no parses).
 -- JOINs wow_server_realms so RLS tenant filtering cascades.
 SELECT
     gp.id,
@@ -19,18 +22,39 @@ SELECT
     COALESCE(wsr.name, '') AS realm_name,
     COALESCE(latest.player_spec, '')::text AS player_spec,
     COALESCE(latest.player_role, '')::text AS player_role,
+    COALESCE(latest.spec_roles, '[]'::jsonb)::text AS spec_roles_json,
     COALESCE(scores.avg_parse, -1)::float8 AS avg_parse
 FROM game_players gp
 JOIN wow_server_realms wsr ON wsr.id = gp.realm_id
 LEFT JOIN LATERAL (
-    SELECT psr.player_spec, psr.player_role
-    FROM parse_score_results psr
-    WHERE psr.tenant_id = @tenant_id
-      AND psr.player_guid = gp.id::text
-      AND psr.metric = 'dps'
-      AND psr.status IN ('ok', 'low_confidence')
-    ORDER BY psr.killed_at DESC NULLS LAST
-    LIMIT 1
+    SELECT
+        (ARRAY_AGG(combos.player_spec ORDER BY combos.last_seen DESC))[1] AS player_spec,
+        (ARRAY_AGG(combos.player_role ORDER BY combos.last_seen DESC))[1] AS player_role,
+        JSONB_AGG(
+            JSONB_BUILD_OBJECT('spec', combos.player_spec, 'role', combos.player_role)
+            ORDER BY combos.last_seen DESC
+        ) AS spec_roles
+    FROM (
+        SELECT psr.player_spec, psr.player_role, MAX(psr.killed_at) AS last_seen
+        FROM parse_score_results psr
+        WHERE psr.tenant_id = @tenant_id
+          AND psr.player_guid = gp.id::text
+          AND psr.status IN ('ok', 'low_confidence')
+          AND psr.instance_id IN (
+              SELECT recent.instance_id
+              FROM (
+                  SELECT psr2.instance_id, MAX(psr2.killed_at) AS latest_kill
+                  FROM parse_score_results psr2
+                  WHERE psr2.tenant_id = @tenant_id
+                    AND psr2.player_guid = gp.id::text
+                    AND psr2.status IN ('ok', 'low_confidence')
+                  GROUP BY psr2.instance_id
+                  ORDER BY latest_kill DESC NULLS LAST
+                  LIMIT 3
+              ) recent
+          )
+        GROUP BY psr.player_spec, psr.player_role
+    ) combos
 ) latest ON true
 LEFT JOIN LATERAL (
     SELECT AVG(best.precise_score)::float8 AS avg_parse
@@ -55,12 +79,18 @@ ORDER BY scores.avg_parse DESC NULLS LAST, gp.level DESC, gp.updated_at DESC
 LIMIT @row_limit;
 
 -- name: GuildTopParses :many
--- Returns a guild's best parses for the guild page "Top Parses" panel.
+-- Returns the current guild members' best parses for the guild page "Top
+-- Parses" panel. Membership comes from game_players, matching the roster
+-- panel, rather than the guild_id copied onto parse scores at scoring time.
 -- Duplicate uploads of the same run collapse to one row per encounter+player
 -- (most recently computed scoring wins, matching GetCharacterParseHistory).
 -- @best_per_player keeps only each player's single best parse so one player
 -- cannot fill the whole board.
-WITH deduped AS (
+WITH guild_members AS (
+    SELECT gp.id::text AS player_guid
+    FROM game_players gp
+    WHERE gp.guild_id = @guild_id::uuid
+), deduped AS (
     SELECT DISTINCT ON (psr.run_id, psr.encounter_name, psr.player_guid)
         psr.player_guid,
         psr.player_name,
@@ -78,9 +108,9 @@ WITH deduped AS (
         psr.display_score,
         psr.killed_at
     FROM parse_score_results psr
+    JOIN guild_members gm ON gm.player_guid = psr.player_guid
     LEFT JOIN log_instances li ON li.id = psr.instance_id
     WHERE psr.tenant_id = @tenant_id
-      AND psr.guild_id = @guild_id::uuid
       AND psr.metric = @metric
       AND psr.status IN ('ok', 'low_confidence')
       AND CASE
@@ -132,18 +162,18 @@ WITH clears AS (
         sr.instance_name,
         li.difficulty_name,
         li.max_players,
-        sr.duration_ms,
-        sr.completion_time
+        sr.ranked_duration_ms::bigint AS duration_ms,
+        sr.ranked_completion_time::timestamptz AS completion_time
     FROM instance_speedruns sr
     JOIN log_instances li ON li.id = sr.instance_id
     JOIN wow_server_realms wsr ON wsr.id = sr.realm_id
     WHERE sr.guild_id = @guild_id::uuid
-      AND sr.duration_ms > 0
+      AND sr.ranked_duration_ms > 0
       AND CASE
-          WHEN @since_days::bigint > 0 THEN sr.completion_time >= now() - make_interval(days => @since_days::int)
+          WHEN @since_days::bigint > 0 THEN sr.ranked_completion_time >= now() - make_interval(days => @since_days::int)
           ELSE true
       END
-    ORDER BY COALESCE(li.duplicate_group_id, li.id), sr.duration_ms ASC
+    ORDER BY COALESCE(li.duplicate_group_id, li.id), sr.ranked_duration_ms ASC
 ), scored AS (
     SELECT
         c.*,

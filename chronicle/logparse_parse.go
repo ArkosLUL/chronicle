@@ -2,7 +2,6 @@ package chronicle
 
 import (
 	"bytes"
-	"compress/gzip"
 	"context"
 	"errors"
 	"fmt"
@@ -14,6 +13,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/consumers"
 	"github.com/Emyrk/chronicle/combatlog/parser/azerothcore"
 	azencounters "github.com/Emyrk/chronicle/combatlog/parser/azerothcore/encounters"
+	blizzardv9 "github.com/Emyrk/chronicle/combatlog/parser/blizzard/v9"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/creatures"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/encounters"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/registry"
@@ -75,11 +75,13 @@ func (w *WorkerLogParse) parseCombatLog(
 
 	logCapabilities := []string{"overheal", "absorb"}
 
-	// encounters — use azerothcore-specific state for server-side logs,
-	// otherwise use the general registry.
+	// Server-side logs still use the flavor registry for known instances so
+	// rankings and speedrun rules are attached. The AzerothCore resolver adds
+	// server-reported unit metadata and falls back to a generic instance for
+	// zones Chronicle does not know yet.
 	var encountersState *encounters.State
 	if logFormat == database.LogFormatAzerothcoreMod {
-		encountersState = azencounters.New(ctx, logLogger)
+		encountersState = azencounters.New(ctx, logLogger, reg)
 	} else {
 		encountersState = encounters.New(ctx, logLogger, reg)
 	}
@@ -189,7 +191,11 @@ func (w *WorkerLogParse) parseCombatLog(
 			return nil, fmt.Errorf("consume v2 log: %w", consumeErr)
 		}
 
-	case database.LogFormat335aCcAddon:
+		if p.SawRaidGroup() {
+			logCapabilities = append(logCapabilities, "raidgroup")
+		}
+
+	case database.LogFormat243CcAddon, database.LogFormat335aCcAddon:
 		logCapabilities = append(logCapabilities, "interrupt")
 		loadStart := time.Now()
 		data := preloadedFirst
@@ -200,22 +206,70 @@ func (w *WorkerLogParse) parseCombatLog(
 			}
 			data, err = io.ReadAll(rdr)
 			if err != nil {
-				return nil, fmt.Errorf("read wotlk log file: %w", err)
+				return nil, fmt.Errorf("read CLEU log file: %w", err)
 			}
 		}
 		loadFileDuration = time.Since(loadStart)
 
-		p, err := wotlk.New(ctx, logLogger, bytes.NewReader(data), gameDB, gameDB, reg)
+		var p *wotlk.Parser
+		var err error
+		if logFormat == database.LogFormat243CcAddon {
+			p, err = wotlk.NewTBC(ctx, logLogger, bytes.NewReader(data), gameDB, gameDB, reg)
+		} else {
+			p, err = wotlk.New(ctx, logLogger, bytes.NewReader(data), gameDB, gameDB, reg)
+		}
 		if err != nil {
-			return nil, fmt.Errorf("create wotlk parser: %w", err)
+			return nil, fmt.Errorf("create CLEU parser: %w", err)
 		}
 		p.SetRealmClockInfo(scanCompanionHeaderClock(data))
 		c.Advancer = p
 		consumeErr = c.ConsumeAll(ctx, p)
 		if consumeErr != nil && !errors.Is(consumeErr, io.EOF) {
-			return nil, fmt.Errorf("consume wotlk log: %w", consumeErr)
+			return nil, fmt.Errorf("consume CLEU log: %w", consumeErr)
 		}
 		totalLines = p.Metrics().TotalLinesParsed
+		if p.SawRaidGroup() {
+			logCapabilities = append(logCapabilities, "raidgroup")
+		}
+
+	case database.LogFormatV9Cleu, database.LogFormatHermesproxy1142Cc:
+		logCapabilities = append(logCapabilities, "interrupt")
+		loadStart := time.Now()
+		data := preloadedFirst
+		if data == nil {
+			rdr, err := w.loadFile(ctx, files[0])
+			if err != nil {
+				return nil, fmt.Errorf("load v9 CLEU log file: %w", err)
+			}
+			data, err = io.ReadAll(rdr)
+			if err != nil {
+				return nil, fmt.Errorf("read v9 CLEU log file: %w", err)
+			}
+		}
+		loadFileDuration = time.Since(loadStart)
+
+		var p *blizzardv9.Parser
+		var err error
+		if logFormat == database.LogFormatHermesproxy1142Cc {
+			p, err = blizzardv9.NewHermesProxy(ctx, logLogger, bytes.NewReader(data), gameDB, gameDB, reg)
+			if err == nil {
+				p.SetRealmClockInfo(scanCompanionHeaderClock(data))
+			}
+		} else {
+			p, err = blizzardv9.New(ctx, logLogger, bytes.NewReader(data), gameDB, gameDB, reg)
+		}
+		if err != nil {
+			return nil, fmt.Errorf("create v9 CLEU parser: %w", err)
+		}
+		c.Advancer = p
+		consumeErr = c.ConsumeAll(ctx, p)
+		if consumeErr != nil && !errors.Is(consumeErr, io.EOF) {
+			return nil, fmt.Errorf("consume v9 CLEU log: %w", consumeErr)
+		}
+		totalLines = p.Metrics().TotalLinesParsed
+		if p.SawRaidGroup() {
+			logCapabilities = append(logCapabilities, "raidgroup")
+		}
 
 	case database.LogFormatAzerothcoreMod:
 		logCapabilities = append(logCapabilities, "interrupt", "server-side")
@@ -316,34 +370,5 @@ func (w *WorkerLogParse) sortReader(ctx context.Context, rdr io.Reader, fileID u
 
 // loadFile downloads and decompresses a single log file from object storage.
 func (w *WorkerLogParse) loadFile(ctx context.Context, file database.LogFile) (io.Reader, error) {
-	storage := w.parent.Storage
-
-	fd, err := storage.DownloadFile(ctx, BucketRaidLogs, w.parent.logPath(file.ID))
-	if err != nil {
-		err = fmt.Errorf("download log file %s: %w", file.ID, err)
-		if errors.Is(err, io.ErrUnexpectedEOF) {
-			err = fmt.Errorf("download log file %s (unexpected EOF — file may be truncated): %w", file.ID, err)
-		}
-		return nil, err
-	}
-
-	var reader io.Reader = bytes.NewReader(fd)
-	if file.ContentEncoding.Valid && file.ContentEncoding.String == "gzip" {
-		gzReader, err := gzip.NewReader(reader)
-		if err != nil {
-			return nil, fmt.Errorf("decompress log file %s: %w", file.ID, err)
-		}
-		defer func() { _ = gzReader.Close() }()
-
-		decompressed := &bytes.Buffer{}
-		if _, err := io.Copy(decompressed, gzReader); err != nil {
-			return nil, fmt.Errorf("read decompressed log file %s: %w", file.ID, err)
-		}
-		reader = decompressed
-	}
-
-	//nolint:ineffassign
-	fd = nil
-
-	return reader, nil
+	return loadRawLogFile(ctx, w.parent.Storage, file)
 }

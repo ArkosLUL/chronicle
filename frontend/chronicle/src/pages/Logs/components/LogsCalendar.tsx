@@ -129,24 +129,37 @@ export function LogsCalendar({
                     key={dayIndex}
                     className={`
                       ${
-                        cells
-                          ? compact
-                            ? "min-h-[36px] p-0.5"
-                            : "min-h-[56px] p-1"
-                          : compact
-                            ? "min-h-[48px] p-1"
-                            : "min-h-[80px] sm:min-h-[100px] p-1 sm:p-1.5"
+                        fillHeight
+                          ? cells
+                            ? "p-0.5"
+                            : compact
+                              ? "p-1"
+                              : "p-1 sm:p-1.5"
+                          : cells
+                            ? compact
+                              ? "min-h-[36px] p-0.5"
+                              : "min-h-[56px] p-1"
+                            : compact
+                              ? "min-h-[48px] p-1"
+                              : "min-h-[80px] sm:min-h-[100px] p-1 sm:p-1.5"
                       }
                       ${
                         cells
                           ? `rounded-md border ${today ? "border-primary/50 bg-primary/5" : "border-border/50 bg-muted/20"} ${!inCurrentMonth ? "opacity-40" : ""}`
                           : `border-b border-r border-border last:border-r-0 ${!inCurrentMonth ? "bg-muted/30" : ""} ${today ? "bg-primary/5" : ""}`
                       }
-                      ${fillHeight ? "flex min-h-0 flex-col overflow-hidden" : ""}
+                      ${fillHeight ? "relative flex min-h-0 flex-col overflow-hidden" : ""}
                     `}
                   >
-                    {/* Date number */}
-                    <div className="flex items-center justify-between mb-1">
+                    {/* Date number. Fixed-height panels overlay it so the label
+                        does not consume a full row above the day content. */}
+                    <div
+                      className={
+                        fillHeight
+                          ? "pointer-events-none absolute right-0.5 top-0.5 z-20 flex items-center gap-1 rounded bg-background/80 px-1 leading-none shadow-sm backdrop-blur-[1px]"
+                          : "mb-1 flex shrink-0 items-center justify-between"
+                      }
+                    >
                       <span
                         className={`
                           ${compact ? "text-[10px]" : "text-xs sm:text-sm"} font-medium

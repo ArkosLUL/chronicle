@@ -16,6 +16,7 @@ import (
 	"github.com/Emyrk/chronicle/api/db2sdk"
 	"github.com/Emyrk/chronicle/chronicle/riverqueue"
 	"github.com/Emyrk/chronicle/chronicle/riverqueue/parseargs"
+	"github.com/Emyrk/chronicle/chroniclebot"
 	"github.com/Emyrk/chronicle/combatlog/parseoptions"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/characters/period"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/creatures"
@@ -33,7 +34,9 @@ import (
 	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/database/authz"
 	"github.com/Emyrk/chronicle/database/dbstatic"
+	"github.com/Emyrk/chronicle/database/gamedb/talents"
 	"github.com/Emyrk/chronicle/database/jsontransform"
+	"github.com/Emyrk/chronicle/internal/guildrenames"
 	"github.com/Emyrk/chronicle/internal/ptr"
 	"github.com/Emyrk/chronicle/internal/semverenc"
 	"github.com/Emyrk/chronicle/internal/services/servicetenant"
@@ -109,7 +112,21 @@ func resolveLogFlavor(current database.WoWFlavor, explicit bool, resolved Resolv
 	return merged, !slices.Equal(current, merged)
 }
 
+func slugCollisionFromLookup(err error) (bool, error) {
+	switch {
+	case err == nil:
+		return true, nil
+	case errors.Is(err, pgx.ErrNoRows):
+		return false, nil
+	default:
+		return false, fmt.Errorf("check colliding slug: %w", err)
+	}
+}
+
 func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse]) error {
+	if job.Args.TenantID != uuid.Nil {
+		ctx = servicetenant.WithTenantID(ctx, job.Args.TenantID)
+	}
 	jobStart := time.Now()
 	metrics := w.parent.metrics
 	report := &chroniclesdk.LogParseReport{
@@ -143,17 +160,24 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 		jobResult = "failure"
 		return fmt.Errorf("fetch log group: %w", err)
 	}
-	// Resolve the parse metadata, preferring the persisted format/flavor
-	// columns and falling back to deriving from the legacy log type (rows
-	// predating the columns).
+	// ── Resolve format & flavor ─────────────────────────────────────────
+	//
+	// Format resolution:
+	//   1. wow_log_groups.format column (when Valid) is authoritative.
+	//   2. Falls back to LogType.Format() for legacy rows predating the column.
+	//
+	// Flavor resolution:
+	//   1. wow_log_groups.flavor column (when non-empty) is authoritative.
+	//   2. Falls back to the realm-resolved dataset's default_flavor
+	//      (seeded from the compiled-in server identity).
+	//   3. When the fallback is used, the resolved flavor is persisted back
+	//      to wow_log_groups.flavor so subsequent reparses use the correct
+	//      value without re-resolving.
 	lg := logGroup.WoWLogGroup
 	logFormat := lg.LogType.Format()
 	if lg.Format.Valid {
 		logFormat = lg.Format.LogFormat
 	}
-	// Resolve flavor: prefer the persisted column on the log group, then
-	// fall back to dataset resolution (below) which returns the dataset's
-	// default_flavor (seeded from the compiled-in server identity).
 	var flavor database.WoWFlavor
 	explicitFlavor := len(lg.Flavor) > 0
 	if explicitFlavor {
@@ -198,13 +222,17 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 		if realmName == "" {
 			jobResult = "cancelled"
 			msg := fmt.Sprintf("no realm info found in log (format %s)", logFormat)
-			if logFormat == database.LogFormat335aCcAddon {
-				msg += "; the ChronicleCompanion addon is required for 3.3.5a client-side logs (https://github.com/Emyrk/ChronicleCompanionWoTLK)"
+			switch logFormat {
+			case database.LogFormat243CcAddon:
+				msg += "; the ChronicleCompanionTBC addon is required for 2.4.3 client-side logs (https://github.com/Emyrk/ChronicleCompanionTBC)"
+			case database.LogFormat335aCcAddon:
+				msg += "; the ChronicleCompanionWoTLK addon is required for 3.3.5a client-side logs (https://github.com/Emyrk/ChronicleCompanionWoTLK)"
+			case database.LogFormatHermesproxy1142Cc:
+				msg += "; the ChronicleCompanionJimsProxy addon is required for HermesProxy 1.14.2 logs (https://github.com/Smopraq/ChronicleCompanionJimsProxy)"
 			}
 			return river.JobCancel(fmt.Errorf("%s", msg))
 		}
-		bypassCtx := servicetenant.AdminBypass(ctx)
-		if r, lookupErr := db.GetWoWServerRealmByName(bypassCtx, realmName); lookupErr == nil {
+		if r, lookupErr := db.GetWoWServerRealmByName(ctx, realmName); lookupErr == nil {
 			preRealmID = r.ID
 		} else {
 			// Realm not yet in DB — use the well-known "Unknown" realm so
@@ -249,6 +277,14 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 	if err != nil {
 		jobResult = "failure"
 		return err
+	}
+
+	talentTreeData, talentTreeErr := gameDB.TalentTrees(ctx, resolved.DatasetID)
+	if talentTreeErr != nil {
+		slog.WarnContext(ctx, "load talent trees for ranking sub-spec inference",
+			slog.String("dataset_id", resolved.DatasetID.String()),
+			slog.String("err", talentTreeErr.Error()),
+		)
 	}
 
 	logCapabilities := parsed.logCapabilities
@@ -321,15 +357,46 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 			}
 		}
 
+		reportedRealmName := ""
+		if finalized.Realm != nil {
+			reportedRealmName = finalized.Realm.RealmName
+		}
 		realm := resolveRealm(ctx, db, finalized, job.Args.RealmID)
 		realmID := realm.ID
 		realmName := realm.Name
+		if job.Args.RealmID != uuid.Nil && reportedRealmName != "" && reportedRealmName != realmName {
+			w.parent.logger.WarnContext(ctx, "server-side log realm differs from upload-key realm",
+				"log_group_id", job.Args.LogID,
+				"realm_id", realmID,
+				"configured_realm", realmName,
+				"reported_realm", reportedRealmName,
+			)
+		}
 
 		keep, failureMsg := w.validateRealmTenant(ctx, db, realm, job.Args.TenantID, lg.Format.LogFormat, job.Args.LogID)
 		if !keep {
 			jobOut.InstanceFailures[fmt.Sprintf("%s_%d", inst.Name(), i)] = failureMsg
 			report.Instances = append(report.Instances, instReport)
 			continue
+		}
+
+		// Compute the instance time range before persisting guilds so historical
+		// guild rename rules can use the log's timestamp.
+		var instanceStart, instanceEnd pgtype.Timestamptz
+		for _, enc := range finalized.Encounters {
+			encStart := database.Timestamptz(enc.Combat.Start)
+			encEnd := database.Timestamptz(enc.Combat.End)
+			if !instanceStart.Valid || encStart.Time.Before(instanceStart.Time) {
+				instanceStart = encStart
+			}
+			if !instanceEnd.Valid || encEnd.Time.After(instanceEnd.Time) {
+				instanceEnd = encEnd
+			}
+		}
+		if instanceStart.Valid {
+			finalized.Guilds.RenameGuilds(func(name string) string {
+				return guildrenames.Resolve(realmName, instanceStart.Time, name)
+			})
 		}
 
 		// Time DB insert
@@ -345,7 +412,6 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 			}
 		}()
 		var dbinstance database.LogInstance
-		var instanceStart, instanceEnd pgtype.Timestamptz
 		err = db.InTx(ctx, func(tx *authz.AuthzTX) error {
 			guild, err := finalized.Guilds.Insert(ctx, encountersState.Units, instanceID, realmID, resolved.DatasetID, tx)
 			if err != nil {
@@ -360,18 +426,6 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 				return fmt.Errorf("insert loot: %w", err)
 			}
 
-			// Compute instance time range from encounters
-			for _, enc := range finalized.Encounters {
-				encStart := database.Timestamptz(enc.Combat.Start)
-				encEnd := database.Timestamptz(enc.Combat.End)
-				if !instanceStart.Valid || encStart.Time.Before(instanceStart.Time) {
-					instanceStart = encStart
-				}
-				if !instanceEnd.Valid || encEnd.Time.After(instanceEnd.Time) {
-					instanceEnd = encEnd
-				}
-			}
-
 			recorderName := ""
 			recorderGUID := ""
 			if finalized.RecorderGUID != nil {
@@ -379,6 +433,11 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 				if u, ok := encountersState.Units.Get(*finalized.RecorderGUID); ok {
 					recorderName = u.Name
 				}
+			}
+
+			instanceCategory := pgtype.Text{}
+			if inst.Category.Valid() {
+				instanceCategory = pgtype.Text{String: string(inst.Category), Valid: true}
 			}
 
 			insertInstanceParams := database.InsertInstanceParams{
@@ -394,21 +453,29 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 					UUID:  guildID,
 					Valid: guildID != uuid.Nil,
 				},
-				StartTime:         instanceStart,
-				EndTime:           instanceEnd,
-				Capabilities:      logCapabilities,
-				Versions:          database.VersionsMap(finalized.Versions),
-				RecorderName:      recorderName,
-				RecorderGuid:      recorderGUID,
-				ParserVersion:     version.GitTag + "+" + version.GitCommit,
-				DifficultyName:    inst.CurrentZone.DifficultyName,
-				MaxPlayers:        int32(inst.CurrentZone.MaxPlayers),
-				DynamicDifficulty: int32(inst.CurrentZone.DynamicDifficulty),
+				StartTime:               instanceStart,
+				EndTime:                 instanceEnd,
+				Capabilities:            logCapabilities,
+				Versions:                database.VersionsMap(finalized.Versions),
+				RecorderName:            recorderName,
+				RecorderGuid:            recorderGUID,
+				ParserVersion:           version.ExactParserVersion(),
+				DifficultyName:          inst.CurrentZone.DifficultyName,
+				MaxPlayers:              int32(inst.CurrentZone.MaxPlayers),
+				DynamicDifficulty:       int32(inst.CurrentZone.DynamicDifficulty),
+				Category:                instanceCategory,
+				VehicleControlIntervals: finalized.VehicleMetadata,
 			}
 
-			// Handling colliding slugs
+			// Handling colliding slugs. Only a missing row is safe to ignore. A
+			// PostgreSQL error aborts the transaction and must be returned before
+			// another statement masks it with SQLSTATE 25P02.
 			_, err = tx.InstanceBySlug(ctx, insertInstanceParams.HashedSlug)
-			if err == nil {
+			slugCollision, err := slugCollisionFromLookup(err)
+			if err != nil {
+				return err
+			}
+			if slugCollision {
 				insertInstanceParams.HashedSlug = pgtype.Text{Valid: false}
 			}
 
@@ -455,6 +522,9 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 			}
 
 			for id := range finalized.Participants.Active {
+				builder.seen(id)
+			}
+			for _, id := range finalized.PersistedUnits {
 				builder.seen(id)
 			}
 			for id := range finalized.Guilds.Participant {
@@ -509,7 +579,39 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 					return fmt.Errorf("insert encounter character fights: %w", err)
 				}
 
+				// Persist encounter phases.
+				for _, phase := range enc.Phases {
+					err := tx.InsertEncounterPhase(ctx, database.InsertEncounterPhaseParams{
+						ID:            phase.ID,
+						EncounterID:   dbencounter.ID,
+						Key:           phase.Key,
+						Name:          phase.Name,
+						PhaseOrder:    int32(phase.Order),
+						StartOffsetMs: phase.StartOffsetMs,
+						EndOffsetMs:   phase.EndOffsetMs,
+						KillType:      database.KillType(phase.KillType),
+					})
+					if err != nil {
+						return fmt.Errorf("insert encounter phase %q: %w", phase.Key, err)
+					}
+				}
+
 				sdkEncounters = append(sdkEncounters, db2sdk.WoWEncounter(dbencounter))
+			}
+
+			for _, snapshot := range finalized.RaidGroupSnapshots {
+				snapshotType := database.RaidGroupSnapshotTypeFinal
+				encounterID := uuid.NullUUID{}
+				if snapshot.EncounterID != nil {
+					snapshotType = database.RaidGroupSnapshotTypeCleanKill
+					encounterID = uuid.NullUUID{UUID: *snapshot.EncounterID, Valid: true}
+				}
+				if err := tx.InsertInstanceRaidGroupSnapshot(ctx, database.InsertInstanceRaidGroupSnapshotParams{
+					InstanceID: dbinstance.ID, EncounterID: encounterID, SnapshotType: snapshotType,
+					ObservedAt: database.Timestamptz(snapshot.ObservedAt), Composition: snapshot.Composition,
+				}); err != nil {
+					return fmt.Errorf("insert raid group snapshot: %w", err)
+				}
 			}
 
 			err = builder.insert(ctx, tx)
@@ -541,13 +643,30 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 				if finalized.Versions != nil {
 					addonVersion = finalized.Versions["addon"]
 				}
-				parserVer := version.GitTag + "+" + version.GitCommit
+				parserVer := version.ExactParserVersion()
 
 				// Data source rule: require server-side capability or addon version
 				// for a speedrun to be eligible.
 				qualified := sr.Qualified
 				if !slices.Contains(logCapabilities, "server-side") && addonVersion == "" {
 					qualified = false
+				}
+
+				rankedStartTime := pgtype.Timestamptz{}
+				rankedCompletionTime := pgtype.Timestamptz{}
+				rankedDurationMs := pgtype.Int8{}
+				if !sr.RankedStartTime.IsZero() && !sr.RankedCompletionTime.IsZero() {
+					rankedStartTime = database.Timestamptz(sr.RankedStartTime)
+					rankedCompletionTime = database.Timestamptz(sr.RankedCompletionTime)
+					rankedDurationMs = pgtype.Int8{Int64: sr.RankedDuration.Milliseconds(), Valid: true}
+				}
+				bossToBossStartTime := pgtype.Timestamptz{}
+				bossToBossCompletionTime := pgtype.Timestamptz{}
+				bossToBossDurationMs := pgtype.Int8{}
+				if !sr.BossToBossStartTime.IsZero() && !sr.BossToBossCompletionTime.IsZero() {
+					bossToBossStartTime = database.Timestamptz(sr.BossToBossStartTime)
+					bossToBossCompletionTime = database.Timestamptz(sr.BossToBossCompletionTime)
+					bossToBossDurationMs = pgtype.Int8{Int64: sr.BossToBossDuration.Milliseconds(), Valid: true}
 				}
 
 				err = tx.InsertInstanceSpeedrun(ctx, database.InsertInstanceSpeedrunParams{
@@ -558,14 +677,20 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 						UUID:  guildID,
 						Valid: guildID != uuid.Nil,
 					},
-					Qualified:        qualified,
-					StartTime:        database.Timestamptz(sr.StartTime),
-					CompletionTime:   database.Timestamptz(sr.CompletionTime),
-					DurationMs:       sr.Duration.Milliseconds(),
-					Proof:            proofJSON,
-					AddonVersion:     addonVersion,
-					ParserVersionNum: semverenc.Encode(parserVer),
-					AddonVersionNum:  semverenc.Encode(addonVersion),
+					Qualified:                qualified,
+					StartTime:                database.Timestamptz(sr.StartTime),
+					CompletionTime:           database.Timestamptz(sr.CompletionTime),
+					DurationMs:               sr.Duration.Milliseconds(),
+					RankedStartTime:          rankedStartTime,
+					RankedCompletionTime:     rankedCompletionTime,
+					RankedDurationMs:         rankedDurationMs,
+					BossToBossStartTime:      bossToBossStartTime,
+					BossToBossCompletionTime: bossToBossCompletionTime,
+					BossToBossDurationMs:     bossToBossDurationMs,
+					Proof:                    proofJSON,
+					AddonVersion:             addonVersion,
+					ParserVersionNum:         semverenc.Encode(parserVer),
+					AddonVersionNum:          semverenc.Encode(addonVersion),
 				})
 				if err != nil {
 					return fmt.Errorf("insert speedrun: %w", err)
@@ -613,7 +738,7 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 		// transaction so a ranking error cannot roll back the parsed instance.
 		if finalized.Rankings != nil && finalized.Rankings.DPS != nil && finalized.RankingRules != nil {
 			rankErr := db.InTx(ctx, func(tx *authz.AuthzTX) error {
-				return insertDPSRankings(ctx, tx, finalized, dbinstance, inst.Name(), realmName)
+				return insertDPSRankings(ctx, tx, finalized, dbinstance, inst.Name(), realmName, resolved.DatasetID, flavor, talentTreeData)
 			}, nil)
 			if rankErr != nil {
 				slog.WarnContext(ctx, "insert dps rankings failed",
@@ -673,6 +798,23 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 	jobOut.Complete = ptr.Ref(time.Now())
 	jobResult = "success"
 	_ = river.RecordOutput(ctx, jobOut)
+
+	if w.parent.queue == nil {
+		return nil
+	}
+	persistedInstances, err := db.GetInstancesByLogGroupID(ctx, job.Args.LogID)
+	if err != nil {
+		w.parent.logger.WarnContext(ctx, "failed to list instances for Discord announcements", slog.Any("error", err))
+	} else {
+		for ordinal := range persistedInstances {
+			if _, err := w.parent.queue.Insert(ctx, chroniclebot.ArgsAnnounceRaidLog{
+				LogGroupID: job.Args.LogID, InstanceOrdinal: int32(ordinal),
+			}, nil); err != nil {
+				w.parent.logger.WarnContext(ctx, "failed to enqueue Discord announcement",
+					slog.Int("instance_ordinal", ordinal), slog.Any("error", err))
+			}
+		}
+	}
 
 	return nil
 }
@@ -887,15 +1029,18 @@ func buildIdentityReport(cs *creatures.Creatures) *chroniclesdk.IdentityReport {
 	return rpt
 }
 
-func (c *Chronicle) EnqueueParseLog(ctx context.Context, log database.WoWLogGroup, verbose bool, identityMode bool, realmID uuid.UUID) (*rivertype.JobInsertResult, error) {
-	t := servicetenant.TenantIDFromContext(ctx)
-	res, err := c.queue.Insert(ctx, ArgsLogParse{
-		LogID:        log.ID,
+func newArgsLogParse(ctx context.Context, logID uuid.UUID, verbose bool, identityMode bool, realmID uuid.UUID) ArgsLogParse {
+	return ArgsLogParse{
+		LogID:        logID,
 		RealmID:      realmID,
-		TenantID:     t,
+		TenantID:     servicetenant.TenantIDFromContext(ctx),
 		Verbose:      verbose,
 		IdentityMode: identityMode,
-	}, &river.InsertOpts{
+	}
+}
+
+func (c *Chronicle) EnqueueParseLog(ctx context.Context, log database.WoWLogGroup, verbose bool, identityMode bool, realmID uuid.UUID) (*rivertype.JobInsertResult, error) {
+	res, err := c.queue.Insert(ctx, newArgsLogParse(ctx, log.ID, verbose, identityMode, realmID), &river.InsertOpts{
 		Tags: []string{
 			fmt.Sprintf("owner_%s", log.Owner.String()),
 		},
@@ -1030,6 +1175,9 @@ func insertDPSRankings(
 	dbinstance database.LogInstance,
 	instanceName string,
 	realmName string,
+	datasetID uuid.UUID,
+	flavor database.WoWFlavor,
+	talentTreeData *talents.TalentTreeData,
 ) error {
 	// Build a set of player GUIDs that violate the level range, reusing the
 	// speedrun proof which has already checked every engaged player.
@@ -1121,15 +1269,17 @@ func insertDPSRankings(
 			// Use the per-encounter talent snapshot from the DPS tracker,
 			// not the armory tracker's final state, so mid-raid respecs
 			// and respec invalidation are correctly captured.
-			spec, talentLayout, talentSummary := extractTalentInfoFromSnapshot(className, stats.Talents)
+			spec, subSpec, talentLayout, talentSummary := extractTalentInfoFromSnapshot(className, stats.Talents, flavor, talentTreeData)
 
 			var talentBuildID uuid.NullUUID
 			if talentLayout != "" {
 				tbID, err := tx.UpsertTalentBuild(ctx, database.UpsertTalentBuildParams{
+					DatasetID:     datasetID,
 					PlayerClass:   className,
 					TalentSummary: talentSummary,
 					TalentLayout:  talentLayout,
 					Spec:          spec,
+					SubSpec:       pgtype.Text{String: subSpec, Valid: subSpec != ""},
 				})
 				if err != nil {
 					if database.IsRLSViolation(err) {
@@ -1164,6 +1314,7 @@ func insertDPSRankings(
 				PlayerName:     player.Name,
 				PlayerClass:    className,
 				PlayerSpec:     spec,
+				PlayerSubSpec:  subSpec,
 				PlayerRole:     roles[unitGUID],
 				PlayerLevel:    playerLevel,
 				TalentBuildID:  talentBuildID,
@@ -1192,7 +1343,7 @@ func insertDPSRankings(
 	}
 
 	// Aggregate trash (non-boss) encounters into per-(player, spec) ranking rows.
-	if err := insertTrashRankings(ctx, tx, finalized, dbinstance, instanceName, realmName, levelViolators); err != nil {
+	if err := insertTrashRankings(ctx, tx, finalized, dbinstance, instanceName, realmName, levelViolators, datasetID, flavor, talentTreeData); err != nil {
 		return err
 	}
 	return nil
@@ -1201,8 +1352,9 @@ func insertDPSRankings(
 // trashPlayerKey groups trash damage by player GUID + spec.
 // A player who respecs mid-raid gets separate trash rows per spec.
 type trashPlayerKey struct {
-	GUID guid.GUID
-	Spec string
+	GUID    guid.GUID
+	Spec    string
+	SubSpec string
 }
 
 // trashPlayerAccum accumulates trash stats for one (player, spec) pair.
@@ -1226,6 +1378,9 @@ func insertTrashRankings(
 	instanceName string,
 	realmName string,
 	levelViolators map[guid.GUID]struct{},
+	datasetID uuid.UUID,
+	flavor database.WoWFlavor,
+	talentTreeData *talents.TalentTreeData,
 ) error {
 	accum := make(map[trashPlayerKey]*trashPlayerAccum)
 
@@ -1276,9 +1431,9 @@ func insertTrashRankings(
 				continue
 			}
 			className := string(db2sdk.HeroClassToDB(finalized.Guilds.Players[unitGUID].HeroClass))
-			spec, talentLayout, talentSummary := extractTalentInfoFromSnapshot(className, stats.Talents)
+			spec, subSpec, talentLayout, talentSummary := extractTalentInfoFromSnapshot(className, stats.Talents, flavor, talentTreeData)
 
-			key := trashPlayerKey{GUID: unitGUID, Spec: spec}
+			key := trashPlayerKey{GUID: unitGUID, Spec: spec, SubSpec: subSpec}
 			a, ok := accum[key]
 			if !ok {
 				a = &trashPlayerAccum{
@@ -1334,10 +1489,12 @@ func insertTrashRankings(
 		var talentBuildID uuid.NullUUID
 		if a.TalentLayout != "" {
 			tbID, err := tx.UpsertTalentBuild(ctx, database.UpsertTalentBuildParams{
+				DatasetID:     datasetID,
 				PlayerClass:   className,
 				TalentSummary: a.TalentSummary,
 				TalentLayout:  a.TalentLayout,
 				Spec:          key.Spec,
+				SubSpec:       pgtype.Text{String: key.SubSpec, Valid: key.SubSpec != ""},
 			})
 			if err != nil {
 				if database.IsRLSViolation(err) {
@@ -1366,6 +1523,7 @@ func insertTrashRankings(
 			PlayerName:     player.Name,
 			PlayerClass:    className,
 			PlayerSpec:     key.Spec,
+			PlayerSubSpec:  key.SubSpec,
 			PlayerRole:     roles[key],
 			PlayerLevel:    playerLevel,
 			TalentBuildID:  talentBuildID,
@@ -1394,19 +1552,19 @@ func insertTrashRankings(
 	return nil
 }
 
-// extractTalentInfoFromSnapshot returns the inferred spec, talent layout string,
-// and talent summary from a per-encounter talent snapshot. Returns "Unknown" spec
-// if the snapshot is nil (e.g., talents were invalidated by a respec).
-func extractTalentInfoFromSnapshot(className string, talents *combatant.Talents) (spec string, layout string, summary []int16) {
-	if talents == nil {
-		return "Unknown", "", nil
+// extractTalentInfoFromSnapshot returns the inferred spec, sub-spec, talent layout,
+// and talent summary from a per-encounter talent snapshot.
+func extractTalentInfoFromSnapshot(className string, playerTalents *combatant.Talents, flavor database.WoWFlavor, treeData *talents.TalentTreeData) (spec string, subSpec string, layout string, summary []int16) {
+	if playerTalents == nil {
+		return "Unknown", "", "", nil
 	}
-	spec = wowspec.InferSpec(className, talents.Summary)
+	spec = wowspec.InferSpec(className, playerTalents.Summary)
+	subSpec = inferTalentSubSpec(className, spec, playerTalents, flavor, treeData)
 	summary = make([]int16, 3)
-	for i, v := range talents.Summary {
+	for i, v := range playerTalents.Summary {
 		summary[i] = int16(v)
 	}
-	for i, tree := range talents.Trees {
+	for i, tree := range playerTalents.Trees {
 		if i > 0 {
 			layout += "}"
 		}
@@ -1414,7 +1572,77 @@ func extractTalentInfoFromSnapshot(className string, talents *combatant.Talents)
 			layout += fmt.Sprintf("%d", rank)
 		}
 	}
-	return spec, layout, summary
+	return spec, subSpec, layout, summary
+}
+
+func inferTalentSubSpec(className, spec string, playerTalents *combatant.Talents, flavor database.WoWFlavor, treeData *talents.TalentTreeData) string {
+	if !flavor.Has(database.FlavorNightmareOfUrsol) {
+		return ""
+	}
+
+	type subSpecRule struct {
+		classID       int32
+		treeIndex     int
+		tabNames      []string
+		markerTalents []string
+		matched       string
+		fallback      string
+	}
+
+	var rule subSpecRule
+	switch {
+	case className == "DRUID" && spec == "Feral":
+		rule = subSpecRule{
+			classID:       11,
+			treeIndex:     1,
+			tabNames:      []string{"Feral", "Feral Combat"},
+			markerTalents: []string{"Thick Hide", "Feral Charge", "Feral Instinct"},
+			matched:       "Bear",
+			fallback:      "Cat",
+		}
+	case className == "SHAMAN" && spec == "Enhancement":
+		rule = subSpecRule{
+			classID:       7,
+			treeIndex:     1,
+			tabNames:      []string{"Enhancement"},
+			markerTalents: []string{"Totemic Alignment", "Ancestral Guardian", "Spirit Armor"},
+			matched:       "Tank",
+			fallback:      "DPS",
+		}
+	default:
+		return ""
+	}
+
+	// Nightmare of Ursol sub-specs form exactly two cohorts. Require every
+	// marker talent; builds missing any marker retain the fallback cohort.
+	// Talent names are resolved from the dataset so positional layouts remain
+	// dataset-specific.
+	markers := make(map[string]bool, len(rule.markerTalents))
+	if treeData != nil {
+		if classData, ok := treeData.Classes[rule.classID]; ok {
+			for _, tab := range classData.Tabs {
+				if !slices.ContainsFunc(rule.tabNames, func(name string) bool { return strings.EqualFold(name, tab.Name) }) {
+					continue
+				}
+				for _, talent := range tab.Talents {
+					if talent.TabIndex < 0 || int(talent.TabIndex) >= len(playerTalents.Trees[rule.treeIndex]) || playerTalents.Trees[rule.treeIndex][talent.TabIndex] == 0 {
+						continue
+					}
+					for _, marker := range rule.markerTalents {
+						if strings.EqualFold(talent.Name, marker) {
+							markers[marker] = true
+						}
+					}
+				}
+			}
+		}
+	}
+	for _, marker := range rule.markerTalents {
+		if !markers[marker] {
+			return rule.fallback
+		}
+	}
+	return rule.matched
 }
 
 // findPlayerGuild returns the guild name for a player, or "" if not in a guild.

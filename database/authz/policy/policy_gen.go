@@ -82,7 +82,7 @@ func (obj *ObjArmory_player) Create() *Armory_playerRelates {
 	return &Armory_playerRelates{obj: obj, rel: obj.src.Create()}
 }
 
-// Chronicle schema.zed:135
+// Chronicle schema.zed:158
 // Relationship: armory_player:<id>#chronicle@chronicle:<id>
 // Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Chronicle() etc.
 func (obj *ObjArmory_player) Chronicle(subs ...*ObjChronicle) *ObjArmory_player {
@@ -100,7 +100,7 @@ func (r *Armory_playerRelates) Chronicle(subs ...*ObjChronicle) *Armory_playerRe
 	return r
 }
 
-// Owner schema.zed:138
+// Owner schema.zed:161
 // Relationship: armory_player:<id>#owner@user:<id>
 // Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Owner() etc.
 func (obj *ObjArmory_player) Owner(subs ...*ObjUser) *ObjArmory_player {
@@ -920,6 +920,10 @@ func (obj *ObjGuild) RelationChronicle() string {
 	return "chronicle"
 }
 
+func (obj *ObjGuild) RelationDiscord_bot_enabled() string {
+	return "discord_bot_enabled"
+}
+
 func (obj *ObjGuild) RelationLeader() string {
 	return "leader"
 }
@@ -948,6 +952,14 @@ func (obj *ObjGuild) PermissionView_chronicle_roster() string {
 	return "view_chronicle_roster"
 }
 
+func (obj *ObjGuild) PermissionUse_discord_bot() string {
+	return "use_discord_bot"
+}
+
+func (obj *ObjGuild) PermissionManage_discord_bot() string {
+	return "manage_discord_bot"
+}
+
 type GuildRelates struct {
 	obj *ObjGuild
 	rel Relationship
@@ -965,7 +977,7 @@ func (obj *ObjGuild) Create() *GuildRelates {
 	return &GuildRelates{obj: obj, rel: obj.src.Create()}
 }
 
-// Chronicle schema.zed:120
+// Chronicle schema.zed:137
 // Relationship: guild:<id>#chronicle@chronicle:<id>
 // Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Chronicle() etc.
 func (obj *ObjGuild) Chronicle(subs ...*ObjChronicle) *ObjGuild {
@@ -983,7 +995,7 @@ func (r *GuildRelates) Chronicle(subs ...*ObjChronicle) *GuildRelates {
 	return r
 }
 
-// Leader schema.zed:122
+// Leader schema.zed:139
 // Relationship: guild:<id>#leader@user:<id>
 // Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Leader() etc.
 func (obj *ObjGuild) Leader(subs ...*ObjUser) *ObjGuild {
@@ -1001,7 +1013,7 @@ func (r *GuildRelates) Leader(subs ...*ObjUser) *GuildRelates {
 	return r
 }
 
-// Member schema.zed:123
+// Member schema.zed:140
 // Relationship: guild:<id>#member@user:<id>
 // Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Member() etc.
 func (obj *ObjGuild) Member(subs ...*ObjUser) *ObjGuild {
@@ -1016,6 +1028,25 @@ func (r *GuildRelates) Member(subs ...*ObjUser) *GuildRelates {
 	for _, sub := range subs {
 		r.rel.Add("member", sub.src.Obj, "")
 	}
+	return r
+}
+
+// Discord_bot_enabledWildcard schema.zed:144
+// Relationship: guild:<id>#discord_bot_enabled@user:*
+func (obj *ObjGuild) Discord_bot_enabledWildcard() *ObjGuild {
+	obj.src.Touch().Add("discord_bot_enabled", &v1.ObjectReference{
+		ObjectType: "user",
+		ObjectId:   "*",
+	}, "")
+	return obj
+}
+
+// Discord_bot_enabledWildcard on Relates uses the specified operation
+func (r *GuildRelates) Discord_bot_enabledWildcard() *GuildRelates {
+	r.rel.Add("discord_bot_enabled", &v1.ObjectReference{
+		ObjectType: "user",
+		ObjectId:   "*",
+	}, "")
 	return r
 }
 
@@ -1167,6 +1198,66 @@ func (obj *ObjGuild) CanView_chronicle_roster_User(sub *ObjUser) rel.Relationshi
 	}
 }
 
+// CanUse_discord_bot_Chronicle checks if the subject has use_discord_bot permission
+// // Object: guild:<id>
+// Schema: permission use_discord_bot = discord_bot_enabled
+func (obj *ObjGuild) CanUse_discord_bot_Chronicle(sub *ObjChronicle) rel.Relationship {
+	r, s := obj.src.Obj, sub.src
+	return rel.Relationship{
+		ResourceType:     r.ObjectType,
+		ResourceID:       r.ObjectId,
+		ResourceRelation: "use_discord_bot",
+		SubjectType:      s.Obj.ObjectType,
+		SubjectID:        s.Obj.ObjectId,
+		SubjectRelation:  s.OptionalRelation,
+	}
+}
+
+// CanUse_discord_bot_User checks if the subject has use_discord_bot permission
+// // Object: guild:<id>
+// Schema: permission use_discord_bot = discord_bot_enabled
+func (obj *ObjGuild) CanUse_discord_bot_User(sub *ObjUser) rel.Relationship {
+	r, s := obj.src.Obj, sub.src
+	return rel.Relationship{
+		ResourceType:     r.ObjectType,
+		ResourceID:       r.ObjectId,
+		ResourceRelation: "use_discord_bot",
+		SubjectType:      s.Obj.ObjectType,
+		SubjectID:        s.Obj.ObjectId,
+		SubjectRelation:  s.OptionalRelation,
+	}
+}
+
+// CanManage_discord_bot_Chronicle checks if the subject has manage_discord_bot permission
+// // Object: guild:<id>
+// Schema: permission manage_discord_bot = admin_guild & discord_bot_enabled
+func (obj *ObjGuild) CanManage_discord_bot_Chronicle(sub *ObjChronicle) rel.Relationship {
+	r, s := obj.src.Obj, sub.src
+	return rel.Relationship{
+		ResourceType:     r.ObjectType,
+		ResourceID:       r.ObjectId,
+		ResourceRelation: "manage_discord_bot",
+		SubjectType:      s.Obj.ObjectType,
+		SubjectID:        s.Obj.ObjectId,
+		SubjectRelation:  s.OptionalRelation,
+	}
+}
+
+// CanManage_discord_bot_User checks if the subject has manage_discord_bot permission
+// // Object: guild:<id>
+// Schema: permission manage_discord_bot = admin_guild & discord_bot_enabled
+func (obj *ObjGuild) CanManage_discord_bot_User(sub *ObjUser) rel.Relationship {
+	r, s := obj.src.Obj, sub.src
+	return rel.Relationship{
+		ResourceType:     r.ObjectType,
+		ResourceID:       r.ObjectId,
+		ResourceRelation: "manage_discord_bot",
+		SubjectType:      s.Obj.ObjectType,
+		SubjectID:        s.Obj.ObjectId,
+		SubjectRelation:  s.OptionalRelation,
+	}
+}
+
 type ObjInstance struct {
 	src Object
 }
@@ -1226,7 +1317,7 @@ func (obj *ObjInstance) Create() *InstanceRelates {
 	return &InstanceRelates{obj: obj, rel: obj.src.Create()}
 }
 
-// Raid_log schema.zed:159
+// Raid_log schema.zed:182
 // Relationship: instance:<id>#raid_log@raid_log:<id>
 // Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Raid_log() etc.
 func (obj *ObjInstance) Raid_log(subs ...*ObjRaid_log) *ObjInstance {
@@ -1244,7 +1335,7 @@ func (r *InstanceRelates) Raid_log(subs ...*ObjRaid_log) *InstanceRelates {
 	return r
 }
 
-// PublicWildcard schema.zed:160
+// PublicWildcard schema.zed:183
 // Relationship: instance:<id>#public@user:*
 func (obj *ObjInstance) PublicWildcard() *ObjInstance {
 	obj.src.Touch().Add("public", &v1.ObjectReference{
@@ -1447,6 +1538,296 @@ func (obj *ObjLayout) CanEdit_User(sub *ObjUser) rel.Relationship {
 	}
 }
 
+type ObjRaid_composition struct {
+	src Object
+}
+
+func (b *SchemaBuilder) Raid_composition(id fmt.Stringer) *ObjRaid_composition {
+	return &ObjRaid_composition{
+		src: b.Object(&v1.ObjectReference{
+			ObjectType: "raid_composition",
+			ObjectId:   id.String(),
+		}, ""),
+	}
+}
+
+// Object returns the underlying ObjectReference for use in SpiceDB API calls.
+func (obj *ObjRaid_composition) Object() rel.Object {
+	return obj.src.Object()
+}
+
+// AsSubject returns this object as a SubjectReference for use in checks.
+func (obj *ObjRaid_composition) AsSubject() *v1.SubjectReference {
+	return &v1.SubjectReference{
+		Object:           obj.src.Obj,
+		OptionalRelation: obj.src.OptionalRelation,
+	}
+}
+
+func (obj *ObjRaid_composition) RelationChronicle() string {
+	return "chronicle"
+}
+
+func (obj *ObjRaid_composition) RelationEditor() string {
+	return "editor"
+}
+
+func (obj *ObjRaid_composition) RelationOwner() string {
+	return "owner"
+}
+
+func (obj *ObjRaid_composition) RelationPublic_viewer() string {
+	return "public_viewer"
+}
+
+func (obj *ObjRaid_composition) RelationViewer() string {
+	return "viewer"
+}
+
+func (obj *ObjRaid_composition) PermissionView() string {
+	return "view"
+}
+
+func (obj *ObjRaid_composition) PermissionEdit() string {
+	return "edit"
+}
+
+func (obj *ObjRaid_composition) PermissionDelete() string {
+	return "delete"
+}
+
+func (obj *ObjRaid_composition) PermissionManage_sharing() string {
+	return "manage_sharing"
+}
+
+type Raid_compositionRelates struct {
+	obj *ObjRaid_composition
+	rel Relationship
+}
+
+func (obj *ObjRaid_composition) Touch() *Raid_compositionRelates {
+	return &Raid_compositionRelates{obj: obj, rel: obj.src.Touch()}
+}
+
+func (obj *ObjRaid_composition) Delete() *Raid_compositionRelates {
+	return &Raid_compositionRelates{obj: obj, rel: obj.src.Delete()}
+}
+
+func (obj *ObjRaid_composition) Create() *Raid_compositionRelates {
+	return &Raid_compositionRelates{obj: obj, rel: obj.src.Create()}
+}
+
+// Chronicle schema.zed:118
+// Relationship: raid_composition:<id>#chronicle@chronicle:<id>
+// Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Chronicle() etc.
+func (obj *ObjRaid_composition) Chronicle(subs ...*ObjChronicle) *ObjRaid_composition {
+	for _, sub := range subs {
+		obj.src.Touch().Add("chronicle", sub.src.Obj, "")
+	}
+	return obj
+}
+
+// Chronicle on Relates uses the specified operation (Touch/Create/Delete)
+func (r *Raid_compositionRelates) Chronicle(subs ...*ObjChronicle) *Raid_compositionRelates {
+	for _, sub := range subs {
+		r.rel.Add("chronicle", sub.src.Obj, "")
+	}
+	return r
+}
+
+// Owner schema.zed:119
+// Relationship: raid_composition:<id>#owner@user:<id>
+// Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Owner() etc.
+func (obj *ObjRaid_composition) Owner(subs ...*ObjUser) *ObjRaid_composition {
+	for _, sub := range subs {
+		obj.src.Touch().Add("owner", sub.src.Obj, "")
+	}
+	return obj
+}
+
+// Owner on Relates uses the specified operation (Touch/Create/Delete)
+func (r *Raid_compositionRelates) Owner(subs ...*ObjUser) *Raid_compositionRelates {
+	for _, sub := range subs {
+		r.rel.Add("owner", sub.src.Obj, "")
+	}
+	return r
+}
+
+// Editor schema.zed:120
+// Relationship: raid_composition:<id>#editor@user:<id>
+// Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Editor() etc.
+func (obj *ObjRaid_composition) Editor(subs ...*ObjUser) *ObjRaid_composition {
+	for _, sub := range subs {
+		obj.src.Touch().Add("editor", sub.src.Obj, "")
+	}
+	return obj
+}
+
+// Editor on Relates uses the specified operation (Touch/Create/Delete)
+func (r *Raid_compositionRelates) Editor(subs ...*ObjUser) *Raid_compositionRelates {
+	for _, sub := range subs {
+		r.rel.Add("editor", sub.src.Obj, "")
+	}
+	return r
+}
+
+// Viewer schema.zed:121
+// Relationship: raid_composition:<id>#viewer@user:<id>
+// Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Viewer() etc.
+func (obj *ObjRaid_composition) Viewer(subs ...*ObjUser) *ObjRaid_composition {
+	for _, sub := range subs {
+		obj.src.Touch().Add("viewer", sub.src.Obj, "")
+	}
+	return obj
+}
+
+// Viewer on Relates uses the specified operation (Touch/Create/Delete)
+func (r *Raid_compositionRelates) Viewer(subs ...*ObjUser) *Raid_compositionRelates {
+	for _, sub := range subs {
+		r.rel.Add("viewer", sub.src.Obj, "")
+	}
+	return r
+}
+
+// Public_viewerWildcard schema.zed:122
+// Relationship: raid_composition:<id>#public_viewer@user:*
+func (obj *ObjRaid_composition) Public_viewerWildcard() *ObjRaid_composition {
+	obj.src.Touch().Add("public_viewer", &v1.ObjectReference{
+		ObjectType: "user",
+		ObjectId:   "*",
+	}, "")
+	return obj
+}
+
+// Public_viewerWildcard on Relates uses the specified operation
+func (r *Raid_compositionRelates) Public_viewerWildcard() *Raid_compositionRelates {
+	r.rel.Add("public_viewer", &v1.ObjectReference{
+		ObjectType: "user",
+		ObjectId:   "*",
+	}, "")
+	return r
+}
+
+// CanView_Chronicle checks if the subject has view permission
+// // Object: raid_composition:<id>
+// Schema: permission view = owner + editor + viewer + public_viewer + chronicle->administer
+func (obj *ObjRaid_composition) CanView_Chronicle(sub *ObjChronicle) rel.Relationship {
+	r, s := obj.src.Obj, sub.src
+	return rel.Relationship{
+		ResourceType:     r.ObjectType,
+		ResourceID:       r.ObjectId,
+		ResourceRelation: "view",
+		SubjectType:      s.Obj.ObjectType,
+		SubjectID:        s.Obj.ObjectId,
+		SubjectRelation:  s.OptionalRelation,
+	}
+}
+
+// CanView_User checks if the subject has view permission
+// // Object: raid_composition:<id>
+// Schema: permission view = owner + editor + viewer + public_viewer + chronicle->administer
+func (obj *ObjRaid_composition) CanView_User(sub *ObjUser) rel.Relationship {
+	r, s := obj.src.Obj, sub.src
+	return rel.Relationship{
+		ResourceType:     r.ObjectType,
+		ResourceID:       r.ObjectId,
+		ResourceRelation: "view",
+		SubjectType:      s.Obj.ObjectType,
+		SubjectID:        s.Obj.ObjectId,
+		SubjectRelation:  s.OptionalRelation,
+	}
+}
+
+// CanEdit_Chronicle checks if the subject has edit permission
+// // Object: raid_composition:<id>
+// Schema: permission edit = owner + editor + chronicle->administer
+func (obj *ObjRaid_composition) CanEdit_Chronicle(sub *ObjChronicle) rel.Relationship {
+	r, s := obj.src.Obj, sub.src
+	return rel.Relationship{
+		ResourceType:     r.ObjectType,
+		ResourceID:       r.ObjectId,
+		ResourceRelation: "edit",
+		SubjectType:      s.Obj.ObjectType,
+		SubjectID:        s.Obj.ObjectId,
+		SubjectRelation:  s.OptionalRelation,
+	}
+}
+
+// CanEdit_User checks if the subject has edit permission
+// // Object: raid_composition:<id>
+// Schema: permission edit = owner + editor + chronicle->administer
+func (obj *ObjRaid_composition) CanEdit_User(sub *ObjUser) rel.Relationship {
+	r, s := obj.src.Obj, sub.src
+	return rel.Relationship{
+		ResourceType:     r.ObjectType,
+		ResourceID:       r.ObjectId,
+		ResourceRelation: "edit",
+		SubjectType:      s.Obj.ObjectType,
+		SubjectID:        s.Obj.ObjectId,
+		SubjectRelation:  s.OptionalRelation,
+	}
+}
+
+// CanDelete_Chronicle checks if the subject has delete permission
+// // Object: raid_composition:<id>
+// Schema: permission delete = owner + chronicle->administer
+func (obj *ObjRaid_composition) CanDelete_Chronicle(sub *ObjChronicle) rel.Relationship {
+	r, s := obj.src.Obj, sub.src
+	return rel.Relationship{
+		ResourceType:     r.ObjectType,
+		ResourceID:       r.ObjectId,
+		ResourceRelation: "delete",
+		SubjectType:      s.Obj.ObjectType,
+		SubjectID:        s.Obj.ObjectId,
+		SubjectRelation:  s.OptionalRelation,
+	}
+}
+
+// CanDelete_User checks if the subject has delete permission
+// // Object: raid_composition:<id>
+// Schema: permission delete = owner + chronicle->administer
+func (obj *ObjRaid_composition) CanDelete_User(sub *ObjUser) rel.Relationship {
+	r, s := obj.src.Obj, sub.src
+	return rel.Relationship{
+		ResourceType:     r.ObjectType,
+		ResourceID:       r.ObjectId,
+		ResourceRelation: "delete",
+		SubjectType:      s.Obj.ObjectType,
+		SubjectID:        s.Obj.ObjectId,
+		SubjectRelation:  s.OptionalRelation,
+	}
+}
+
+// CanManage_sharing_Chronicle checks if the subject has manage_sharing permission
+// // Object: raid_composition:<id>
+// Schema: permission manage_sharing = owner + chronicle->administer
+func (obj *ObjRaid_composition) CanManage_sharing_Chronicle(sub *ObjChronicle) rel.Relationship {
+	r, s := obj.src.Obj, sub.src
+	return rel.Relationship{
+		ResourceType:     r.ObjectType,
+		ResourceID:       r.ObjectId,
+		ResourceRelation: "manage_sharing",
+		SubjectType:      s.Obj.ObjectType,
+		SubjectID:        s.Obj.ObjectId,
+		SubjectRelation:  s.OptionalRelation,
+	}
+}
+
+// CanManage_sharing_User checks if the subject has manage_sharing permission
+// // Object: raid_composition:<id>
+// Schema: permission manage_sharing = owner + chronicle->administer
+func (obj *ObjRaid_composition) CanManage_sharing_User(sub *ObjUser) rel.Relationship {
+	r, s := obj.src.Obj, sub.src
+	return rel.Relationship{
+		ResourceType:     r.ObjectType,
+		ResourceID:       r.ObjectId,
+		ResourceRelation: "manage_sharing",
+		SubjectType:      s.Obj.ObjectType,
+		SubjectID:        s.Obj.ObjectId,
+		SubjectRelation:  s.OptionalRelation,
+	}
+}
+
 type ObjRaid_log struct {
 	src Object
 }
@@ -1518,7 +1899,7 @@ func (obj *ObjRaid_log) Create() *Raid_logRelates {
 	return &Raid_logRelates{obj: obj, rel: obj.src.Create()}
 }
 
-// Chronicle schema.zed:145
+// Chronicle schema.zed:168
 // Relationship: raid_log:<id>#chronicle@chronicle:<id>
 // Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Chronicle() etc.
 func (obj *ObjRaid_log) Chronicle(subs ...*ObjChronicle) *ObjRaid_log {
@@ -1536,7 +1917,7 @@ func (r *Raid_logRelates) Chronicle(subs ...*ObjChronicle) *Raid_logRelates {
 	return r
 }
 
-// Uploader schema.zed:146
+// Uploader schema.zed:169
 // Relationship: raid_log:<id>#uploader@user:<id>
 // Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Uploader() etc.
 func (obj *ObjRaid_log) Uploader(subs ...*ObjUser) *ObjRaid_log {
@@ -1751,7 +2132,7 @@ func (obj *ObjRiver_queue) Create() *River_queueRelates {
 	return &River_queueRelates{obj: obj, rel: obj.src.Create()}
 }
 
-// Chronicle schema.zed:114
+// Chronicle schema.zed:131
 // Relationship: river_queue:<id>#chronicle@chronicle:<id>
 // Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Chronicle() etc.
 func (obj *ObjRiver_queue) Chronicle(subs ...*ObjChronicle) *ObjRiver_queue {

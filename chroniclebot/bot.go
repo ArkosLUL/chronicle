@@ -20,10 +20,12 @@ type Config struct {
 	// Token is the bot token from Discord Developer Portal.
 	Token string
 	// GuildID is your Discord server ID. If empty, commands are registered globally.
-	GuildID  string
-	Disabled bool
-	DB       database.Store
-	Zed      *authz.Authz
+	GuildID       string
+	Disabled      bool
+	DB            database.Store
+	Zed           *authz.Authz
+	AccessURL     string
+	PrimaryDomain string
 }
 
 // Bot represents a Discord bot instance.
@@ -85,6 +87,11 @@ func New(ctx context.Context, logger *slog.Logger, config Config) (*Bot, error) 
 	}
 
 	return bot, nil
+}
+
+// Available reports whether the Discord bot is configured and connected.
+func (b *Bot) Available() bool {
+	return b != nil && !b.disabled
 }
 
 func (b *Bot) Disabled() bool {
@@ -212,6 +219,63 @@ func (b *Bot) enqueueSyncJob(discordID, uniqueString string) {
 			slog.String("error", err.Error()),
 		)
 	}
+}
+
+// VerifyGuild confirms that the connected bot can access a Discord guild.
+func (b *Bot) VerifyGuild(guildID string) (*discordgo.Guild, error) {
+	if !b.Available() || b.session == nil {
+		return nil, fmt.Errorf("discord bot is unavailable")
+	}
+	guild, err := b.session.Guild(guildID)
+	if err != nil {
+		return nil, fmt.Errorf("fetch Discord guild %s: %w", guildID, err)
+	}
+	return guild, nil
+}
+
+// LeaveGuild removes the bot from a Discord guild.
+func (b *Bot) LeaveGuild(guildID string) error {
+	if !b.Available() || b.session == nil {
+		return fmt.Errorf("discord bot is unavailable")
+	}
+	if err := b.session.GuildLeave(guildID); err != nil {
+		return fmt.Errorf("leave Discord guild %s: %w", guildID, err)
+	}
+	return nil
+}
+
+func hasDiscordAnnouncementPermissions(permissions int64) bool {
+	const required = discordgo.PermissionViewChannel |
+		discordgo.PermissionSendMessages |
+		discordgo.PermissionEmbedLinks |
+		discordgo.PermissionCreatePublicThreads |
+		discordgo.PermissionSendMessagesInThreads
+	return permissions&required == required
+}
+
+// WritableTextChannels returns text channels where the bot can send announcements and create public threads.
+func (b *Bot) WritableTextChannels(guildID string) ([]*discordgo.Channel, error) {
+	if !b.Available() || b.session == nil || b.session.State == nil || b.session.State.User == nil {
+		return nil, fmt.Errorf("discord bot is unavailable")
+	}
+	channels, err := b.session.GuildChannels(guildID)
+	if err != nil {
+		return nil, fmt.Errorf("get Discord guild channels: %w", err)
+	}
+	writable := make([]*discordgo.Channel, 0, len(channels))
+	for _, channel := range channels {
+		if channel.Type != discordgo.ChannelTypeGuildText {
+			continue
+		}
+		permissions, err := b.session.UserChannelPermissions(b.session.State.User.ID, channel.ID)
+		if err != nil {
+			return nil, fmt.Errorf("get Discord channel %s permissions: %w", channel.ID, err)
+		}
+		if hasDiscordAnnouncementPermissions(permissions) {
+			writable = append(writable, channel)
+		}
+	}
+	return writable, nil
 }
 
 // GetGuildMember fetches a member from a guild.

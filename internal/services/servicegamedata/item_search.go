@@ -42,25 +42,38 @@ func (s *Service) handleSearchItems(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	db := servicedbstore.DatabaseStore(s.broker)
 
+	qualities := parseIntList(r.URL.Query().Get("quality"))
+	slots := parseIntList(r.URL.Query().Get("slot"))
+	classes := parseIntList(r.URL.Query().Get("class"))
+
+	// An empty query is allowed when an inventory-slot or item-class filter
+	// narrows the scan. Gear item browsing uses slots; gem browsing uses the
+	// gem item class because gems do not have an equipment slot.
 	q := r.URL.Query().Get("q")
-	if len(q) < 2 {
+	filteredBrowse := len(q) == 0 && (len(slots) > 0 || len(classes) > 0)
+	if len(q) < 2 && !filteredBrowse {
 		badRequest(ctx, w, "Query parameter 'q' must be at least 2 characters.")
 		return
 	}
 
-	qualities := parseIntList(r.URL.Query().Get("quality"))
-	slots := parseIntList(r.URL.Query().Get("slot"))
-	classes := parseIntList(r.URL.Query().Get("class"))
+	// Optional character-level ceiling. Applied in SQL so it narrows the
+	// scan before the LIMIT — filtering client-side would starve the list.
+	// Anything unparseable or non-positive means "no ceiling".
+	maxRequiredLevel, err := strconv.Atoi(r.URL.Query().Get("max_required_level"))
+	if err != nil || maxRequiredLevel < 0 {
+		maxRequiredLevel = 0
+	}
 
 	// sort param: "quality_desc" (default), "item_level_desc", "item_level_asc",
 	// "required_level_desc", "required_level_asc"
 	sortParam := r.URL.Query().Get("sort")
 	params := database.SearchItemTemplatesParams{
-		DatasetID:      datasetIDFromContext(ctx),
-		SearchTerm:     q,
-		Qualities:      qualities,
-		InventoryTypes: slots,
-		ItemClasses:    classes,
+		DatasetID:        datasetIDFromContext(ctx),
+		SearchTerm:       q,
+		Qualities:        qualities,
+		InventoryTypes:   slots,
+		ItemClasses:      classes,
+		MaxRequiredLevel: int32(maxRequiredLevel),
 	}
 	switch sortParam {
 	case "item_level_desc":
@@ -99,6 +112,7 @@ func (s *Service) handleSearchItems(w http.ResponseWriter, r *http.Request) {
 			RequiredSkill:     row.RequiredSkill,
 			RequiredSkillRank: row.RequiredSkillRank,
 			Armor:             row.Armor,
+			GemEnchantID:      row.GemEnchantID,
 			Icon:              row.Icon,
 		})
 	}

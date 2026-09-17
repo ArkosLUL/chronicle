@@ -193,7 +193,6 @@ func VanillaPlusSMRaidHostiles() map[uint32]Identity {
 		25221: "Brother Michael",
 		25229: "Brigitte Abbendis",
 		25222: "Fairbanks",
-		25243: "Beltheris",
 		25223: "Doan",
 		25224: "Vishas",
 		25225: "Loksey",
@@ -1285,7 +1284,7 @@ func BlackwingLairHostiles(fl database.WoWFlavor) *identifier.Identifier {
 		hostile[25123] = Identity{
 			Affiliation:   types.AffiliationHostile,
 			Name:          "Vaelastrasz the Chained",
-			EncounterName: "",
+			EncounterName: "Nefarian",
 			Boss:          true,
 		}
 		hostile[25100] = Identity{
@@ -1945,15 +1944,24 @@ func GnomereganHostiles() map[uint32]Identity {
 		7849:  "Mobile Alert System",
 		7850:  "Kernobee",
 		7897:  "Alarm-a-bomb 2600",
-		7998:  "Blastmaster Emi Shortfuse",
 		13876: "Mekgineer Trigger",
+		7915:  "Walking Bomb",
 	})
 	LoadBosses(hostile, map[uint32]string{
+		7361: "Grubbis",
+		6215: "Grubbis", // "Chomper",
 		6229: "Crowd Pummeler 9-60",
 		6235: "Electrocutioner 6000",
 		7079: "Viscous Fallout",
 		7800: "Mekgineer Thermaplugg",
 	})
+
+	hostile[7998] = Identity{
+		Affiliation:     types.AffiliationFriendly,
+		Name:            "Blastmaster Emi Shortfuse",
+		Boss:            false,
+		EncounterNameFn: nil,
+	}
 	return hostile
 }
 

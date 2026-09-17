@@ -19,10 +19,19 @@ import (
 	"github.com/Emyrk/chronicle/database/gamedb/chrondbc"
 )
 
+type clientFormat uint8
+
+const (
+	clientFormatWotLK clientFormat = iota
+	clientFormatTBC
+)
+
 type Parser struct {
-	logger  *slog.Logger
-	wowDB   gamedb.SpellFetcher
-	scanner *bufio.Scanner
+	logger       *slog.Logger
+	wowDB        gamedb.SpellFetcher
+	gameDB       gamedb.GameDB
+	scanner      *bufio.Scanner
+	clientFormat clientFormat
 
 	lastDate   time.Time
 	guidNames  *GUIDNames
@@ -49,19 +58,32 @@ type Parser struct {
 }
 
 func New(ctx context.Context, logger *slog.Logger, r io.Reader, wowDB gamedb.GameDB, gear gamedb.GearResolver, reg *registry.Registry) (*Parser, error) {
+	return newParser(ctx, logger, r, wowDB, gear, reg, clientFormatWotLK)
+}
+
+// NewTBC creates a parser for native 2.4.3 COMBAT_LOG_EVENT_UNFILTERED
+// records. TBC and WotLK share the event-prefix and base-field layout, but
+// their damage and healing suffixes differ.
+func NewTBC(ctx context.Context, logger *slog.Logger, r io.Reader, wowDB gamedb.GameDB, gear gamedb.GearResolver, reg *registry.Registry) (*Parser, error) {
+	return newParser(ctx, logger, r, wowDB, gear, reg, clientFormatTBC)
+}
+
+func newParser(ctx context.Context, logger *slog.Logger, r io.Reader, wowDB gamedb.GameDB, gear gamedb.GearResolver, reg *registry.Registry, format clientFormat) (*Parser, error) {
 	if wowDB == nil {
 		return nil, fmt.Errorf("wowDB cannot be nil")
 	}
 	gn := NewGUIDNames()
 	return &Parser{
-		eventHook:   map[string]func(ts time.Time, m *Matched, raw string) ([]messages.Message, error){},
-		logger:      logger,
-		wowDB:       wowDB,
-		scanner:     bufio.NewScanner(r),
-		guidNames:   gn,
-		synthetics:  synthetic.New(ctx, logger, wowDB, reg, gn),
-		itemFetcher: gear,
-		baseYear:    time.Now().Year(),
+		eventHook:    map[string]func(ts time.Time, m *Matched, raw string) ([]messages.Message, error){},
+		logger:       logger,
+		wowDB:        wowDB,
+		gameDB:       wowDB,
+		scanner:      bufio.NewScanner(r),
+		clientFormat: format,
+		guidNames:    gn,
+		synthetics:   synthetic.New(ctx, logger, wowDB, reg, gn, format == clientFormatTBC),
+		itemFetcher:  gear,
+		baseYear:     time.Now().Year(),
 		metrics: parservanilla.Metrics{
 			MatchingTime:   make(map[string]time.Duration),
 			UnmatchingTime: make(map[string]time.Duration),
@@ -78,6 +100,11 @@ func (p *Parser) SetSynthetics(s interface {
 	ProcessMessages([]messages.Message) ([]messages.Message, error)
 }) {
 	p.synthetics = s
+}
+
+// ConfigureSynthetics replaces the default synthetic event pipeline.
+func (p *Parser) ConfigureSynthetics(ctx context.Context, reg *registry.Registry, options synthetic.Options) {
+	p.synthetics = synthetic.NewWithOptions(ctx, p.logger, p.gameDB, reg, p.guidNames, options)
 }
 
 // SetBaseYear overrides the year used for timestamps (WotLK logs omit the year).
@@ -110,6 +137,11 @@ func (p *Parser) normalizeTimestamp(ts time.Time) time.Time {
 // server-generated logs.
 func (p *Parser) SetUnixMillisMode(enabled bool) {
 	p.useUnixMillis = enabled
+}
+
+// SawRaidGroup reports whether the companion addon emitted a valid raid layout.
+func (p *Parser) SawRaidGroup() bool {
+	return p.companion != nil && p.companion.SawRaidGroup()
 }
 
 func (p *Parser) DetailedTimes() map[string]time.Duration {

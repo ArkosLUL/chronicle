@@ -2,13 +2,16 @@ package servicerankings_test
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/url"
 	"testing"
 	"time"
 
 	"github.com/Emyrk/chronicle/api/chroniclesdk"
+	"github.com/Emyrk/chronicle/chronicle/riverqueue"
 	"github.com/Emyrk/chronicle/chronicle/riverqueue/parseargs"
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/database"
@@ -25,9 +28,38 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func newSingleConnectionPool(t *testing.T) *pgxpool.Pool {
+	t.Helper()
+
+	connectionURL := dbtestutil.NewConnectionURL(t)
+	migrationPool, err := database.NewPostgresDB(t.Context(), slog.Default(), connectionURL)
+	require.NoError(t, err)
+	migrationPool.Close()
+
+	u, err := url.Parse(connectionURL)
+	require.NoError(t, err)
+	query := u.Query()
+	query.Set("pool_max_conns", "1")
+	u.RawQuery = query.Encode()
+	pool, err := pgxpool.New(t.Context(), u.String())
+	require.NoError(t, err)
+	t.Cleanup(pool.Close)
+	return pool
+}
+
 type cohortErrorStore struct {
 	database.Store
 	err error
+}
+
+func (s cohortErrorStore) InTx(
+	ctx context.Context,
+	f func(database.Store) error,
+	opts *pgx.TxOptions,
+) error {
+	return s.Store.InTx(ctx, func(tx database.Store) error {
+		return f(cohortErrorStore{Store: tx, err: s.err})
+	}, opts)
 }
 
 func (s cohortErrorStore) GetSnapshotCohortValues(
@@ -77,11 +109,90 @@ func TestWorkerComputeParseScores_NoSnapshot(t *testing.T) {
 	assert.Empty(t, receipts, "exhausted no-snapshot should NOT create a receipt")
 }
 
-func TestWorkerComputeParseScores_WithSnapshot(t *testing.T) {
+func TestWorkerComputeParseScores_AttemptThreeRecordsMissingSnapshotReason(t *testing.T) {
 	t.Parallel()
 	ctx := testutil.Context(t, testutil.WaitMedium)
 
 	pool, _ := dbtestutil.NewPGXPool(t)
+	store := database.New(pool)
+	f := setupScoringFixture(t, pool, store)
+	q := setupParseScoreQueueForTest(t, pool)
+
+	worker := &servicerankings.WorkerComputeParseScores{
+		Store:  store,
+		Queue:  q,
+		Logger: slog.Default(),
+	}
+
+	err := worker.Work(ctx, &river.Job[parseargs.ArgsComputeParseScores]{
+		Args: parseargs.ArgsComputeParseScores{
+			InstanceID: f.instanceID,
+			TenantID:   uuid.Nil,
+			Attempt:    2,
+		},
+	})
+	require.NoError(t, err)
+
+	var rawArgs []byte
+	var scheduledAt time.Time
+	err = pool.QueryRow(ctx, `
+		SELECT args, scheduled_at
+		FROM river_job
+		WHERE kind = $1 AND args->>'instance_id' = $2
+		ORDER BY id DESC
+		LIMIT 1`, parseargs.KindComputeParseScores, f.instanceID.String()).Scan(&rawArgs, &scheduledAt)
+	require.NoError(t, err)
+
+	var args parseargs.ArgsComputeParseScores
+	require.NoError(t, json.Unmarshal(rawArgs, &args))
+	assert.Equal(t, 3, args.Attempt)
+	assert.Equal(t, servicerankings.RetryReasonNoPublishedSnapshot, args.RetryReason)
+	assert.WithinDuration(t, time.Now().Add(7*24*time.Hour), scheduledAt, 5*time.Second)
+}
+
+func TestWorkerComputeParseScores_OldInstanceDoesNotRetryMissingSnapshot(t *testing.T) {
+	t.Parallel()
+	ctx := testutil.Context(t, testutil.WaitMedium)
+
+	pool, _ := dbtestutil.NewPGXPool(t)
+	store := database.New(pool)
+	f := setupScoringFixture(t, pool, store)
+	q := setupParseScoreQueueForTest(t, pool)
+
+	_, err := pool.Exec(ctx, `UPDATE log_instances SET start_time = $1 WHERE id = $2`,
+		time.Now().Add(-servicerankings.MissingSnapshotRetryWindow-time.Hour), f.instanceID)
+	require.NoError(t, err)
+
+	worker := &servicerankings.WorkerComputeParseScores{
+		Store:  store,
+		Queue:  q,
+		Logger: slog.Default(),
+	}
+	err = worker.Work(ctx, &river.Job[parseargs.ArgsComputeParseScores]{
+		Args: parseargs.ArgsComputeParseScores{
+			InstanceID: f.instanceID,
+			TenantID:   uuid.Nil,
+		},
+	})
+	require.NoError(t, err)
+
+	var count int
+	err = pool.QueryRow(ctx, `
+		SELECT COUNT(*)
+		FROM river_job
+		WHERE kind = $1 AND args->>'instance_id' = $2`,
+		parseargs.KindComputeParseScores, f.instanceID.String()).Scan(&count)
+	require.NoError(t, err)
+	assert.Zero(t, count, "old instances cannot gain an eligible historical snapshot without a backfill")
+}
+
+func TestWorkerComputeParseScores_WithSnapshot(t *testing.T) {
+	t.Parallel()
+	ctx := testutil.Context(t, testutil.WaitMedium)
+
+	// Keep this pool at one connection to catch queries that bypass the tx handle
+	// while a transaction is already holding the only connection.
+	pool := newSingleConnectionPool(t)
 	store := database.New(pool)
 
 	f := setupScoringFixture(t, pool, store)
@@ -972,6 +1083,25 @@ func setupScoringFixture(t *testing.T, pool *pgxpool.Pool, store database.Store)
 	require.NoError(t, err)
 
 	return scoringFixture{realmID: realmID, instanceID: instanceID}
+}
+
+func setupParseScoreQueueForTest(t *testing.T, pool *pgxpool.Pool) *riverqueue.Queues {
+	t.Helper()
+	ctx := testutil.Context(t, testutil.WaitShort)
+
+	q, err := riverqueue.New(ctx, riverqueue.Options{
+		Logger: slog.Default(),
+		Pool:   pool,
+	})
+	require.NoError(t, err)
+	riverqueue.AddWorker(q, &servicerankings.WorkerComputeParseScores{
+		Store:  database.New(pool),
+		Logger: slog.Default(),
+	})
+	q.AddQueue(riverqueue.QueueRankings, river.QueueConfig{MaxWorkers: 1})
+	require.NoError(t, q.Start(ctx))
+	t.Cleanup(func() { _ = q.Stop(context.Background()) })
+	return q
 }
 
 func createPublishedSnapshot(t *testing.T, ctx context.Context, store database.Store) database.RankingSnapshot {

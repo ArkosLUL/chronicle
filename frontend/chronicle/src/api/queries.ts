@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData, type UseQueryOptions } from "@tanstack/react-query";
 import type { WoWSpell } from "./wowdb";
-import type { WoWServer, WoWServerRealm, UploadKey, CreateWoWServerRequest, CreateWoWServerRealmRequest, CreateUploadKeyRequest, RetentionPolicy, RetentionPreviewResponse, RetentionPreviewRequest, SupportedInstance, CensusEntry, Tenant, UpsertTenantRequest, ServerApplication, CreateServerApplicationRequest, CreateModificationRequestPayload, ApplicationAdminEntry } from "./typesGenerated";
+import type { WoWServer, WoWServerRealm, UploadKey, CreateWoWServerRequest, CreateWoWServerRealmRequest, CreateUploadKeyRequest, RetentionPolicy, RetentionPreviewResponse, RetentionPreviewRequest, SupportedInstance, CensusEntry, Tenant, UpsertTenantRequest, ServerApplication, CreateServerApplicationRequest, CreateModificationRequestPayload, ApplicationAdminEntry, GuildCharacterRosterResponse, ListRaidCompositionsResponse, RaidComposition, CreateRaidCompositionRequest, UpdateRaidCompositionRequest, UpdateRaidCompositionSharingRequest, InstanceItemPricesResponse } from "./typesGenerated";
 import type { 
   WoWLogGroup as WoWLogGroupGenerated, 
   WoWLogFile as WoWLogFileGenerated,
@@ -48,6 +48,7 @@ import type {
   ArmoryLootResponse as ArmoryLootResponseGenerated,
   ListGuildsResponse as ListGuildsResponseGenerated,
   GuildPageConfig as GuildPageConfigGenerated,
+  GuildResourceAnalyticsResponse as GuildResourceAnalyticsResponseGenerated,
   GuildPageTheme as GuildPageThemeGenerated,
   GuildPageTab as GuildPageTabGenerated,
   GuildPagePanel as GuildPagePanelGenerated,
@@ -56,8 +57,12 @@ import type {
   UpdateGuildPageRequest as UpdateGuildPageRequestGenerated,
   GuildRosterMember as GuildRosterMemberGenerated,
   GuildSettings as GuildSettingsGenerated,
+  GuildDiscordIntegrationSettings as GuildDiscordIntegrationSettingsGenerated,
+  GuildDiscordAnnouncementAttemptsResponse as GuildDiscordAnnouncementAttemptsResponseGenerated,
   GuildJoinRequest as GuildJoinRequestGenerated,
   UpdateGuildSettingsRequest as UpdateGuildSettingsRequestGenerated,
+  UpdateGuildDiscordIntegrationRequest as UpdateGuildDiscordIntegrationRequestGenerated,
+  UpdateGuildDiscordRaidLogAnnouncementsRequest as UpdateGuildDiscordRaidLogAnnouncementsRequestGenerated,
   CreateJoinRequestBody as CreateJoinRequestBodyGenerated,
   RegressionFixture as RegressionFixtureGenerated,
   RegressionSnapshotSummary as RegressionSnapshotSummaryGenerated,
@@ -118,6 +123,7 @@ export type ArmoryGearHistoryResponse = ArmoryGearHistoryResponseGenerated;
 export type ArmoryLootResponse = ArmoryLootResponseGenerated;
 export type ListGuildsResponse = ListGuildsResponseGenerated;
 export type GuildPageConfig = GuildPageConfigGenerated;
+export type GuildResourceAnalyticsResponse = GuildResourceAnalyticsResponseGenerated;
 export type GuildPageTab = GuildPageTabGenerated;
 export type GuildPagePanel = GuildPagePanelGenerated;
 export type UpdateTabRequest = UpdateTabRequestGenerated;
@@ -126,8 +132,12 @@ export type UpdateGuildPageRequest = UpdateGuildPageRequestGenerated;
 export type GuildPageTheme = GuildPageThemeGenerated;
 export type GuildRosterMember = GuildRosterMemberGenerated;
 export type GuildSettings = GuildSettingsGenerated;
+export type GuildDiscordIntegrationSettings = GuildDiscordIntegrationSettingsGenerated;
+export type GuildDiscordAnnouncementAttemptsResponse = GuildDiscordAnnouncementAttemptsResponseGenerated;
 export type GuildJoinRequest = GuildJoinRequestGenerated;
 export type UpdateGuildSettingsRequest = UpdateGuildSettingsRequestGenerated;
+export type UpdateGuildDiscordIntegrationRequest = UpdateGuildDiscordIntegrationRequestGenerated;
+export type UpdateGuildDiscordRaidLogAnnouncementsRequest = UpdateGuildDiscordRaidLogAnnouncementsRequestGenerated;
 export type CreateJoinRequestBody = CreateJoinRequestBodyGenerated;
 export type AdminBulkDeleteResponse = AdminBulkDeleteResponseGenerated;
 export type AdminBulkSelectedReparseResponse = AdminBulkSelectedReparseResponseGenerated;
@@ -165,6 +175,7 @@ interface APIErrorResponse {
 
 export interface RequestError extends Error {
   detail?: string;
+  status?: number;
 }
 
 /** Show an API error as a toast, including the detail field if present. */
@@ -759,17 +770,46 @@ export function useSupportedInstanceBossCounts() {
   });
 }
 
+export function selectSupportedInstanceProgressionBosses(instances: SupportedInstance[]) {
+  return new Map(
+    instances.flatMap((instance) =>
+      instance.progression_bosses == null
+        ? []
+        : [[instance.name, new Set(instance.progression_bosses)] as const],
+    ),
+  );
+}
+
+export function useSupportedInstanceProgressionBosses() {
+  return useQuery({
+    queryKey: supportedInstancesQueryKey(),
+    queryFn: fetchSupportedInstances,
+    staleTime: supportedInstancesCacheTime,
+    gcTime: supportedInstancesCacheTime,
+    select: selectSupportedInstanceProgressionBosses,
+  });
+}
+
 export function useLogGroups(options?: Omit<UseQueryOptions<WoWLogGroup[]>, "queryKey" | "queryFn"> & {
   start?: string;
   end?: string;
+  /**
+   * When true, resolves each instance's realm/server/tenant fields
+   * regardless of which tenant subdomain the request came from (instead of
+   * leaving them blank for logs whose realm belongs to a different
+   * tenant). Used by the account storage page, which always lists every
+   * log the user owns across every tenant.
+   */
+  allTenants?: boolean;
 }) {
-  const { start, end, ...queryOptions } = options ?? {};
+  const { start, end, allTenants, ...queryOptions } = options ?? {};
   const params = new URLSearchParams();
   if (start) params.set("start", start);
   if (end) params.set("end", end);
+  if (allTenants) params.set("all_tenants", "true");
   const qs = params.toString();
   return useQuery({
-    queryKey: ["logGroups", start, end],
+    queryKey: ["logGroups", start, end, allTenants],
     retry: false,
     placeholderData: keepPreviousData,
     queryFn: async () => {
@@ -826,6 +866,8 @@ export function useDeleteLogGroup() {
       queryClient.invalidateQueries({ queryKey: ["logGroups"] });
       // Remove the specific log from cache
       queryClient.removeQueries({ queryKey: ["logGroup", logId] });
+      // Deleting a whole log group frees both raw and parsed storage.
+      queryClient.invalidateQueries({ queryKey: ["my-storage"] });
     },
   });
 }
@@ -854,6 +896,8 @@ export function useDeleteLogInstance() {
       queryClient.invalidateQueries({ queryKey: ["logGroups"] });
       queryClient.removeQueries({ queryKey: ["instance", instanceId] });
       queryClient.removeQueries({ queryKey: ["instanceYoutube", instanceId] });
+      // Deleting an instance's parsed data frees parsed storage.
+      queryClient.invalidateQueries({ queryKey: ["my-storage"] });
     },
   });
 }
@@ -948,6 +992,9 @@ export function useDeleteLogFiles() {
     onSuccess: (logId) => {
       // Invalidate to refetch with updated file status
       queryClient.invalidateQueries({ queryKey: ["logGroup", logId] });
+      queryClient.invalidateQueries({ queryKey: ["logGroups"] });
+      // Deleting raw files frees raw storage.
+      queryClient.invalidateQueries({ queryKey: ["my-storage"] });
     },
   });
 }
@@ -976,6 +1023,43 @@ export function useInstanceYoutube(instanceId: string, options?: Omit<UseQueryOp
       return response.json() as Promise<Video>;
     },
     ...options,
+  });
+}
+
+export function useInstanceItemPrices(instanceId: string, itemIds: number[]) {
+  const normalizedItemIds = [...new Set(itemIds.filter((itemId) => itemId > 0))].sort((a, b) => a - b);
+  return useQuery({
+    queryKey: ["instance-item-prices", instanceId, normalizedItemIds],
+    queryFn: async () => {
+      const batches: number[][] = [];
+      for (let index = 0; index < normalizedItemIds.length; index += 20) {
+        batches.push(normalizedItemIds.slice(index, index + 20));
+      }
+      const responses = await Promise.all(batches.map(async (batch) => {
+        const response = await fetch(`/api/v1/raidlogs/instances/${instanceId}/item-prices`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ item_ids: batch }),
+        });
+        if (!response.ok) throw new Error("Failed to fetch item prices");
+        return response.json() as Promise<InstanceItemPricesResponse>;
+      }));
+      const first = responses[0];
+      const inconsistent = responses.some((response) =>
+        response.requested_date !== first?.requested_date || response.faction !== first?.faction,
+      );
+      if (inconsistent) throw new Error("Inconsistent item price batch response");
+      return {
+        available: responses.some((response) => response.available),
+        reason: responses.find((response) => response.reason)?.reason,
+        requested_date: first?.requested_date ?? "",
+        faction: first?.faction,
+        prices: responses.flatMap((response) => response.prices),
+      } satisfies InstanceItemPricesResponse;
+    },
+    enabled: !!instanceId && normalizedItemIds.length > 0,
+    staleTime: Infinity,
+    retry: false,
   });
 }
 
@@ -1042,16 +1126,25 @@ export interface AdminLogsParams {
   sortOrder?: "asc" | "desc";
   userId?: string;
   instanceName?: string;
+  withoutInstance?: boolean;
 }
 
 export function useAdminLogs(
   params: AdminLogsParams = {},
   options?: Omit<UseQueryOptions<AdminLogsResponse>, "queryKey" | "queryFn">
 ) {
-  const { limit = 50, offset = 0, sortBy = "date", sortOrder = "desc", userId, instanceName } = params;
+  const {
+    limit = 50,
+    offset = 0,
+    sortBy = "date",
+    sortOrder = "desc",
+    userId,
+    instanceName,
+    withoutInstance = false,
+  } = params;
 
   return useQuery({
-    queryKey: ["admin", "logs", { limit, offset, sortBy, sortOrder, userId, instanceName }],
+    queryKey: ["admin", "logs", { limit, offset, sortBy, sortOrder, userId, instanceName, withoutInstance }],
     queryFn: async () => {
       const searchParams = new URLSearchParams({
         limit: String(limit),
@@ -1061,6 +1154,7 @@ export function useAdminLogs(
       });
       if (userId) searchParams.set("user_id", userId);
       if (instanceName) searchParams.set("instance_name", instanceName);
+      if (withoutInstance) searchParams.set("without_instance", "true");
       const response = await fetch(`/api/v1/admin/logs?${searchParams}`);
       if (!response.ok) throw new Error("Failed to fetch logs");
       return response.json() as Promise<AdminLogsResponse>;
@@ -1206,6 +1300,7 @@ export interface DatasetImportSummary {
   extra_attacks_count: number;
   duration_modifiers_count: number;
   periodic_spells_count: number;
+  vulnerability_spells_count: number;
   cooldowns_count: number;
   desc_variables_count: number;
   affected_aura_durations_count: number;
@@ -1557,12 +1652,13 @@ export function useArmoryLoot(
   });
 }
 
-export function useGuildSearch(params: { search: string; offset?: number }) {
+export function useGuildSearch(params: { search: string; realm?: string; offset?: number }) {
   return useQuery({
     queryKey: ["guild-search", params],
     queryFn: async () => {
       const searchParams = new URLSearchParams();
       if (params.search) searchParams.set("search", params.search);
+      if (params.realm) searchParams.set("realm", params.realm);
       if (params.offset) searchParams.set("offset", String(params.offset));
       const response = await fetch(`/api/v1/guilds/?${searchParams}`);
       if (!response.ok) {
@@ -1595,6 +1691,24 @@ export function useGuildPage(guildId: string | undefined) {
   });
 }
 
+export function useGuildResourceAnalytics(guildId: string | undefined) {
+  return useQuery({
+    queryKey: ["guild-resource-analytics", guildId],
+    queryFn: async () => {
+      const response = await fetch(`/api/v1/guilds/${guildId}/analytics`, {
+        credentials: "include",
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        throw buildAPIError("Failed to fetch guild analytics", error);
+      }
+      return response.json() as Promise<GuildResourceAnalyticsResponse>;
+    },
+    enabled: !!guildId,
+    retry: false,
+  });
+}
+
 export function useGuildRoster(guildId: string | undefined) {
   return useQuery({
     queryKey: ["guild-roster", guildId],
@@ -1613,7 +1727,33 @@ export function useGuildRoster(guildId: string | undefined) {
   });
 }
 
-export function useGuildSettings(guildId: string | undefined) {
+/** Characters seen in a guild's raid logs (the "guild roster" of playable characters). */
+export function useGuildCharacters(
+  guildId: string | undefined,
+  params?: { seenWithinDays?: number; limit?: number },
+) {
+  return useQuery({
+    queryKey: ["guild-characters", guildId, params],
+    queryFn: async () => {
+      const searchParams = new URLSearchParams();
+      searchParams.set("seen_within_days", String(params?.seenWithinDays ?? 60));
+      searchParams.set("limit", String(params?.limit ?? 500));
+      const response = await fetch(`/api/v1/guilds/${guildId}/characters?${searchParams}`);
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        throw buildAPIError("Failed to fetch guild characters", error);
+      }
+      return response.json() as Promise<GuildCharacterRosterResponse>;
+    },
+    enabled: !!guildId,
+    staleTime: 60_000,
+  });
+}
+
+export function useGuildSettings(
+  guildId: string | undefined,
+  enabled = true,
+) {
   return useQuery({
     queryKey: ["guild-settings", guildId],
     queryFn: async () => {
@@ -1626,7 +1766,7 @@ export function useGuildSettings(guildId: string | undefined) {
       }
       return response.json() as Promise<GuildSettings>;
     },
-    enabled: !!guildId,
+    enabled: !!guildId && enabled,
     retry: false,
   });
 }
@@ -1649,6 +1789,133 @@ export function useUpdateGuildSettings(guildId: string | undefined) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["guild-settings", guildId] });
+    },
+  });
+}
+
+export function useGuildDiscordIntegration(
+  guildId: string | undefined,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: ["guild-discord-integration", guildId],
+    queryFn: async () => {
+      const response = await fetch(
+        `/api/v1/guilds/${guildId}/settings/discord-integration`,
+        { credentials: "include" },
+      );
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        const requestError = buildAPIError(
+          "Failed to fetch Discord integration settings",
+          error,
+        );
+        requestError.status = response.status;
+        throw requestError;
+      }
+      return response.json() as Promise<GuildDiscordIntegrationSettings>;
+    },
+    enabled: !!guildId && enabled,
+    retry: false,
+  });
+}
+
+export function useGuildDiscordAnnouncementAttempts(
+  guildId: string | undefined,
+  page: number,
+  pageSize: number,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: ["guild-discord-announcement-attempts", guildId, page, pageSize],
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        limit: String(pageSize),
+        offset: String(page * pageSize),
+      });
+      const response = await fetch(
+        `/api/v1/guilds/${guildId}/settings/discord-integration/announcement-attempts?${params}`,
+        { credentials: "include" },
+      );
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        throw buildAPIError("Failed to fetch Discord announcement attempts", error);
+      }
+      return response.json() as Promise<GuildDiscordAnnouncementAttemptsResponse>;
+    },
+    enabled: !!guildId && enabled,
+    placeholderData: keepPreviousData,
+    retry: false,
+  });
+}
+
+export function useUpdateGuildDiscordIntegration(guildId: string | undefined) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (req: UpdateGuildDiscordIntegrationRequest) => {
+      const response = await fetch(
+        `/api/v1/guilds/${guildId}/settings/discord-integration`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(req),
+          credentials: "include",
+        },
+      );
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        throw buildAPIError("Failed to update Discord integration", error);
+      }
+      return response.json() as Promise<GuildDiscordIntegrationSettings>;
+    },
+    onSuccess: (settings) => {
+      queryClient.setQueryData(["guild-discord-integration", guildId], settings);
+    },
+  });
+}
+
+export function useUpdateGuildDiscordRaidLogAnnouncements(guildId: string | undefined) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (req: UpdateGuildDiscordRaidLogAnnouncementsRequest) => {
+      const response = await fetch(
+        `/api/v1/guilds/${guildId}/settings/discord-integration/raid-log-announcements`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(req),
+          credentials: "include",
+        },
+      );
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        throw buildAPIError("Failed to update raid log announcements", error);
+      }
+      return response.json() as Promise<GuildDiscordIntegrationSettings>;
+    },
+    onSuccess: (settings) => {
+      queryClient.setQueryData(["guild-discord-integration", guildId], settings);
+    },
+  });
+}
+
+export function useDeleteGuildDiscordInstallation(guildId: string | undefined) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const response = await fetch(
+        `/api/v1/guilds/${guildId}/settings/discord-integration/installation`,
+        { method: "DELETE", credentials: "include" },
+      );
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        throw buildAPIError("Failed to unlink Discord server", error);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["guild-discord-integration", guildId],
+      });
     },
   });
 }
@@ -2116,6 +2383,25 @@ export function useCreateAzerothcoreServer() {
   });
 }
 
+export function useUpdateAzerothcoreServer() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ serverId, ...req }: CreateWoWServerRequest & { serverId: string }) => {
+      const response = await fetch(`/api/v1/azerothcore/servers/${serverId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(req),
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        throw new Error(error?.message || "Failed to update server");
+      }
+      return response.json() as Promise<WoWServer>;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["azerothcore", "servers"] }),
+  });
+}
+
 export function useDeleteAzerothcoreServer() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -2164,6 +2450,25 @@ export function useCreateAzerothcoreRealm() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["azerothcore", "realms"] });
     },
+  });
+}
+
+export function useUpdateAzerothcoreRealm() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ realmId, ...req }: CreateWoWServerRealmRequest & { realmId: string }) => {
+      const response = await fetch(`/api/v1/azerothcore/realms/${realmId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(req),
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        throw new Error(error?.message || "Failed to update realm");
+      }
+      return response.json() as Promise<WoWServerRealm>;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["azerothcore", "realms"] }),
   });
 }
 
@@ -2265,7 +2570,7 @@ export function useUpsertTenant() {
         : `/api/v1/admin/tenants/${req.id}`;
       // Omit id from the body — on create it's server-generated,
       // on update it comes from the URL path.
-      const { id: _, ...body } = req;
+      const body = { ...req, id: undefined };
       const response = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
@@ -2903,6 +3208,151 @@ export function useDeleteTalentBuild() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["my-talent-builds"] });
+    },
+  });
+}
+
+// ─── Saved raid compositions ──────────────────────────────────────
+
+export function useMyRaidCompositions(enabled = true) {
+  return useQuery({
+    queryKey: ["my-raid-comps"],
+    queryFn: async () => {
+      const response = await fetch("/api/v1/me/raid-comps", {
+        credentials: "include",
+      });
+      if (!response.ok)
+        throw buildAPIError(
+          "Failed to load compositions",
+          await response.json().catch(() => null)
+        );
+      return response.json() as Promise<ListRaidCompositionsResponse>;
+    },
+    enabled,
+    retry: false,
+  });
+}
+
+/** Fetch a composition by id. Public compositions need no auth (share links). */
+export function useRaidComposition(compID: string | undefined) {
+  return useQuery({
+    queryKey: ["raid-comp", compID],
+    queryFn: async () => {
+      const response = await fetch(`/api/v1/raid-comps/${compID}`, {
+        credentials: "include",
+      });
+      if (!response.ok)
+        throw buildAPIError(
+          "Failed to load composition",
+          await response.json().catch(() => null)
+        );
+      return response.json() as Promise<RaidComposition>;
+    },
+    enabled: !!compID,
+    retry: false,
+  });
+}
+
+export function useCreateRaidComposition() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (request: CreateRaidCompositionRequest) => {
+      const response = await fetch("/api/v1/me/raid-comps", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(request),
+        credentials: "include",
+      });
+      if (!response.ok)
+        throw buildAPIError(
+          "Failed to save composition",
+          await response.json().catch(() => null)
+        );
+      return response.json() as Promise<RaidComposition>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["my-raid-comps"] });
+    },
+  });
+}
+
+export function useUpdateRaidComposition() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      compID,
+      request,
+    }: {
+      compID: string;
+      request: UpdateRaidCompositionRequest;
+    }) => {
+      const response = await fetch(`/api/v1/raid-comps/${compID}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(request),
+        credentials: "include",
+      });
+      if (!response.ok)
+        throw buildAPIError(
+          "Failed to save composition",
+          await response.json().catch(() => null)
+        );
+      return response.json() as Promise<RaidComposition>;
+    },
+    onSuccess: (comp) => {
+      queryClient.invalidateQueries({ queryKey: ["my-raid-comps"] });
+      queryClient.invalidateQueries({ queryKey: ["raid-comp", comp.id] });
+    },
+  });
+}
+
+export function useDeleteRaidComposition() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (compID: string) => {
+      const response = await fetch(`/api/v1/raid-comps/${compID}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!response.ok)
+        throw buildAPIError(
+          "Failed to delete composition",
+          await response.json().catch(() => null)
+        );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["my-raid-comps"] });
+    },
+  });
+}
+
+/** Declaratively set a composition's sharing: public view + editor list. */
+export function useUpdateRaidCompositionSharing() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      compID,
+      request,
+    }: {
+      compID: string;
+      request: UpdateRaidCompositionSharingRequest;
+    }) => {
+      const response = await fetch(`/api/v1/raid-comps/${compID}/sharing`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(request),
+        credentials: "include",
+      });
+      if (!response.ok)
+        throw buildAPIError(
+          "Failed to update sharing",
+          await response.json().catch(() => null)
+        );
+      return response.json() as Promise<RaidComposition>;
+    },
+    onSuccess: (comp) => {
+      queryClient.invalidateQueries({ queryKey: ["my-raid-comps"] });
+      queryClient.invalidateQueries({ queryKey: ["raid-comp", comp.id] });
     },
   });
 }

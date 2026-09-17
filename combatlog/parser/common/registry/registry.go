@@ -27,6 +27,8 @@ type Entry struct {
 	Name string
 	// Comment is an optional note (e.g. "not fully implemented").
 	Comment string
+	// Category identifies whether the instance is a raid or dungeon.
+	Category instances.InstanceCategory
 	// Factory creates a Hookable for this instance.
 	Factory InstanceFactory
 	// MultiZone means this is a registry of more than 1 unique instance sharing the same zone.
@@ -39,6 +41,12 @@ type Entry struct {
 	HostileEntries map[uint32]instances.Identity
 	// SpeedrunRules holds the speedrun rules captured at registration time.
 	SpeedrunRules *rankings.SpeedrunRules
+	// BossCount overrides the encounter count inferred from SpeedrunRules.
+	BossCount *int
+	// ProgressionBosses is the ordered boss encounter list used for progression.
+	ProgressionBosses []string
+	// DerivedNames are instance names selected from encounter data within a shared zone.
+	DerivedNames []string
 	// DerivedSpeedrunRules holds per-sub-instance speedrun rules when
 	// the factory uses DerivedRankings (e.g. Lower/Upper Tower of Karazhan).
 	DerivedSpeedrunRules map[string]*rankings.SpeedrunRules
@@ -64,14 +72,31 @@ func FromFlavoredFactory(flavor database.WoWFlavor, f *instances.CommonFactory) 
 		}
 	}
 
+	var bossCount *int
+	if f.BossCount != nil {
+		bossCount = f.BossCount(flavor)
+	}
+
+	var progressionBosses []string
+	if f.ProgressionBosses != nil {
+		progressionBosses = f.ProgressionBosses(flavor)
+	}
+
 	entry := Entry{
-		commonFactory:  f,
-		Name:           f.Name,
-		MultiZone:      f.MultiZone,
-		Factory:        wrap(f.New),
-		ZoneNames:      f.ZoneNames,
-		HostileEntries: hostiles,
-		SpeedrunRules:  speedrun,
+		commonFactory:     f,
+		Name:              f.Name,
+		Category:          f.Category,
+		MultiZone:         f.MultiZone,
+		Factory:           wrap(f.New),
+		ZoneNames:         f.ZoneNames,
+		HostileEntries:    hostiles,
+		SpeedrunRules:     speedrun,
+		BossCount:         bossCount,
+		ProgressionBosses: progressionBosses,
+	}
+
+	if f.DerivedName != nil {
+		entry.DerivedNames = f.DerivedName(flavor).Names()
 	}
 
 	// When DerivedRankings are present, collect per-sub-instance speedrun rules
@@ -271,19 +296,36 @@ type InstanceDetailUnit struct {
 
 // InstanceDetail holds enriched metadata for a registered instance.
 type InstanceDetail struct {
-	Name      string
-	Comment   string
-	Fallback  bool
-	ZoneNames []string
-	BossCount *int
-	Bosses    []InstanceDetailUnit
-	Trash     []InstanceDetailUnit
+	Name                        string
+	Comment                     string
+	Category                    instances.InstanceCategory
+	Fallback                    bool
+	ZoneNames                   []string
+	DerivedNames                []string
+	BossCount                   *int
+	ProgressionBosses           []string
+	RankedStartAfterRequirement string
+	Bosses                      []InstanceDetailUnit
+	Trash                       []InstanceDetailUnit
 }
 
-// speedrunBossCount returns the number of distinct boss encounters required by
-// the speedrun rules. Hostile encounter names collapse multi-unit encounters,
-// while the requirement name covers dynamically named encounters.
-func speedrunBossCount(entry *Entry) *int {
+func rankedStartAfterRequirement(entry *Entry) string {
+	if entry.SpeedrunRules == nil {
+		return ""
+	}
+	return entry.SpeedrunRules.RankedStartAfterRequirement
+}
+
+// progressionBossCount returns the canonical boss count when configured, then
+// falls back to the distinct boss encounters required by the speedrun rules.
+func progressionBossCount(entry *Entry) *int {
+	if entry.BossCount != nil {
+		return entry.BossCount
+	}
+	if entry.ProgressionBosses != nil {
+		count := len(entry.ProgressionBosses)
+		return &count
+	}
 	if entry.SpeedrunRules == nil {
 		return nil
 	}
@@ -315,6 +357,51 @@ func speedrunBossCount(entry *Entry) *int {
 	return &count
 }
 
+func progressionBosses(entry *Entry) []string {
+	if entry.ProgressionBosses != nil {
+		return entry.ProgressionBosses
+	}
+	if entry.SpeedrunRules == nil {
+		return nil
+	}
+
+	seen := make(map[string]struct{})
+	bosses := make([]string, 0, len(entry.SpeedrunRules.Requirements))
+	appendBoss := func(name string) {
+		if name == "" {
+			return
+		}
+		if _, ok := seen[name]; ok {
+			return
+		}
+		seen[name] = struct{}{}
+		bosses = append(bosses, name)
+	}
+
+	for _, requirement := range entry.SpeedrunRules.Requirements {
+		if requirement.Category != rankings.SpeedrunCategoryBosses {
+			continue
+		}
+
+		matchedEncounter := false
+		for _, entryID := range requirement.EntryIDs {
+			identity, ok := entry.HostileEntries[entryID]
+			if !ok || !identity.Boss || identity.EncounterName == "" {
+				continue
+			}
+			appendBoss(identity.EncounterName)
+			matchedEncounter = true
+		}
+		if !matchedEncounter {
+			appendBoss(requirement.Name)
+		}
+	}
+	if len(bosses) == 0 {
+		return nil
+	}
+	return bosses
+}
+
 // AllInstanceDetails returns enriched metadata for every registered instance,
 // including zone names, boss names, and trash mob names.
 func (r *Registry) AllInstanceDetails() []InstanceDetail {
@@ -344,13 +431,17 @@ func (r *Registry) AllInstanceDetails() []InstanceDetail {
 			sort.Slice(trash, func(i, j int) bool { return trash[i].Name < trash[j].Name })
 
 			result = append(result, InstanceDetail{
-				Name:      entry.Name,
-				Comment:   entry.Comment,
-				Fallback:  fallback,
-				ZoneNames: entry.ZoneNames,
-				BossCount: speedrunBossCount(entry),
-				Bosses:    bosses,
-				Trash:     trash,
+				Name:                        entry.Name,
+				Comment:                     entry.Comment,
+				Category:                    entry.Category,
+				Fallback:                    fallback,
+				ZoneNames:                   entry.ZoneNames,
+				DerivedNames:                entry.DerivedNames,
+				BossCount:                   progressionBossCount(entry),
+				ProgressionBosses:           progressionBosses(entry),
+				RankedStartAfterRequirement: rankedStartAfterRequirement(entry),
+				Bosses:                      bosses,
+				Trash:                       trash,
 			})
 		}
 	}

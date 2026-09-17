@@ -11,8 +11,10 @@ import { useMouse } from '@/hooks/useMouse';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { cn } from '@/lib/utils';
 import { BreakoutIdentity } from '@/components/ui/BreakoutPanel/BreakoutIdentity';
+import { playerClassLabel } from '@/components/ui/BreakoutPanel/playerClassLabel';
 import { usePortalContainer } from '@/components/ui/PortalContainerContext';
 import { X, GripHorizontal } from 'lucide-react';
+import { usePlayerSpecializations } from './PlayerSpecializationContext';
 import {
   createPlayerMetricChartModel,
   type PlayerMetricChartData,
@@ -41,6 +43,8 @@ export interface ParsePillData {
   displayScore: number;
   /** Hex color for the score. */
   color: string;
+  /** Sub-spec shown in player identity labels, when applicable. */
+  subSpec?: string;
   /** Tooltip content rendered on hover. */
   tooltipContent: ReactNode;
 }
@@ -79,6 +83,8 @@ interface PlayerMetricChartProps extends React.ComponentProps<"div"> {
   onRowCtrlClick?: (playerId: string, event: React.MouseEvent) => void
   /** Custom suffix appended to each row's value (e.g. '%'). Overrides the default '/s' from perSecond. */
   valueSuffix?: string
+  /** Hide the primary value badge when it is zero, while preserving stacked secondary data. */
+  hideZeroValue?: boolean
   /** Parse pill data keyed by playerID. When provided, shows a colored score pill on each matching row. */
   parsePills?: Map<string, ParsePillData>
   /** Initial pinned breakout positions, primarily for stories, screenshots, and guided demos. */
@@ -105,6 +111,7 @@ export function PlayerMetricChart({
   disableInteractions = false,
   onRowCtrlClick,
   valueSuffix,
+  hideZeroValue = false,
   parsePills,
   initialPinnedPositions,
   pinnedPositionsOverride,
@@ -115,14 +122,29 @@ export function PlayerMetricChart({
   ...divProps
 }: PlayerMetricChartProps) {
   void _dir;
+  const playerSpecializations = usePlayerSpecializations();
+  const enrichedData = useMemo(
+    () => data.map((player) => {
+      const specialization = playerSpecializations.get(player.playerID);
+      if (!specialization) return player;
+      return {
+        ...player,
+        specialization: specialization.name,
+        subSpec: specialization.subSpec,
+        specializationIconUrl: specialization.iconUrl,
+      };
+    }),
+    [data, playerSpecializations],
+  );
+
   // Track which rows have pinned tooltips (multiple allowed)
   const [pinnedPlayerIds, setPinnedPlayerIds] = useState<Set<string>>(
     () => new Set(initialPinnedPositions?.keys() ?? []),
   )
 
   const { chartData, maximumValue, summedValue } = useMemo(
-    () => createPlayerMetricChartModel(data, perSecond, duration_millis),
-    [data, perSecond, duration_millis],
+    () => createPlayerMetricChartModel(enrichedData, perSecond, duration_millis),
+    [enrichedData, perSecond, duration_millis],
   )
 
   const handleTogglePin = (playerId: string) => {
@@ -158,6 +180,7 @@ export function PlayerMetricChart({
             type={type}
             suffix={valueSuffix ?? (perSecond ? '/s' : '')}
             decimals={perSecond ? 1 : 0}
+            hideZeroValue={hideZeroValue}
             isPinned={pinnedPlayerIds.has(player.playerID)}
             initialPinnedPosition={initialPinnedPositions?.get(player.playerID)}
             pinnedPositionOverride={pinnedPositionsOverride?.get(player.playerID)}
@@ -186,6 +209,7 @@ export interface PlayerMetricRowProps {
   type: ChartType
   suffix?: string
   decimals?: number
+  hideZeroValue?: boolean
   isPinned?: boolean
   initialPinnedPosition?: { x: number; y: number }
   /** Controlled breakout position; overrides internal drag state. */
@@ -213,9 +237,10 @@ interface DraggablePinnedTooltipProps {
   onClose: () => void
   panelTitle?: string
   breakout?: BreakoutFn
+  subSpec?: string
 }
 
-function DraggablePinnedTooltip({ player, initialPosition, positionOverride, onClose, panelTitle, breakout }: DraggablePinnedTooltipProps) {
+function DraggablePinnedTooltip({ player, initialPosition, positionOverride, onClose, panelTitle, breakout, subSpec }: DraggablePinnedTooltipProps) {
   const isMobile = useIsMobile()
   const portalContainer = usePortalContainer()
   const portalDocument = portalContainer?.ownerDocument
@@ -284,7 +309,13 @@ function DraggablePinnedTooltip({ player, initialPosition, positionOverride, onC
         >
           {/* Header */}
           <div className="flex shrink-0 items-center gap-2 border-b border-border bg-background/45 px-2.5 py-1.5">
-            <BreakoutIdentity color={player.color} name={player.playerName} className={player.className} />
+            <BreakoutIdentity
+              color={player.color}
+              name={player.playerName}
+              className={player.className}
+              specialization={player.specialization}
+              subSpec={subSpec}
+            />
             {panelTitle && (
               <span className="ml-auto border-l border-border pl-2 text-2xs text-muted-foreground">
                 {panelTitle}
@@ -331,7 +362,13 @@ function DraggablePinnedTooltip({ player, initialPosition, positionOverride, onC
         style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
       >
         <GripHorizontal className="h-3 w-3 shrink-0 text-muted-foreground" />
-        <BreakoutIdentity color={player.color} name={player.playerName} className={player.className} />
+        <BreakoutIdentity
+          color={player.color}
+          name={player.playerName}
+          className={player.className}
+          specialization={player.specialization}
+          subSpec={subSpec}
+        />
         {panelTitle && (
           <span className="ml-auto border-l border-border pl-2 text-2xs text-muted-foreground">
             {panelTitle}
@@ -376,6 +413,7 @@ export function PlayerMetricRow({
   parsePill,
   classIconBasePath = '/c/icons',
   animateValues = true,
+  hideZeroValue = false,
 }: PlayerMetricRowProps) {
   const { ref, x, y } = useMouse<HTMLDivElement>();
   const rowRef = useRef<HTMLDivElement>(null)
@@ -621,31 +659,31 @@ export function PlayerMetricRow({
         </span>
         )}
 
-        {/* Icon */}
+        {/* Specialization icon, falling back to class when talents are unavailable. */}
         <img
-          // src={`/c/icons/spec_${player.className.toLowerCase()}_${player.specialization.toLowerCase().replace(/\s+/g, '')}.png`}
-          src={`${classIconBasePath}/class_${player.className.toLowerCase()}.png`}
-          alt={player.specialization}
+          src={player.specializationIconUrl ?? `${classIconBasePath}/class_${player.className.toLowerCase()}.png`}
+          alt={player.specialization || player.className}
+          data-player-icon={player.specializationIconUrl ? "specialization" : "class"}
           style={{
-            width: '20px',
-            height: '20px',
+            width: '24px',
+            height: '24px',
             marginRight: '8px',
-            borderRadius: '2px',
+            flexShrink: 0,
+            borderRadius: '3px',
           }}
           onError={(e) => {
-            // Fallback to class icon if spec icon not found, then to unknown
             const target = e.currentTarget;
             const classIcon = `${classIconBasePath}/class_${player.className.toLowerCase()}.png`;
             const unknownIcon = `${classIconBasePath}/class_unknown.png`;
-            if (target.src.endsWith(unknownIcon)) {
-              // Already at fallback, hide the image
-              target.style.display = 'none';
-            } else if (target.src.includes('/c/icons/class_')) {
-              // Class icon failed, try unknown
+            const iconType = target.dataset.playerIcon;
+            if (iconType === "specialization") {
+              target.dataset.playerIcon = "class";
+              target.src = classIcon;
+            } else if (iconType === "class") {
+              target.dataset.playerIcon = "unknown";
               target.src = unknownIcon;
             } else {
-              // Spec icon failed, try class icon
-              target.src = classIcon;
+              target.style.display = 'none';
             }
           }}
         />
@@ -680,7 +718,9 @@ export function PlayerMetricRow({
             pill placement can avoid overlapping them. */}
         <span ref={valuesRef} style={{ display: 'inline-flex', alignItems: 'center', flexShrink: 0 }}>
         {/* DPS value */}
-        {formatValue(type, player, suffix, decimals)}
+        {(!hideZeroValue || player.displayValue !== 0)
+          ? formatValue(type, player, suffix, decimals)
+          : null}
 
         {/* Percentage */}
         <span
@@ -756,7 +796,7 @@ export function PlayerMetricRow({
               />
               <span className="font-medium">{player.playerName}</span>
               <span className="text-muted-foreground text-xs ml-auto">
-                {player.className}
+                {playerClassLabel(player.className, player.specialization, player.subSpec ?? parsePill?.subSpec)}
               </span>
             </div>
           </div>
@@ -774,6 +814,7 @@ export function PlayerMetricRow({
         onClose={handleClose}
         panelTitle={panelTitle}
         breakout={breakout}
+        subSpec={player.subSpec ?? parsePill?.subSpec}
       />
     )}
   </>

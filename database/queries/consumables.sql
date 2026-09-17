@@ -2,6 +2,40 @@
 DELETE FROM dbc_consumables WHERE dataset_id = @dataset_id;
 
 -- name: InsertDerivedConsumables :execrows
+WITH eligible_item_spells AS (
+    SELECT
+        wit.dataset_id,
+        wit.entry AS item_id,
+        array_agg(slot.spell_id ORDER BY slot.slot) AS item_spell_ids
+    FROM world_item_template wit
+    CROSS JOIN LATERAL (VALUES
+        (1, wit.spellid_1, wit.spelltrigger_1),
+        (2, wit.spellid_2, wit.spelltrigger_2),
+        (3, wit.spellid_3, wit.spelltrigger_3),
+        (4, wit.spellid_4, wit.spelltrigger_4),
+        (5, wit.spellid_5, wit.spelltrigger_5)
+    ) AS slot(slot, spell_id, trigger)
+    WHERE wit.dataset_id = @dataset_id
+      AND slot.spell_id <> 0
+      AND slot.trigger = 0
+      -- Codices can list both a learn-spell wrapper and the taught class spell
+      -- as on-use slots. Reject the whole item when any on-use slot teaches a
+      -- spell, otherwise the taught aura remains as a false consumable effect.
+      AND NOT EXISTS (
+          SELECT 1
+          FROM dbc_spells learn_spell
+          WHERE learn_spell.dataset_id = wit.dataset_id
+            AND learn_spell.spell_id = ANY(ARRAY[
+                CASE WHEN wit.spelltrigger_1 = 0 THEN wit.spellid_1 ELSE 0 END,
+                CASE WHEN wit.spelltrigger_2 = 0 THEN wit.spellid_2 ELSE 0 END,
+                CASE WHEN wit.spelltrigger_3 = 0 THEN wit.spellid_3 ELSE 0 END,
+                CASE WHEN wit.spelltrigger_4 = 0 THEN wit.spellid_4 ELSE 0 END,
+                CASE WHEN wit.spelltrigger_5 = 0 THEN wit.spellid_5 ELSE 0 END
+            ])
+            AND 36 IN (learn_spell.effect_0, learn_spell.effect_1, learn_spell.effect_2)
+      )
+    GROUP BY wit.dataset_id, wit.entry
+)
 INSERT INTO dbc_consumables (
     dataset_id,
     item_id,
@@ -16,14 +50,11 @@ SELECT
     wit.name,
     wit.quality,
     COALESCE(NULLIF(wdi.icon, ''), dbi.inventory_icon ->> 0, '')::text,
-    ARRAY_REMOVE(ARRAY[
-        CASE WHEN wit.class = 0 OR wit.spelltrigger_1 = 0 THEN wit.spellid_1 ELSE 0 END,
-        CASE WHEN wit.class = 0 OR wit.spelltrigger_2 = 0 THEN wit.spellid_2 ELSE 0 END,
-        CASE WHEN wit.class = 0 OR wit.spelltrigger_3 = 0 THEN wit.spellid_3 ELSE 0 END,
-        CASE WHEN wit.class = 0 OR wit.spelltrigger_4 = 0 THEN wit.spellid_4 ELSE 0 END,
-        CASE WHEN wit.class = 0 OR wit.spelltrigger_5 = 0 THEN wit.spellid_5 ELSE 0 END
-    ], 0)::int[]
+    eligible.item_spell_ids
 FROM world_item_template wit
+JOIN eligible_item_spells eligible
+  ON eligible.dataset_id = wit.dataset_id
+ AND eligible.item_id = wit.entry
 LEFT JOIN world_display_info wdi
     ON wdi.dataset_id = wit.dataset_id AND wdi.id = wit.display_id
 LEFT JOIN dbc_item_display_info dbi
@@ -58,13 +89,7 @@ WHERE wit.dataset_id = @dataset_id
                   SELECT 1
                   FROM dbc_spells spell
                   WHERE spell.dataset_id = wit.dataset_id
-                    AND (
-                        (spell.spell_id = wit.spellid_1 AND wit.spelltrigger_1 = 0) OR
-                        (spell.spell_id = wit.spellid_2 AND wit.spelltrigger_2 = 0) OR
-                        (spell.spell_id = wit.spellid_3 AND wit.spelltrigger_3 = 0) OR
-                        (spell.spell_id = wit.spellid_4 AND wit.spelltrigger_4 = 0) OR
-                        (spell.spell_id = wit.spellid_5 AND wit.spelltrigger_5 = 0)
-                    )
+                    AND spell.spell_id = ANY(eligible.item_spell_ids)
                     AND (
                         spell.effect_0 IN (6, 174) OR
                         spell.effect_1 IN (6, 174) OR
@@ -74,12 +99,19 @@ WHERE wit.dataset_id = @dataset_id
           )
       )
   )
-  AND (
-      wit.spellid_1 <> 0 OR
-      wit.spellid_2 <> 0 OR
-      wit.spellid_3 <> 0 OR
-      wit.spellid_4 <> 0 OR
-      wit.spellid_5 <> 0
+  -- Mount items are reusable utility items, not consumables. Their use spell
+  -- applies a mounted aura directly, which otherwise matches the generic aura
+  -- fallback for non-stackable consumables.
+  AND NOT EXISTS (
+      SELECT 1
+      FROM dbc_spells mount_spell
+      WHERE mount_spell.dataset_id = wit.dataset_id
+        AND mount_spell.spell_id = ANY(eligible.item_spell_ids)
+        AND 78 IN (
+            mount_spell.effect_aura_0,
+            mount_spell.effect_aura_1,
+            mount_spell.effect_aura_2
+        )
   );
 
 -- name: InsertDerivedConsumableBuffs :execrows
@@ -112,12 +144,15 @@ WITH RECURSIVE roots AS (
     JOIN dbc_spells spell
       ON spell.dataset_id = graph.dataset_id
      AND spell.spell_id = graph.spell_id
-    CROSS JOIN LATERAL unnest(ARRAY[
-        spell.effect_trigger_spell_0,
-        spell.effect_trigger_spell_1,
-        spell.effect_trigger_spell_2
-    ]) AS triggered(spell_id)
-    WHERE triggered.spell_id <> 0
+    CROSS JOIN LATERAL (VALUES
+        (spell.effect_0, spell.effect_trigger_spell_0),
+        (spell.effect_1, spell.effect_trigger_spell_1),
+        (spell.effect_2, spell.effect_trigger_spell_2)
+    ) AS triggered(effect, spell_id)
+    -- A learn-spell effect names the taught spell in this field; it does not
+    -- execute that spell and must not create a consumable buff edge.
+    WHERE triggered.effect <> 36
+      AND triggered.spell_id <> 0
       AND NOT triggered.spell_id = ANY(graph.path)
       AND cardinality(graph.path) < 8
 )

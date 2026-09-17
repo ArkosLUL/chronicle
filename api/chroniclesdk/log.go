@@ -46,6 +46,10 @@ type WoWLogGroup struct {
 
 	Files            []WoWLogFile    `json:"files"`
 	ProcessingOutput json.RawMessage `json:"processing_output,omitempty"`
+	// ParsedBytes is the total size, in bytes, of the parsed combat-log event
+	// streams (log_instance_events.events) for this log group. It does not
+	// count against the owner's raw storage allowance.
+	ParsedBytes int64 `json:"parsed_bytes"`
 }
 
 type WoWLogFile struct {
@@ -68,38 +72,69 @@ type Guild struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
+type VehicleControlMetadata struct {
+	Intervals   []VehicleControlInterval   `json:"intervals,omitempty"`
+	Diagnostics []VehicleControlDiagnostic `json:"diagnostics,omitempty"`
+}
+
+type VehicleControlInterval struct {
+	SessionID       string     `json:"session_id,omitempty"`
+	VehicleGUID     GUIDString `json:"vehicle_guid"`
+	ControllerGUID  GUIDString `json:"controller_guid"`
+	VehicleName     string     `json:"vehicle_name,omitempty"`
+	ControllerName  string     `json:"controller_name,omitempty"`
+	AssignedAtMs    int64      `json:"assigned_at_ms"`
+	ReleasedAtMs    *int64     `json:"released_at_ms,omitempty"`
+	AssignedOrdinal uint64     `json:"assigned_ordinal"`
+	ReleaseReason   string     `json:"release_reason,omitempty"`
+	InferredRelease bool       `json:"inferred_release,omitempty"`
+}
+
+type VehicleControlDiagnostic struct {
+	Kind                 string      `json:"kind"`
+	SessionID            string      `json:"session_id,omitempty"`
+	TimestampMs          int64       `json:"timestamp_ms"`
+	Ordinal              uint64      `json:"ordinal"`
+	VehicleGUID          GUIDString  `json:"vehicle_guid"`
+	ControllerGUID       GUIDString  `json:"controller_guid"`
+	VehicleName          string      `json:"vehicle_name,omitempty"`
+	ControllerName       string      `json:"controller_name,omitempty"`
+	ActiveControllerGUID *GUIDString `json:"active_controller_guid,omitempty"`
+}
+
 type WoWInstance struct {
 	ID      uuid.UUID `json:"id"`
 	RealmID uuid.UUID `json:"realm_id"`
 	// DatasetID is the resolved game-data dataset for this instance's realm.
 	// Frontends use it to fetch matching talent/spell data regardless of the
 	// tenant domain serving the request. Only populated on the detail endpoint.
-	DatasetID   uuid.UUID `json:"dataset_id,omitempty"`
-	IconBaseURL string    `json:"icon_base_url,omitempty"`
+	DatasetID   *uuid.UUID `json:"dataset_id"`
+	IconBaseURL string     `json:"icon_base_url,omitempty"`
 	// Format is the log group's parse format (e.g. "1.12a-cc-addon").
 	// Flavor is the server-mechanics tag set. Both come from the log group and
 	// are only populated on the detail endpoint.
-	Format            string            `json:"format,omitempty"`
-	Flavor            []string          `json:"flavor,omitempty"`
-	RealmName         string            `json:"realm_name,omitempty"`
-	ServerName        string            `json:"server_name,omitempty"`
-	TenantName        string            `json:"tenant_name,omitempty"`
-	TenantSlug        string            `json:"tenant_slug,omitempty"`
-	TenantIncludeAll  bool              `json:"tenant_include_in_all,omitempty"`
-	LogGroupID        uuid.UUID         `json:"log_group_id"`
-	Name              string            `json:"name"`
-	Slug              string            `json:"slug"`
-	StartTime         *time.Time        `json:"start_time,omitempty"`
-	EndTime           *time.Time        `json:"end_time,omitempty"`
-	Guild             *Guild            `json:"guild,omitempty"`
-	Capabilities      []string          `json:"capabilities"`
-	Versions          map[string]string `json:"versions"`
-	RecorderName      string            `json:"recorder_name"`
-	RecorderGUID      string            `json:"recorder_guid"`
-	DuplicateGroupID  *uuid.UUID        `json:"duplicate_group_id,omitempty"`
-	DifficultyName    string            `json:"difficulty_name"`
-	MaxPlayers        int               `json:"max_players"`
-	DynamicDifficulty int               `json:"dynamic_difficulty"`
+	Format                  string                  `json:"format,omitempty"`
+	Flavor                  []string                `json:"flavor,omitempty"`
+	RealmName               string                  `json:"realm_name,omitempty"`
+	ServerName              string                  `json:"server_name,omitempty"`
+	TenantName              string                  `json:"tenant_name,omitempty"`
+	TenantSlug              string                  `json:"tenant_slug,omitempty"`
+	TenantIncludeAll        bool                    `json:"tenant_include_in_all,omitempty"`
+	LogGroupID              uuid.UUID               `json:"log_group_id"`
+	Name                    string                  `json:"name"`
+	Slug                    string                  `json:"slug"`
+	StartTime               *time.Time              `json:"start_time,omitempty"`
+	EndTime                 *time.Time              `json:"end_time,omitempty"`
+	Guild                   *Guild                  `json:"guild,omitempty"`
+	Capabilities            []string                `json:"capabilities"`
+	Versions                map[string]string       `json:"versions"`
+	RecorderName            string                  `json:"recorder_name"`
+	RecorderGUID            string                  `json:"recorder_guid"`
+	DuplicateGroupID        *uuid.UUID              `json:"duplicate_group_id,omitempty"`
+	DifficultyName          string                  `json:"difficulty_name"`
+	MaxPlayers              int                     `json:"max_players"`
+	DynamicDifficulty       int                     `json:"dynamic_difficulty"`
+	VehicleControlIntervals *VehicleControlMetadata `json:"vehicle_control_intervals,omitempty"`
 }
 
 // KillType represents the outcome of an encounter.
@@ -129,12 +164,24 @@ type WoWEncounter struct {
 type WoWEncounterWithHostiles struct {
 	WoWEncounter
 	Hostiles []WoWEncounterHostile `json:"hostiles"`
+	Phases   []WoWEncounterPhase   `json:"phases,omitempty"`
 }
 
 type WoWEncounterHostile struct {
 	ID      guid.GUID        `json:"id"`
 	Boss    bool             `json:"boss"`
 	Periods []ActivityPeriod `json:"periods"`
+}
+
+// WoWEncounterPhase represents a named sub-range within an encounter.
+type WoWEncounterPhase struct {
+	ID            uuid.UUID `json:"id"`
+	Key           string    `json:"key"`
+	Name          string    `json:"name"`
+	Order         int       `json:"order"`
+	StartOffsetMs int64     `json:"start_offset_ms"`
+	EndOffsetMs   int64     `json:"end_offset_ms"`
+	KillType      KillType  `json:"kill_type"`
 }
 
 type WoWLogGroupState struct {
@@ -243,7 +290,7 @@ type WoWSimpleParsedInstance struct {
 
 type InstanceUnit struct {
 	Name  string     `json:"name"`
-	Owner *guid.GUID `json:"owner"`
+	Owner *guid.GUID `json:"owner,omitempty"`
 	Entry uint32     `json:"entry"`
 }
 
@@ -252,6 +299,14 @@ type InstancePlayer struct {
 	Class types.HeroClasses `json:"class"`
 	Race  types.HeroRaces   `json:"race"`
 	Level int32             `json:"level"`
+}
+
+// WoWAttendanceInstance is the lightweight instance detail response used when
+// only the raid roster is needed.
+type WoWAttendanceInstance struct {
+	WoWInstance
+	RealmName string                        `json:"realm_name,omitempty"`
+	Players   map[GUIDString]InstancePlayer `json:"players"`
 }
 
 type WoWParsedInstance struct {
@@ -313,16 +368,22 @@ type SpeedrunLevelRangeResult struct {
 
 // SpeedrunResult is the outcome of evaluating speedrun rules against an instance.
 type SpeedrunResult struct {
-	Qualified          bool                      `json:"qualified"`
-	StartTime          time.Time                 `json:"start_time"`
-	CompletionTime     time.Time                 `json:"completion_time"`
-	DurationMs         int64                     `json:"duration_ms"`
-	Proof              []SpeedrunProof           `json:"proof"`
-	VersionStatus      *SpeedrunVersionStatus    `json:"version_status,omitempty"`
-	LevelRange         *SpeedrunLevelRangeResult `json:"level_range,omitempty"`
-	DataSourceStatus   *SpeedrunDataSourceStatus `json:"data_source,omitempty"`
-	DpsRankingsStatus  *DpsRankingsStatus        `json:"dps_rankings,omitempty"`
-	EncounterKillTimes []EncounterKillTime       `json:"encounter_kill_times"`
+	Qualified                bool                      `json:"qualified"`
+	StartTime                time.Time                 `json:"start_time"`
+	CompletionTime           time.Time                 `json:"completion_time"`
+	DurationMs               int64                     `json:"duration_ms"`
+	RankedStartTime          *time.Time                `json:"ranked_start_time,omitempty"`
+	RankedCompletionTime     *time.Time                `json:"ranked_completion_time,omitempty"`
+	RankedDurationMs         *int64                    `json:"ranked_duration_ms,omitempty"`
+	BossToBossStartTime      *time.Time                `json:"boss_to_boss_start_time,omitempty"`
+	BossToBossCompletionTime *time.Time                `json:"boss_to_boss_completion_time,omitempty"`
+	BossToBossDurationMs     *int64                    `json:"boss_to_boss_duration_ms,omitempty"`
+	Proof                    []SpeedrunProof           `json:"proof"`
+	VersionStatus            *SpeedrunVersionStatus    `json:"version_status,omitempty"`
+	LevelRange               *SpeedrunLevelRangeResult `json:"level_range,omitempty"`
+	DataSourceStatus         *SpeedrunDataSourceStatus `json:"data_source,omitempty"`
+	DpsRankingsStatus        *DpsRankingsStatus        `json:"dps_rankings,omitempty"`
+	EncounterKillTimes       []EncounterKillTime       `json:"encounter_kill_times"`
 }
 
 type EncounterKillTime struct {

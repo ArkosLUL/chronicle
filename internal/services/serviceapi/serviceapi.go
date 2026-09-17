@@ -14,6 +14,7 @@ import (
 	"github.com/Emyrk/chronicle/api/chronauth"
 	"github.com/Emyrk/chronicle/api/chronauth/authkeys"
 	"github.com/Emyrk/chronicle/api/chroniclesdk"
+	"github.com/Emyrk/chronicle/internal/itempricing"
 	"github.com/Emyrk/chronicle/internal/services"
 	"github.com/Emyrk/chronicle/internal/services/serviceaccessurl"
 	"github.com/Emyrk/chronicle/internal/services/serviceapplication"
@@ -64,8 +65,12 @@ type Service struct {
 	zugzugURL             string
 	zugzugSecret          string
 	zugzugInstructionsURL string
+	itemPricingAPIKey     string
+	itemPricingBaseURL    string
 	discordAuth           chronauth.DiscordOAuth
 	app                   *api.API
+	serverLn              net.Listener
+	httpHandler           *switchableHandler
 	closeListener         func()
 }
 
@@ -123,10 +128,10 @@ func (s *Service) Start(ctx context.Context) error {
 	}
 	datasetSvc := servicedataset.Dataset(s.broker)
 
-	serverLn, err := ProvisionListener(logger, s.httpAddress)
-	if err != nil {
+	if err := s.StartStartupServer(ctx, logger); err != nil {
 		return err
 	}
+	serverLn := s.serverLn
 
 	accessURL := serviceaccessurl.AccessURL(s.broker)
 	if accessURL == "" {
@@ -196,6 +201,7 @@ func (s *Service) Start(ctx context.Context) error {
 		ExternalAPI:      externalAPI,
 		Rankings:         rankings,
 		Mailer:           mailer,
+		ItemPricing:      itempricing.New(zed, s.itemPricingAPIKey, s.itemPricingBaseURL),
 
 		AccessURL:             au,
 		ShortLinkDomain:       s.shortLinkDomain,
@@ -214,15 +220,17 @@ func (s *Service) Start(ctx context.Context) error {
 		return fmt.Errorf("create api: %w", err)
 	}
 
-	closeServer := ServeHandler(ctx, logger, handler.Routes(), serverLn, "api")
-	s.closeListener = closeServer
+	s.httpHandler.Set(handler.Routes())
 	s.app = handler
 
 	return nil
 }
 
 func (s *Service) Close(_ context.Context) error {
-	defer s.closeListener()
+	defer s.CloseHTTPServer()
+	if s.app == nil {
+		return nil
+	}
 	return s.app.Close()
 }
 
@@ -339,6 +347,24 @@ func (s *Service) Options() serpent.OptionSet {
 			Env:         "CHRONICLE_ZUGZUG_INSTRUCTIONS_URL",
 			Default:     "",
 			Value:       serpent.StringOf(&s.zugzugInstructionsURL),
+		},
+		{
+			Name:        "WoWAuctions API Key",
+			Description: "Authorization token for the WoWAuctions item pricing API.",
+			Required:    false,
+			Flag:        "wowauctions-api-key",
+			Env:         "CHRONICLE_WOWAUCTIONS_API_KEY",
+			Default:     "",
+			Value:       serpent.StringOf(&s.itemPricingAPIKey),
+		},
+		{
+			Name:        "WoWAuctions Base URL",
+			Description: "Base URL for the WoWAuctions item pricing API.",
+			Required:    false,
+			Flag:        "wowauctions-base-url",
+			Env:         "CHRONICLE_WOWAUCTIONS_BASE_URL",
+			Default:     "https://api.wowauctions.net/emyrk",
+			Value:       serpent.StringOf(&s.itemPricingBaseURL),
 		},
 		{
 			Name:        "Internal OCR URL",

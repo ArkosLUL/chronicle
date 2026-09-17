@@ -49,9 +49,9 @@ VALUES
 
 -- name: InsertInstance :one
 INSERT INTO
-  log_instances (id, realm_id, log_group_id, name, hashed_slug, guild_id, start_time, end_time, capabilities, versions, recorder_name, recorder_guid, parser_version, difficulty_name, max_players, dynamic_difficulty)
+  log_instances (id, realm_id, log_group_id, name, hashed_slug, guild_id, start_time, end_time, capabilities, versions, recorder_name, recorder_guid, parser_version, difficulty_name, max_players, dynamic_difficulty, vehicle_control_intervals, category)
 VALUES
-  ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+  ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
 RETURNING *
 ;
 
@@ -127,6 +127,24 @@ FROM
 WHERE
   encounter_id IN (SELECT id FROM log_instance_encounters WHERE instance_id = $1)
 ;
+-- name: InsertEncounterPhase :exec
+INSERT INTO
+  log_instance_encounter_phases (id, encounter_id, key, name, phase_order, start_offset_ms, end_offset_ms, kill_type)
+VALUES
+  ($1, $2, $3, $4, $5, $6, $7, $8)
+;
+
+-- name: GetEncounterPhasesByInstanceID :many
+SELECT
+  *
+FROM
+  log_instance_encounter_phases
+WHERE
+  encounter_id IN (SELECT id FROM log_instance_encounters WHERE instance_id = $1)
+ORDER BY
+  encounter_id, phase_order
+;
+
 
 -- name: InstanceUnitsByInstanceID :many
 SELECT
@@ -301,6 +319,179 @@ ORDER BY first_encounter_time DESC, li.id DESC
 LIMIT CASE WHEN @limit_count :: int > 0 THEN @limit_count ELSE NULL END
 OFFSET @offset_count;
 
+-- name: ListRecentInstanceGroups :many
+-- Pages logical runs, then returns every upload in each selected duplicate group.
+-- The first row for each run is its representative: most boss encounters, then
+-- most total encounters, then the duplicate-group anchor and stable tie-breakers.
+WITH matching_runs AS (
+    SELECT DISTINCT COALESCE(li.duplicate_group_id, li.id) AS run_id
+    FROM log_instances li
+    JOIN parsed_log_group plg ON plg.id = li.log_group_id
+    JOIN wow_log_groups wlg ON wlg.id = plg.id
+    LEFT JOIN server_upload_meta sm ON sm.log_group_id = li.log_group_id
+    WHERE (
+          (li.start_time >= @start_time::timestamptz AND li.start_time < @end_time::timestamptz)
+          OR (
+              li.start_time IS NULL
+              AND wlg.created_at >= @start_time::timestamptz
+              AND wlg.created_at < @end_time::timestamptz
+          )
+      )
+      AND (
+          COALESCE(cardinality(@instance_names::text[]), 0) = 0
+          OR COALESCE(NULLIF(btrim(li.name), ''), NULLIF(btrim(sm.instance_name), ''), li.name) = ANY(@instance_names::text[])
+      )
+      AND (
+          @has_video::text = ''
+          OR (
+              @has_video::text = 'true'
+              AND EXISTS (
+                  SELECT 1
+                  FROM log_instance_youtube_timestamped yt
+                  WHERE yt.log_instance_id = li.id OR yt.instance_slug = li.hashed_slug
+              )
+          )
+          OR (
+              @has_video::text = 'false'
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM log_instance_youtube_timestamped yt
+                  WHERE yt.log_instance_id = li.id OR yt.instance_slug = li.hashed_slug
+              )
+          )
+      )
+      AND (
+          @realm_id::uuid = '00000000-0000-0000-0000-000000000000'::uuid
+          OR li.realm_id = @realm_id::uuid
+      )
+      AND (
+          @guild_id::uuid = '00000000-0000-0000-0000-000000000000'::uuid
+          OR li.guild_id = @guild_id::uuid
+      )
+      AND (
+          @player_guid::wow_guid = '0x0000000000000000'::wow_guid
+          OR EXISTS (
+              SELECT 1
+              FROM log_instance_players lip_filter
+              WHERE lip_filter.instance_id = li.id
+                AND lip_filter.unit_guid = @player_guid
+          )
+      )
+),
+instance_rows AS (
+    SELECT
+        li.id,
+        li.hashed_slug AS slug,
+        COALESCE(NULLIF(btrim(li.name), ''), NULLIF(btrim(sm.instance_name), ''), li.name) AS name,
+        li.realm_id,
+        wsr.name AS realm_name,
+        wlg.owner AS uploader_id,
+        u.username AS uploader_name,
+        wlg.created_at AS uploaded_at,
+        COALESCE(li.start_time, encounters.first_encounter_time, wlg.created_at)::timestamptz AS first_encounter_time,
+        COALESCE(players.player_count, 0)::bigint AS player_count,
+        COALESCE(encounters.boss_count, 0)::bigint AS boss_count,
+        COALESCE(encounters.encounter_count, 0)::bigint AS encounter_count,
+        COALESCE(encounters.boss_kills, 0)::bigint AS boss_kills,
+        COALESCE(encounters.duration_ms, 0)::float8 AS duration_ms,
+        iom.total_combat_duration_ms AS combat_duration_ms,
+        g.id AS guild_id,
+        g.name AS guild_name,
+        youtube.has_youtube_video,
+        li.duplicate_group_id,
+        COALESCE(li.duplicate_group_id, li.id) AS run_id,
+        li.recorder_name,
+        li.difficulty_name,
+        li.max_players,
+        li.dynamic_difficulty
+    FROM log_instances li
+    JOIN matching_runs ON matching_runs.run_id = COALESCE(li.duplicate_group_id, li.id)
+    JOIN parsed_log_group plg ON plg.id = li.log_group_id
+    JOIN wow_log_groups wlg ON wlg.id = plg.id
+    LEFT JOIN instance_overview_metrics iom ON iom.instance_id = li.id
+    LEFT JOIN server_upload_meta sm ON sm.log_group_id = li.log_group_id
+    JOIN users u ON u.id = wlg.owner
+    JOIN wow_server_realms wsr ON wsr.id = li.realm_id
+    LEFT JOIN guilds g ON g.id = li.guild_id
+    LEFT JOIN LATERAL (
+        SELECT COUNT(*)::bigint AS player_count
+        FROM log_instance_players lip
+        WHERE lip.instance_id = li.id
+    ) players ON true
+    LEFT JOIN LATERAL (
+        SELECT
+            MIN(lie.start_time) AS first_encounter_time,
+            COUNT(*)::bigint AS encounter_count,
+            COUNT(*) FILTER (WHERE lie.boss = true)::bigint AS boss_count,
+            COUNT(*) FILTER (
+                WHERE lie.boss = true
+                  AND lie.kill_type IN ('clean', 'partial')
+            )::bigint AS boss_kills,
+            EXTRACT(EPOCH FROM (MAX(lie.end_time) - MIN(lie.start_time))) * 1000 AS duration_ms
+        FROM log_instance_encounters lie
+        WHERE lie.instance_id = li.id
+    ) encounters ON true
+    LEFT JOIN LATERAL (
+        SELECT EXISTS (
+            SELECT 1
+            FROM log_instance_youtube_timestamped yt
+            WHERE yt.log_instance_id = li.id OR yt.instance_slug = li.hashed_slug
+        ) AS has_youtube_video
+    ) youtube ON true
+),
+ranked_instances AS (
+    SELECT
+        instance_rows.*,
+        ROW_NUMBER() OVER (
+            PARTITION BY instance_rows.run_id
+            ORDER BY
+                instance_rows.boss_count DESC,
+                instance_rows.encounter_count DESC,
+                (instance_rows.id = instance_rows.duplicate_group_id) DESC NULLS LAST,
+                instance_rows.first_encounter_time ASC,
+                instance_rows.id ASC
+        ) AS representative_rank
+    FROM instance_rows
+    JOIN matching_runs USING (run_id)
+),
+selected_runs AS (
+    SELECT id, run_id, first_encounter_time
+    FROM ranked_instances
+    WHERE representative_rank = 1
+    ORDER BY first_encounter_time DESC, id DESC
+    LIMIT CASE WHEN @limit_count::int > 0 THEN @limit_count ELSE NULL END
+    OFFSET @offset_count
+)
+SELECT
+    ranked_instances.id,
+    ranked_instances.slug,
+    ranked_instances.name,
+    ranked_instances.realm_id,
+    ranked_instances.realm_name,
+    ranked_instances.uploader_id,
+    ranked_instances.uploader_name,
+    ranked_instances.uploaded_at,
+    ranked_instances.first_encounter_time,
+    ranked_instances.player_count,
+    ranked_instances.boss_count,
+    ranked_instances.boss_kills,
+    ranked_instances.duration_ms,
+    ranked_instances.combat_duration_ms,
+    ranked_instances.guild_id,
+    ranked_instances.guild_name,
+    ranked_instances.has_youtube_video,
+    ranked_instances.duplicate_group_id,
+    ranked_instances.recorder_name,
+    ranked_instances.difficulty_name,
+    ranked_instances.max_players,
+    ranked_instances.dynamic_difficulty
+FROM ranked_instances
+JOIN selected_runs USING (run_id)
+ORDER BY
+    selected_runs.first_encounter_time DESC,
+    selected_runs.id DESC,
+    ranked_instances.representative_rank ASC;
+
 -- name: ListRecentInstancesByPlayer :many
 SELECT DISTINCT ON (
         COALESCE((SELECT MIN(lie.start_time) FROM log_instance_encounters lie WHERE lie.instance_id = li.id), wlg.created_at),
@@ -443,3 +634,29 @@ ORDER BY li.id;
 
 
 
+
+-- name: InstancePlayerSpecs :many
+SELECT encounter_id, player_guid, player_spec, killed_at
+FROM encounter_dps_rankings
+WHERE instance_id = $1
+  AND encounter_id IS NOT NULL
+  AND player_spec NOT IN ('', 'Unknown')
+ORDER BY killed_at ASC, id ASC;
+
+-- name: InsertInstanceRaidGroupSnapshot :exec
+INSERT INTO log_instance_raid_group_snapshots (
+  instance_id, encounter_id, snapshot_type, observed_at, composition
+) VALUES ($1, $2, $3, $4, $5);
+
+-- name: InstanceRaidGroupSnapshots :many
+SELECT
+  snapshots.*,
+  encounters.name AS encounter_name,
+  encounters.end_time AS killed_at
+FROM log_instance_raid_group_snapshots snapshots
+LEFT JOIN log_instance_encounters encounters ON encounters.id = snapshots.encounter_id
+WHERE snapshots.instance_id = $1
+ORDER BY
+  CASE WHEN snapshots.snapshot_type = 'clean_kill' THEN 0 ELSE 1 END,
+  encounters.end_time ASC NULLS LAST,
+  snapshots.observed_at ASC;

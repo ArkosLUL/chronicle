@@ -26,12 +26,15 @@ import type { PanelFilter, PanelFilterType } from "./processors/filters";
 import { usePanelAggregation } from "./usePanelAggregation";
 import { usePanelTiming } from "./PanelTimingContext";
 import { useSyncModeContextOptional } from "../SyncModeContext";
+import { useTimeRangeContextOptional } from "../TimeRangeContext";
+import { getTimeRangeDurationMs } from "./panelDuration";
 import type { PanelDefinition, PanelContext } from "./types";
 import { PanelSelector } from "./PanelSelector";
 import { hasExplainer } from "./explainers";
 import type { PlayerMetricChartData } from "@/components/ui/PlayerMetricChart/PlayerMetricChart";
 import { useChartDataActions } from "./ChartDataRegistry";
 import { openPanelPopup, syncPopupAppearance, type PanelPopup } from "./panelPopup";
+import { hasRequiredPanelCapabilities } from "./panelAvailability";
 
 // Import panel definitions
 import { createDamageDonePanel } from "./DamageDone/DamageDone";
@@ -40,7 +43,6 @@ import { createDamageTakenPanel } from "./DamageTaken/DamageTaken";
 import { createHealingDonePanel } from "./HealingDone/HealingDone";
 import { createExtraAttacksPanel } from "./ExtraAttacks/ExtraAttacks";
 import { createConsumablesPanel } from "./Consumables/Consumables";
-import { createConsumablesTotalPanel } from "./Consumables/ConsumablesTotal";
 import { createConsumablesLedgerPanel } from "./Consumables/ConsumablesLedger";
 import { createHealingTakenPanel } from "./HealingTaken/HealingTaken";
 import { createDeathsPanel } from "./Deaths/Deaths";
@@ -52,21 +54,27 @@ import { createEmptyPanel } from "./Empty/Empty";
 import { createLeaderboardPanel } from "./LeaderboardPanel/LeaderboardPanel";
 import { createResourceRegenPanel } from "./ResourceRegen/ResourceRegen";
 import { createInnervatePanel } from "./Innervate/Innervate";
+import { createFaerieFirePanel } from "./FaerieFire/FaerieFire";
 import { createSunderPanel } from "./Sunder/Sunder";
 import { createJudgementPanel } from "./Judgement/Judgement";
 import { createAuraUptimePanel } from "./AuraUptime/AuraUptime";
+import { createUnitAurasPanel } from "./UnitAuras/UnitAuras";
 import { createMetricsPanel } from "./Metrics/Metrics";
 import { PeriodsPanel } from "./PeriodsPanel/PeriodsPanel";
 import { createPossessionPanel } from "./PossessionPanel/PossessionPanel";
+import { createVehiclePanel } from "./VehiclePanel/VehiclePanel";
 import { createComparisonPanel } from "./ComparisonPanel/ComparisonPanel";
 import { createTimelinePanel } from "./Timeline/Timeline";
 import { createRotationsPanel } from "./Rotations/Rotations";
 import { createStatusPanel } from "./Status/Status";
 import { createHealerCastsPanel } from "./HealerCasts/HealerCasts";
+import { createSpellCountPanel } from "./SpellCount/SpellCount";
 import { createUnitLookupPanel } from "./UnitLookup/UnitLookup";
 import { createEquipmentPanel } from "./Equipment/Equipment";
 import { createLootPanel } from "./LootPanel/LootPanel";
+import { createRankingRecordsPanel } from "./RankingRecords/RankingRecords";
 import { createLoggingMetadataPanel } from "./LoggingMetadata/LoggingMetadata";
+import { createRaidCompositionPanel } from "./RaidComposition/RaidComposition";
 
 import { createDispelsDonePanel, createDispelsReceivedPanel } from "./Dispel/Dispel";
 import { createInterruptsPanel } from "./Interrupt/Interrupt";
@@ -96,7 +104,6 @@ export const PANELS: Record<string, PanelDefinition<any, any>> = {
   healing_taken: createHealingTakenPanel("players"),
   extra_attacks: createExtraAttacksPanel(),
   consumables: createConsumablesPanel(),
-  consumables_total: createConsumablesTotalPanel(),
   consumables_ledger: createConsumablesLedgerPanel(),
   deaths: createDeathsPanel(),
   death_log: createDeathLogPanel(),
@@ -110,12 +117,14 @@ export const PANELS: Record<string, PanelDefinition<any, any>> = {
   leaderboard: createLeaderboardPanel(),
   // Class: Druid
   innervate: createInnervatePanel(),
+  faerie_fire: createFaerieFirePanel(),
   // Class: Warrior
   sunder: createSunderPanel(),
   // Class: Paladin
   judgement: createJudgementPanel(),
   // Aura tracking
   aura_uptime: createAuraUptimePanel(),
+  unit_auras: createUnitAurasPanel(),
   // Debug/Analysis
   metrics: createMetricsPanel(),
   periods: PeriodsPanel,
@@ -126,10 +135,12 @@ export const PANELS: Record<string, PanelDefinition<any, any>> = {
   // Replay
   status: createStatusPanel(),
   healer_casts: createHealerCastsPanel(),
+  spell_count: createSpellCountPanel(),
   // Rotations
   rotations: createRotationsPanel(),
-  // Possession timeline
+  // Control timelines
   possession: createPossessionPanel(),
+  vehicle: createVehiclePanel(),
   // Unit lookup
   unit_lookup: createUnitLookupPanel(),
   equipment: createEquipmentPanel(),
@@ -141,7 +152,9 @@ export const PANELS: Record<string, PanelDefinition<any, any>> = {
   interrupts: createInterruptsPanel(),
   interrupt_log: createInterruptLogPanel(),
   loot: createLootPanel(),
+  ranking_records: createRankingRecordsPanel(),
   logging_metadata: createLoggingMetadataPanel(),
+  raid_composition: createRaidCompositionPanel(),
   absorbed_damage: createAbsorbedDamagePanel(),
   resists: createResistsPanel(),
   guilds: createGuildsPanel(),
@@ -413,7 +426,9 @@ export function EventsPanel({
 }: EventsPanelProps) {
   const isMobile = useIsMobile();
   const inheritedPortalContainer = usePortalContainer();
-  const rawPanel = PANELS[panelType];
+  // Fall back to the empty panel for types that no longer exist (e.g. a
+  // saved layout or share link referencing a removed panel).
+  const rawPanel = PANELS[panelType] ?? PANELS.empty;
 
   // Inject a default time_range controller filter for all panels that support filtering,
   // unless the panel already defines its own time_range default.
@@ -426,6 +441,10 @@ export function EventsPanel({
       defaultFilters: [...existing],
     };
   }, [rawPanel]);
+  const panelAvailable = hasRequiredPanelCapabilities(
+    panel,
+    context.instance.capabilities ?? [],
+  );
 
   // Determine checkbox label first (needed for storage key)
   const checkboxLabel = panel.checkboxLabel || "Per second";
@@ -472,11 +491,12 @@ export function EventsPanel({
 
   const customFilters = useMemo(() => (panelContext?.filters as PanelFilter[] | undefined) ?? null, [panelContext]);
   const syncMode = useSyncModeContextOptional();
+  const timeRange = useTimeRangeContextOptional();
   const isSyncActive = syncMode?.enabled === true;
   // Applied filters keep working during Sync (full-data panels still run them in
   // the worker); only editing is paused while playback drives the panels.
   const filteringSupported = panel.supportsFiltering === true && !isSyncActive;
-  const fixedFilters = panel.fixedFilters ?? [];
+  const fixedFilters = useMemo(() => panel.fixedFilters ?? [], [panel.fixedFilters]);
   const userFilters = useMemo(() => customFilters ?? [], [customFilters]);
 
   const hasCustomFilters = filteringSupported && customFilters !== null &&
@@ -812,7 +832,7 @@ export function EventsPanel({
     panelContext,
     panelContextKey: panelContextVersion,
     panelIndex,
-    enabled: !panel.selfManagesAggregation,
+    enabled: panelAvailable && !panel.selfManagesAggregation,
   });
   
   // Report timing when panel finishes loading
@@ -821,6 +841,15 @@ export function EventsPanel({
   usePanelTiming(`panel-${panelIndex}`, isDone);
 
   const effectiveDurationMs = useMemo(() => {
+    const filteredDurationMs = getTimeRangeDurationMs(
+      [...fixedFilters, ...userFilters],
+      timeRange,
+      durationMs,
+    );
+    if (filteredDurationMs !== null) {
+      return filteredDurationMs;
+    }
+
     // Full-data panels aggregate the whole encounter even during Sync, so they
     // keep the full duration; elapsed time would skew their per-second values.
     if (
@@ -835,7 +864,16 @@ export function EventsPanel({
     }
 
     return durationMs;
-  }, [syncMode?.enabled, syncMode?.currentTimestamp, syncMode?.encounterBounds, durationMs, panel.syncDataMode]);
+  }, [
+    durationMs,
+    fixedFilters,
+    panel.syncDataMode,
+    syncMode?.enabled,
+    syncMode?.currentTimestamp,
+    syncMode?.encounterBounds,
+    timeRange,
+    userFilters,
+  ]);
 
   const renderedPanel = (
       <PanelCard
@@ -851,11 +889,17 @@ export function EventsPanel({
                   <>
                     <span className="truncate max-w-[160px]">{customTitle}</span>
                     <span className="text-xs text-muted-foreground shrink-0">
-                      <PanelSelector value={panelType} onChange={onPanelTypeChange} />
+                      <PanelSelector
+                        value={panelType}
+                        onChange={onPanelTypeChange}
+                      />
                     </span>
                   </>
                 ) : (
-                  <PanelSelector value={panelType} onChange={onPanelTypeChange} />
+                  <PanelSelector
+                    value={panelType}
+                    onChange={onPanelTypeChange}
+                  />
                 )}
                 <DropdownMenu modal={false}>
                   <DropdownMenuTrigger asChild>

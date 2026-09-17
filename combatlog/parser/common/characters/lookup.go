@@ -7,14 +7,31 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/common/characters/characterset"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/characters/period"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/identifier"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/messages"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/phases"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/unitdb"
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/unitinfo"
-	"github.com/Emyrk/chronicle/combatlog/parser/common/messages"
-	"github.com/Emyrk/chronicle/combatlog/parser/common/unitdb"
 )
 
 type CharacterFactory func(id guid.GUID, chars *Characters) (Character, bool)
+
+// CreatureFactories restricts encounter-specific factories to creature GUIDs.
+// Entry IDs are also encoded in pet, vehicle, and object GUIDs, so factories
+// that match only on GetEntry can otherwise misclassify an unrelated unit.
+func CreatureFactories(factories ...CharacterFactory) []CharacterFactory {
+	wrapped := make([]CharacterFactory, 0, len(factories))
+	for _, factory := range factories {
+		wrapped = append(wrapped, func(id guid.GUID, chars *Characters) (Character, bool) {
+			if !id.IsCreature() {
+				return nil, false
+			}
+			return factory(id, chars)
+		})
+	}
+	return wrapped
+}
 
 type SetHook interface {
 	// ActivityChange is invoked every time a character's activity status changes.
@@ -40,6 +57,19 @@ type Characters struct {
 	hooks           []SetHook
 	activityChanged map[Character]struct{}
 
+	// phaseTransitionCb is set by hookable to record phase transitions on the
+	// active ongoingFight. Characters call EmitPhaseTransition which forwards
+	// here when set.
+	phaseTransitionCb phases.TransitionCallback
+
+	// stagedTransitions holds transitions emitted during Characters.Process
+	// before the fight detection callback is installed. Hookable drains these
+	// after fight start to apply them to the live phase tracker.
+	stagedTransitions []phases.Transition
+
+	// explicitEncounter is set while a combat-log supplied encounter window is
+	// active. Character inactivity timeouts are suppressed until its END record.
+	explicitEncounter bool
 }
 
 func NewCharacters(db *unitdb.Units, factories []CharacterFactory, id *identifier.Identifier) *Characters {
@@ -55,6 +85,35 @@ func NewCharacters(db *unitdb.Units, factories []CharacterFactory, id *identifie
 
 func (c *Characters) RegisterHook(hook SetHook) {
 	c.hooks = append(c.hooks, hook)
+}
+
+// SetPhaseTransitionCallback installs the callback that specialized characters
+// use to emit phase transitions. Hookable sets this so transitions are recorded
+// on the active ongoingFight.
+func (c *Characters) SetPhaseTransitionCallback(cb phases.TransitionCallback) {
+	c.phaseTransitionCb = cb
+}
+
+// EmitPhaseTransition forwards a phase transition to the installed callback.
+// When no callback is installed, the transition is staged so that hookable can
+// drain it after fight detection on the same message.
+func (c *Characters) EmitPhaseTransition(t phases.Transition) {
+	if c.phaseTransitionCb != nil {
+		c.phaseTransitionCb(t)
+	} else {
+		c.stagedTransitions = append(c.stagedTransitions, t)
+	}
+}
+
+// DrainStagedTransitions returns and clears any transitions that were staged
+// because they were emitted before a fight callback was installed.
+func (c *Characters) DrainStagedTransitions() []phases.Transition {
+	if len(c.stagedTransitions) == 0 {
+		return nil
+	}
+	staged := c.stagedTransitions
+	c.stagedTransitions = nil
+	return staged
 }
 
 func (c *Characters) Save(key string, value any) {
@@ -105,7 +164,8 @@ func (c *Characters) Add(id guid.GUID, now time.Time) (_ Character, newChar bool
 			char = cc
 		}
 
-		if entry, ok := id.GetEntry(); ok {
+		if id.IsCreature() {
+			entry, _ := id.GetEntry()
 			c.ByEntry[entry] = append(c.ByEntry[entry], char)
 		}
 
@@ -124,6 +184,10 @@ func (c *Characters) Add(id guid.GUID, now time.Time) (_ Character, newChar bool
 	return char, newChar
 }
 
+func (c *Characters) ExplicitEncounterActive() bool {
+	return c.explicitEncounter
+}
+
 // TODO: Maybe a "synthetic" boolean should exist on message base. This would
 // allow inserting custom messages for totems/pets that indicate their death/recall.
 // This would have to be returned here to be added to the message stream.
@@ -132,8 +196,25 @@ func (c *Characters) Add(id guid.GUID, now time.Time) (_ Character, newChar bool
 func (c *Characters) Process(m messages.Message) (bool, error) {
 	defer func() { c.activityChanged = nil }()
 	c.processNewCharacters(m)
+
+	boundary, isBoundary := m.(*messages.EncounterBoundary)
+	if isBoundary {
+		c.explicitEncounter = boundary.Active
+	}
+
 	forAllErr := c.All.ForEachAwake(m.Date(), func(char Character) error {
 		before := char.IsActive()
+		if isBoundary && before && !boundary.PreserveActivity {
+			reason := "encounter end"
+			if boundary.Active {
+				reason = "encounter start"
+			}
+			if ender, ok := char.(interface {
+				End(string, messages.Message, period.EndState)
+			}); ok {
+				ender.End(reason, m, period.EndStateReset)
+			}
+		}
 
 		// TODO: Dead characters that will never return should be removed from processing?
 		// Or at least have some kind of speedup

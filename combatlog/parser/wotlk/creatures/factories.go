@@ -23,8 +23,20 @@ func AzerothServersideCoreCharacterFactories() []characters.CharacterFactory {
 // TODO: Move this to common
 func NewCharacterFactories(flavor database.WoWFlavor) []characters.CharacterFactory {
 	cres := creatures.VanillaCharacterFactories(flavor)
+	if flavor.Has(database.FlavorTBC, database.FlavorWrath) {
+		tbc := characters.CreatureFactories(
+			// Karazhan
+			NewAttumenTheHuntsman,
+			// Serpentshrine Cavern
+			NewCoilfangGuardian,
+			NewTaintedElementals,
+			NewMorogrimTidewalker,
+			NewLeotherasTheBlind,
+		)
+		cres = append(tbc, cres...)
+	}
 	if flavor.Has(database.FlavorWrath) {
-		cres = append([]characters.CharacterFactory{
+		wrath := characters.CreatureFactories(
 			// The Nexus
 			NewAzureEnforcer,
 			NewCrazedManaWraith,
@@ -40,13 +52,36 @@ func NewCharacterFactories(flavor database.WoWFlavor) []characters.CharacterFact
 			// Underbog
 			NewClaw,
 
+			// Vault of Archavon
+			NewEmalon,
+
 			// Obsidian Sanctum
 			NewSarthrion,
 
 			// Eye of Eternity
 			NewMalygos,
+			NewNexusLord,
+			NewScionOfEternity,
 			NewPowerSpark,
-		}, cres...)
+
+			// Ulduar,
+			NewIgnisIronConstruct,
+			NewAlgalon,
+			NewAssemblyOfIronCharacter,
+			NewRazorscaleAdd,
+			NewFreyaEncounterCharacter,
+			NewHodirEncounterCharacter,
+			NewKologarnEncounterCharacter,
+			NewSif,
+			NewThorimEncounterCharacter,
+			NewMimironEncounterCharacter,
+			NewYoggSaronGuardian,
+			NewYoggSaronEncounterCharacter,
+		)
+		// Mechanolift, Vortex, Kologarn, Mimiron's machines, and Yogg-Saron can use
+		// vehicle GUIDs, so they must not rely solely on the CreatureFactories wrappers.
+		wrath = append(wrath, NewFlameLeviathan, NewMechanolift, NewVortex, NewKologarnEncounterCharacter, NewMimironEncounterCharacter, NewYoggSaronEncounterCharacter)
+		cres = append(wrath, cres...)
 	}
 
 	return cres

@@ -52,7 +52,7 @@ func (s *stubChar) CurrentPeriod() (period.Period, bool) {
 func singleBossRules(name string, entryID uint32) SpeedrunRules {
 	return SpeedrunRules{
 		Requirements: []SpeedrunRequirement{
-			{Name: name, EntryIDs: []uint32{entryID}, Count: 1},
+			{Name: name, EntryIDs: []uint32{entryID}, Count: 1, Category: SpeedrunCategoryBosses},
 		},
 	}
 }
@@ -311,4 +311,140 @@ func TestSpeedrunTracker_Result_QualifiedRun(t *testing.T) {
 	assert.Equal(t, 30*time.Minute, result.Duration)
 	require.Len(t, result.Proof, 1)
 	assert.True(t, result.Proof[0].Satisfied)
+}
+
+func TestSpeedrunTracker_BossToBossTimeExcludesEarlyTrash(t *testing.T) {
+	t.Parallel()
+	rules := SpeedrunRules{Requirements: []SpeedrunRequirement{
+		{Name: "Early Trash", EntryIDs: []uint32{10}, Count: 1, Category: SpeedrunCategoryTrash},
+		{Name: "First Boss", EntryIDs: []uint32{100}, Count: 1, Category: SpeedrunCategoryBosses},
+		{Name: "Final Boss", EntryIDs: []uint32{200}, Count: 1, Category: SpeedrunCategoryBosses},
+	}}
+	tracker := NewSpeedrunTracker(rules, nil, nil)
+
+	tracker.FightStarted(uuid.New(), msg(t0))
+	tracker.ActivityChange(msg(t0.Add(time.Minute)), &stubChar{id: makeCreatureGUID(10, 1), endState: period.EndStateSlain, hasPeriod: true})
+	tracker.FightEnded(uuid.New(), msg(t0.Add(2*time.Minute)))
+
+	firstBossStart := t0.Add(10 * time.Minute)
+	tracker.FightStarted(uuid.New(), msg(firstBossStart))
+	tracker.ActivityChange(msg(firstBossStart.Add(time.Minute)), &stubChar{id: makeCreatureGUID(100, 1), endState: period.EndStateSlain, hasPeriod: true})
+	tracker.FightEnded(uuid.New(), msg(firstBossStart.Add(2*time.Minute)))
+
+	finalBossStart := t0.Add(20 * time.Minute)
+	finalBossEnd := finalBossStart.Add(2 * time.Minute)
+	tracker.FightStarted(uuid.New(), msg(finalBossStart))
+	tracker.ActivityChange(msg(finalBossStart.Add(time.Minute)), &stubChar{id: makeCreatureGUID(200, 1), endState: period.EndStateSlain, hasPeriod: true})
+	tracker.FightEnded(uuid.New(), msg(finalBossEnd))
+
+	result := tracker.Result()
+	require.True(t, result.Qualified)
+	assert.Equal(t, t0, result.StartTime)
+	assert.Equal(t, finalBossEnd, result.CompletionTime)
+	assert.Equal(t, t0, result.RankedStartTime)
+	assert.Equal(t, finalBossEnd, result.RankedCompletionTime)
+	assert.Equal(t, 22*time.Minute, result.RankedDuration)
+	assert.Equal(t, firstBossStart, result.BossToBossStartTime)
+	assert.Equal(t, finalBossEnd, result.BossToBossCompletionTime)
+	assert.Equal(t, 12*time.Minute, result.BossToBossDuration)
+}
+
+func TestSpeedrunTracker_RankedTimeStartsAfterConfiguredRequirement(t *testing.T) {
+	t.Parallel()
+
+	rules := SpeedrunRules{
+		Requirements: []SpeedrunRequirement{
+			{Name: "Opening Boss", EntryIDs: []uint32{100}, Count: 1, Category: SpeedrunCategoryBosses},
+			{Name: "Final Boss", EntryIDs: []uint32{200}, Count: 1, Category: SpeedrunCategoryBosses},
+		},
+		RankedStartAfterRequirement: "Opening Boss",
+	}
+	tracker := NewSpeedrunTracker(rules, nil, nil)
+
+	openingStart := t0
+	openingEnd := t0.Add(2 * time.Minute)
+	tracker.FightStarted(uuid.New(), msg(openingStart))
+	tracker.ActivityChange(msg(openingEnd), &stubChar{id: makeCreatureGUID(100, 1), endState: period.EndStateSlain, hasPeriod: true})
+	tracker.FightEnded(uuid.New(), msg(openingEnd))
+
+	finalStart := t0.Add(10 * time.Minute)
+	finalEnd := finalStart.Add(2 * time.Minute)
+	tracker.FightStarted(uuid.New(), msg(finalStart))
+	tracker.ActivityChange(msg(finalEnd), &stubChar{id: makeCreatureGUID(200, 1), endState: period.EndStateSlain, hasPeriod: true})
+	tracker.FightEnded(uuid.New(), msg(finalEnd))
+
+	result := tracker.Result()
+	require.True(t, result.Qualified)
+	assert.Equal(t, openingEnd, result.RankedStartTime)
+	assert.Equal(t, finalEnd, result.RankedCompletionTime)
+	assert.Equal(t, 10*time.Minute, result.RankedDuration)
+	assert.Equal(t, openingStart, result.BossToBossStartTime)
+	assert.Equal(t, finalEnd, result.BossToBossCompletionTime)
+	assert.Equal(t, 12*time.Minute, result.BossToBossDuration)
+}
+
+func TestSpeedrunTracker_TimingEndsBeforeTrailingRequiredTrash(t *testing.T) {
+	t.Parallel()
+	rules := SpeedrunRules{Requirements: []SpeedrunRequirement{
+		{Name: "First Boss", EntryIDs: []uint32{100}, Count: 1, Category: SpeedrunCategoryBosses},
+		{Name: "Final Boss", EntryIDs: []uint32{200}, Count: 1, Category: SpeedrunCategoryBosses},
+		{Name: "Trailing Trash", EntryIDs: []uint32{10}, Count: 1, Category: SpeedrunCategoryTrash},
+	}}
+	tracker := NewSpeedrunTracker(rules, nil, nil)
+
+	tracker.FightStarted(uuid.New(), msg(t0))
+	tracker.ActivityChange(msg(t0.Add(time.Minute)), &stubChar{id: makeCreatureGUID(100, 1), endState: period.EndStateSlain, hasPeriod: true})
+	tracker.FightEnded(uuid.New(), msg(t0.Add(2*time.Minute)))
+
+	finalBossStart := t0.Add(10 * time.Minute)
+	finalBossEnd := finalBossStart.Add(2 * time.Minute)
+	tracker.FightStarted(uuid.New(), msg(finalBossStart))
+	tracker.ActivityChange(msg(finalBossStart.Add(time.Minute)), &stubChar{id: makeCreatureGUID(200, 1), endState: period.EndStateSlain, hasPeriod: true})
+	tracker.FightEnded(uuid.New(), msg(finalBossEnd))
+	assert.False(t, tracker.completed, "trailing trash is still required for qualification")
+
+	clearEnd := t0.Add(22 * time.Minute)
+	tracker.FightStarted(uuid.New(), msg(t0.Add(20*time.Minute)))
+	tracker.ActivityChange(msg(t0.Add(21*time.Minute)), &stubChar{id: makeCreatureGUID(10, 1), endState: period.EndStateSlain, hasPeriod: true})
+	tracker.FightEnded(uuid.New(), msg(clearEnd))
+
+	result := tracker.Result()
+	require.True(t, result.Qualified)
+	assert.Equal(t, finalBossEnd, result.CompletionTime)
+	assert.Equal(t, 12*time.Minute, result.Duration)
+	assert.Equal(t, t0, result.RankedStartTime)
+	assert.Equal(t, finalBossEnd, result.RankedCompletionTime)
+	assert.Equal(t, 12*time.Minute, result.RankedDuration)
+	assert.Equal(t, t0, result.BossToBossStartTime)
+	assert.Equal(t, finalBossEnd, result.BossToBossCompletionTime)
+	assert.Equal(t, 12*time.Minute, result.BossToBossDuration)
+}
+
+func TestSpeedrunTracker_BossToBossTimeIncludesFirstBossWipe(t *testing.T) {
+	t.Parallel()
+	engagement := NewEngagementTracker(nil)
+	tracker := NewSpeedrunTracker(singleBossRules("Boss", 100), nil, engagement)
+	bossGUID := makeCreatureGUID(100, 1)
+
+	wipeEncounterID := uuid.New()
+	tracker.FightStarted(wipeEncounterID, msg(t0))
+	engagement.results[wipeEncounterID] = &EngagementResult{Engaged: map[guid.GUID]UnitCategory{
+		bossGUID: CategoryCreature,
+	}}
+	tracker.FightEnded(wipeEncounterID, msg(t0.Add(time.Minute)))
+
+	killEncounterID := uuid.New()
+	killEnd := t0.Add(7 * time.Minute)
+	tracker.FightStarted(killEncounterID, msg(t0.Add(5*time.Minute)))
+	tracker.ActivityChange(msg(t0.Add(6*time.Minute)), &stubChar{id: bossGUID, endState: period.EndStateSlain, hasPeriod: true})
+	tracker.FightEnded(killEncounterID, msg(killEnd))
+
+	result := tracker.Result()
+	require.True(t, result.Qualified)
+	assert.Equal(t, t0, result.RankedStartTime)
+	assert.Equal(t, killEnd, result.RankedCompletionTime)
+	assert.Equal(t, 7*time.Minute, result.RankedDuration)
+	assert.Equal(t, t0, result.BossToBossStartTime)
+	assert.Equal(t, killEnd, result.BossToBossCompletionTime)
+	assert.Equal(t, 7*time.Minute, result.BossToBossDuration)
 }

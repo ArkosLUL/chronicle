@@ -1,5 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
-import type { ItemTooltip, ItemSearchResult, CreatureSearchResult, ItemSetSearchResult, ItemSetDetail } from "./typesGenerated";
+import { keepPreviousData, useQueries, useQuery } from "@tanstack/react-query";
+import type { AuctionHouseFaction, InstanceItemPricesResponse, ItemPricingRealm, ItemTooltip, ItemSearchResult, CreatureSearchResult, EnchantmentSearchResult, ItemSetSearchResult, ItemSetDetail, SimItem } from "./typesGenerated";
 
 export interface FetchItemTooltipParams {
   itemId: number;
@@ -20,6 +20,14 @@ export async function fetchItemTooltip({ itemId, randomProperty, enchant }: Fetc
   return response.json();
 }
 
+export async function fetchGemTooltip(enchantId: number): Promise<ItemTooltip> {
+  const response = await fetch(`/api/v1/internal/gamedata/tooltip/gem/${enchantId}`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch gem tooltip: ${response.status}`);
+  }
+  return response.json();
+}
+
 export function useItemTooltip(params: FetchItemTooltipParams | null) {
   return useQuery({
     queryKey: ["item-tooltip", params?.itemId, params?.randomProperty, params?.enchant],
@@ -30,24 +38,82 @@ export function useItemTooltip(params: FetchItemTooltipParams | null) {
   });
 }
 
+async function fetchSimItem(itemId: number): Promise<SimItem> {
+  const response = await fetch(`/api/v1/internal/gamedata/sim/item/${itemId}`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch sim item: ${response.status}`);
+  }
+  return response.json();
+}
+
+/**
+ * Full stat payloads for a set of items (for stat-weight scoring). One
+ * query per unique item with a shared ["sim-item", id] cache key — the
+ * same data the DPS sim fetches.
+ */
+export function useSimItems(itemIds: number[]): Map<number, SimItem> {
+  const unique = [...new Set(itemIds.filter((id) => id > 0))];
+  const queries = useQueries({
+    queries: unique.map((id) => ({
+      queryKey: ["sim-item", id],
+      queryFn: () => fetchSimItem(id),
+      staleTime: 5 * 60 * 1000,
+      retry: false,
+    })),
+  });
+  const out = new Map<number, SimItem>();
+  unique.forEach((id, i) => {
+    const data = queries[i].data;
+    if (data) out.set(id, data);
+  });
+  return out;
+}
+
+export class GameDataRequestError extends Error {
+  readonly status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "GameDataRequestError";
+    this.status = status;
+  }
+}
+
 export interface SearchItemsParams {
   q: string;
   quality?: string; // comma-separated, e.g. "3,4"
   slot?: string;    // comma-separated
   class?: string;   // comma-separated
   sort?: string;
+  /**
+   * Character-level ceiling: hides items that require a higher level.
+   * Applied server-side, before the result cap.
+   */
+  maxRequiredLevel?: number;
+  /**
+   * Allow an empty query (server requires a slot filter then) — returns
+   * the top items for the slot by the chosen sort.
+   */
+  allowEmpty?: boolean;
 }
 
-async function fetchSearchItems(params: SearchItemsParams): Promise<ItemSearchResult[]> {
+async function fetchSearchItems(
+  params: SearchItemsParams,
+  signal?: AbortSignal,
+): Promise<ItemSearchResult[]> {
   const qs = new URLSearchParams();
   qs.set("q", params.q);
   if (params.quality) qs.set("quality", params.quality);
   if (params.slot) qs.set("slot", params.slot);
   if (params.class) qs.set("class", params.class);
   if (params.sort) qs.set("sort", params.sort);
-  const response = await fetch(`/api/v1/internal/gamedata/search/items?${qs.toString()}`);
+  if (params.maxRequiredLevel) qs.set("max_required_level", String(params.maxRequiredLevel));
+  const response = await fetch(
+    `/api/v1/internal/gamedata/search/items?${qs.toString()}`,
+    { signal },
+  );
   if (!response.ok) {
-    throw new Error(`Failed to search items: ${response.status}`);
+    throw new GameDataRequestError("Failed to search items", response.status);
   }
   return response.json();
 }
@@ -55,8 +121,69 @@ async function fetchSearchItems(params: SearchItemsParams): Promise<ItemSearchRe
 export function useSearchItems(params: SearchItemsParams | null) {
   return useQuery({
     queryKey: ["gamedata", "search-items", params],
-    queryFn: () => fetchSearchItems(params!),
-    enabled: params != null && params.q.length >= 2,
+    queryFn: ({ signal }) => fetchSearchItems(params!, signal),
+    enabled:
+      params != null &&
+      (params.q.length >= 2 ||
+        (!!params.allowEmpty && params.q.length === 0 && (!!params.slot || !!params.class))),
+    staleTime: 5 * 60 * 1000,
+    placeholderData: keepPreviousData,
+    retry: false,
+  });
+}
+
+export function useItemPricingRealms() {
+  return useQuery({
+    queryKey: ["item-pricing", "realms"],
+    queryFn: async () => {
+      const response = await fetch("/api/v1/item-pricing/realms");
+      if (!response.ok) throw new Error("Failed to fetch pricing realms");
+      return response.json() as Promise<ItemPricingRealm[]>;
+    },
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  });
+}
+
+export function useCurrentItemPrices(realmId: string, faction: AuctionHouseFaction | "", itemIds: number[]) {
+  const normalizedItemIds = [...new Set(itemIds.filter((itemId) => itemId > 0))].sort((a, b) => a - b);
+  return useQuery({
+    queryKey: ["item-pricing", "current", realmId, faction, normalizedItemIds],
+    queryFn: async () => {
+      const batches: number[][] = [];
+      for (let index = 0; index < normalizedItemIds.length; index += 20) {
+        batches.push(normalizedItemIds.slice(index, index + 20));
+      }
+      const responses = await Promise.all(batches.map(async (batch) => {
+        const response = await fetch("/api/v1/item-pricing/prices", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ realm_id: realmId, faction, item_ids: batch }),
+        });
+        if (!response.ok) throw new Error("Failed to fetch item prices");
+        return response.json() as Promise<InstanceItemPricesResponse>;
+      }));
+      return responses.flatMap((response) => response.prices);
+    },
+    enabled: realmId !== "" && faction !== "" && normalizedItemIds.length > 0,
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  });
+}
+
+export function useSearchEnchantments(q: string | null, invTypes?: readonly number[]) {
+  const slot = invTypes?.length ? invTypes.join(",") : "";
+  return useQuery({
+    queryKey: ["gamedata", "search-enchantments", q, slot],
+    queryFn: async () => {
+      const params = new URLSearchParams({ q: q ?? "" });
+      if (slot) params.set("slot", slot);
+      const response = await fetch(`/api/v1/internal/gamedata/search/enchantments?${params}`);
+      if (!response.ok) throw new Error(`Failed to search enchantments: ${response.status}`);
+      return response.json() as Promise<EnchantmentSearchResult[]>;
+    },
+    // A slot filter alone is a valid query (browse all valid enchants).
+    enabled: q != null && (q.length >= 2 || !!slot),
     staleTime: 5 * 60 * 1000,
     retry: false,
   });

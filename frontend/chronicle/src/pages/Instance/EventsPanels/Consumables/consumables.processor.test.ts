@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { ConsumeProcessorEvent, ProcessorContext } from "../processorTypes";
 import { consumableDisplayName, consumablesProcessor, consumablesTotalProcessor } from "./consumables.processor";
-import { aggregateConsumablesTotal, filterConsumablesTotal, fuzzyConsumableMatch } from "./consumablesTotal";
+import { aggregateConsumablesTotal, filterConsumablesTotal, fuzzyConsumableMatch } from "./consumablesTotalLogic";
 
 function createContext(overrides?: Partial<ProcessorContext>): ProcessorContext {
   return {
@@ -76,6 +76,24 @@ describe("consumable disambiguation", () => {
 
     const direct = { ...ambiguous, itemId: 10 };
     expect(resolveConsumableUse(direct, mappings).itemId).toBe(10);
+  });
+
+  it("resolves cast evidence through a direct-spell disambiguation", async () => {
+    const { buildConsumableDisambiguationMap, resolveConsumableUse } = await import("./consumableDisambiguation");
+    const use = process([
+      consumeEvent({
+        kind: 2,
+        spell: { id: 17531, name: "Restore Mana" },
+        candidateItemIds: [13444, 99999],
+        candidateItemIdsCount: 2,
+      }),
+    ]).uses.get("use-1")!;
+    const mappings = buildConsumableDisambiguationMap([
+      { effect_kind: "direct", spell_id: 17531, item_id: 13444 },
+    ]);
+
+    expect(use.candidateEffectKind).toBe("direct");
+    expect(resolveConsumableUse(use, mappings).itemId).toBe(13444);
   });
 
   it("rejects stale and wrong-domain mappings", async () => {
@@ -244,6 +262,31 @@ describe("consumablesProcessor", () => {
     expect(use.observations).toHaveLength(2);
     expect(use.observations[1].amount).toBe(1200);
     expect(use.observations[1].resourceType).toBe("Mana");
+  });
+
+  it("classifies projected pre-combat evidence as a real use before the pull", () => {
+    const pullTime = 1700000000000;
+    const state = consumablesProcessor.createState();
+    consumablesProcessor.processEvent(
+      state,
+      consumeEvent({
+        kind: 9,
+        isProjection: true,
+        itemId: 13444,
+        consumedAtUnixMilli: pullTime - 5000,
+        observedAtUnixMilli: pullTime - 5000,
+      }),
+      "enc1",
+      new Date(pullTime),
+      "consume",
+      createContext(),
+    );
+
+    const use = state.uses.get("use-1")!;
+    expect(use.activeAtPullOnly).toBe(false);
+    expect(use.kinds).toEqual([9]);
+    expect(use.offsetMilli).toBe(-5000);
+    expect(use.dateMilli).toBe(pullTime - 5000);
   });
 
   it("prefers the consumed timestamp for display time", () => {

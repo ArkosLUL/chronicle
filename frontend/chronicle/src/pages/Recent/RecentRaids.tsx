@@ -4,15 +4,13 @@ import { Popover as PopoverPrimitive } from "radix-ui";
 import { Card } from "@/components/ui/Card/Card";
 import { Button } from "@/components/ui/button";
 
-import { useSupportedInstanceBossCounts, useSupportedInstances, useRealms, useSiteConfig } from "@/api/queries";
-import { serverCapabilities } from "@/config/serverCapabilities";
+import { useSupportedInstanceBossCounts, useSupportedInstances, useRealms } from "@/api/queries";
 import { useUrlState, serializers } from "@/hooks/useUrlState";
-import {
-  getInstanceCategory,
-  INSTANCE_CONFIG,
-} from "@/pages/Logs/utils/instanceImages";
+import { INSTANCE_CONFIG } from "@/pages/Logs/utils/instanceImages";
+import { getInstanceCategory } from "@/pages/Logs/utils/instanceCategory";
 import { RaidCard } from "./RaidCard";
 import { expandInstanceOptions, expandInstanceQuery } from "./recentRaids.utils";
+import { groupDuplicateInstances } from "@/utils/groupDuplicates";
 import type { RecentInstance, RecentInstancesResponse } from "@/api/typesGenerated";
 
 function renderItems(names: string[], selected: string[], onToggle: (name: string) => void) {
@@ -100,6 +98,7 @@ function InstanceCombobox({
 }
 
 const API_BASE = "/api/v1/raidlogs";
+const RECENT_WINDOW_DAYS = 30;
 
 type CategoryFilter = "all" | "raid" | "dungeon";
 type VideoFilter = "all" | "with";
@@ -128,10 +127,6 @@ export function RecentRaids() {
   const { data: supportedInstances } = useSupportedInstances();
   const { data: bossCounts } = useSupportedInstanceBossCounts();
   const { data: realms } = useRealms();
-  const { data: siteConfig } = useSiteConfig();
-  const instanceFlavor = siteConfig?.dataset_flavor?.length
-    ? siteConfig.dataset_flavor
-    : serverCapabilities.defaultFlavor;
 
   const [rawCategory, setRawCategory] = useUrlState("cat", "all", serializers.string);
   const [selectedInstances, setSelectedInstances] = useUrlState("inst", [], serializers.stringArray);
@@ -172,9 +167,9 @@ export function RecentRaids() {
     }
 
     return instanceOptions.filter(
-      (name) => getInstanceCategory(name, instanceFlavor) === category,
+      (name) => getInstanceCategory(name, supportedInstances) === category,
     );
-  }, [category, instanceFlavor, instanceOptions]);
+  }, [category, instanceOptions, supportedInstances]);
 
   const selectedInstancesValid = useMemo(
     () => stableSelectedInstances.filter((name) => instanceOptions.includes(name)),
@@ -206,6 +201,7 @@ export function RecentRaids() {
   const hasVideoParam = videoFilter === "with" ? "true" : "";
 
   const PAGE_SIZE = 24;
+  const instanceGroups = useMemo(() => groupDuplicateInstances(instances), [instances]);
 
   const fetchInstances = useCallback(async (offset?: number) => {
     if (hasConflictingFilters) {
@@ -227,6 +223,7 @@ export function RecentRaids() {
 
     try {
       const params = new URLSearchParams();
+      params.set("days", String(RECENT_WINDOW_DAYS));
       params.set("limit", String(PAGE_SIZE));
       if (offset) {
         params.set("offset", String(offset));
@@ -257,7 +254,7 @@ export function RecentRaids() {
         setInstances((prev) => [...prev, ...data.instances]);
       }
 
-      setHasMore(data.instances.length >= PAGE_SIZE);
+      setHasMore(data.has_more);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load recent raids");
     } finally {
@@ -294,14 +291,14 @@ export function RecentRaids() {
   // Infinite scroll observer
   const loadMoreRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (!hasMore || loadingMore || hasConflictingFilters || instances.length === 0) {
+    if (!hasMore || loadingMore || hasConflictingFilters || instanceGroups.length === 0) {
       return;
     }
 
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) {
-          fetchInstances(instances.length);
+          fetchInstances(instanceGroups.length);
         }
       },
       { threshold: 0.1 },
@@ -312,7 +309,7 @@ export function RecentRaids() {
     }
 
     return () => observer.disconnect();
-  }, [fetchInstances, hasConflictingFilters, hasMore, instances.length, loadingMore]);
+  }, [fetchInstances, hasConflictingFilters, hasMore, instanceGroups.length, loadingMore]);
 
   const toggleInstance = useCallback((name: string) => {
     setSelectedInstances((prev) => {
@@ -341,7 +338,7 @@ export function RecentRaids() {
             Recent
           </h1>
           <p className="text-muted-foreground mt-1">
-            Browse the latest dungeon & raid uploads from the community
+            Browse community dungeon & raid uploads from the last {RECENT_WINDOW_DAYS} days. Older uploads are not shown here.
           </p>
         </div>
 
@@ -433,16 +430,20 @@ export function RecentRaids() {
         )}
 
         {/* Raid grid */}
-        {instances.length > 0 && (
+        {instanceGroups.length > 0 && (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {instances.map((instance) => (
-                <RaidCard
-                  key={instance.id}
-                  instance={instance}
-                  bossCount={bossCounts?.get(instance.name)}
-                />
-              ))}
+              {instanceGroups.map((group) => {
+                const instance = group[0];
+                return (
+                  <RaidCard
+                    key={instance.id}
+                    instance={instance}
+                    instances={group}
+                    bossCount={bossCounts?.get(instance.name)}
+                  />
+                );
+              })}
             </div>
 
             {/* Infinite scroll trigger */}
@@ -457,9 +458,9 @@ export function RecentRaids() {
             )}
 
             {/* End of results */}
-            {!loading && !hasMore && instances.length > 0 && (
+            {!loading && !hasMore && instanceGroups.length > 0 && (
               <p className="text-center text-sm text-muted-foreground py-8">
-                You&apos;ve reached the end! {instances.length} raids shown.
+                You&apos;ve reached the end! {instanceGroups.length} raids shown.
               </p>
             )}
           </>

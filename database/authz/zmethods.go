@@ -201,6 +201,32 @@ func (z *Authz) IsGuildMember(ctx context.Context, guildID, userID uuid.UUID) (b
 	return z.CheckOne(ctx, nil, zg.CanDirect_member_User(actor))
 }
 
+// IsGuildDiscordBotEnabled reports whether the guild has the wildcard Discord
+// bot entitlement. The concrete subject ID is irrelevant because the relation
+// only grants access through user:*.
+func (z *Authz) IsGuildDiscordBotEnabled(ctx context.Context, guildID uuid.UUID) (bool, error) {
+	guild := policy.New().Guild(guildID)
+	return z.CheckOne(ctx, nil, guild.CanUse_discord_bot_User(policy.New().User(uuid.Nil)))
+}
+
+// SetGuildDiscordBotEnabled grants or revokes the guild's wildcard Discord bot
+// entitlement. Callers are responsible for checking administer_authz.
+func (z *Authz) SetGuildDiscordBotEnabled(ctx context.Context, guildID uuid.UUID, enabled bool) error {
+	guild := policy.New().Guild(guildID)
+	filter := rel.NewFilter(guild.Object().Typ, guild.Object().ID, "discord_bot_enabled")
+	if err := z.Delete(ctx, rel.NewPreconditionedFilter(filter)); err != nil {
+		return fmt.Errorf("delete Discord bot entitlement: %w", err)
+	}
+	if !enabled {
+		return nil
+	}
+
+	builder := policy.New()
+	builder.Guild(guildID).Discord_bot_enabledWildcard()
+	_, err := z.Write(ctx, *builder.Txn())
+	return err
+}
+
 // SetUserChronicleRoles replaces all Chronicle roles for a user.
 // It deletes all existing chronicle→user relationships, then writes the new set.
 func (z *Authz) SetUserChronicleRoles(ctx context.Context, userID uuid.UUID, roles []string) error {
@@ -309,4 +335,62 @@ func (z *Authz) RemoveTenantApplicationAdmin(ctx context.Context, applicationID,
 	f := rel.NewFilter("wow_tenant_application", applicationID.String(), "admin")
 	f.WithSubjectFilter("user", userID.String(), "")
 	return z.Delete(ctx, rel.NewPreconditionedFilter(f))
+}
+
+// RaidCompPermission names a checkable raid_composition permission.
+type RaidCompPermission string
+
+const (
+	RaidCompView          RaidCompPermission = "view"
+	RaidCompEdit          RaidCompPermission = "edit"
+	RaidCompDelete        RaidCompPermission = "delete"
+	RaidCompManageSharing RaidCompPermission = "manage_sharing"
+)
+
+// CheckRaidComposition checks a permission on a raid composition for a user.
+// Anonymous viewers pass uuid.Nil: the public_viewer wildcard matches any
+// user subject, so public compositions stay viewable without an account.
+func (z *Authz) CheckRaidComposition(ctx context.Context, compID, userID uuid.UUID, permission RaidCompPermission) (bool, error) {
+	b := policy.New()
+	comp := b.Raid_composition(compID)
+	actor := b.User(userID)
+	switch permission {
+	case RaidCompView:
+		return z.CheckOne(ctx, nil, comp.CanView_User(actor))
+	case RaidCompEdit:
+		return z.CheckOne(ctx, nil, comp.CanEdit_User(actor))
+	case RaidCompDelete:
+		return z.CheckOne(ctx, nil, comp.CanDelete_User(actor))
+	case RaidCompManageSharing:
+		return z.CheckOne(ctx, nil, comp.CanManage_sharing_User(actor))
+	default:
+		return false, fmt.Errorf("unknown raid composition permission %q", permission)
+	}
+}
+
+// SetRaidCompositionSharing declaratively replaces a composition's sharing
+// state: the public_viewer wildcard and the full set of editor grants.
+func (z *Authz) SetRaidCompositionSharing(ctx context.Context, compID uuid.UUID, publicView bool, editors []uuid.UUID) error {
+	obj := policy.New().Raid_composition(compID).Object()
+	for _, relation := range []string{"editor", "public_viewer"} {
+		f := rel.NewFilter(obj.Typ, obj.ID, relation)
+		if err := z.Delete(ctx, rel.NewPreconditionedFilter(f)); err != nil {
+			return fmt.Errorf("clear %s relations: %w", relation, err)
+		}
+	}
+
+	if !publicView && len(editors) == 0 {
+		return nil
+	}
+
+	b := policy.New()
+	comp := b.Raid_composition(compID)
+	if publicView {
+		comp.Public_viewerWildcard()
+	}
+	for _, editor := range editors {
+		comp.Editor(b.User(editor))
+	}
+	_, err := z.Write(ctx, *b.Txn())
+	return err
 }

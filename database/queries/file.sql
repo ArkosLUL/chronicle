@@ -314,8 +314,10 @@ WHERE
        THEN wow_log_groups.owner = @filter_user_id 
        ELSE true END
   AND
-  -- Filter by instance name (skip if empty string)
-  CASE WHEN @filter_instance_name::text != '' 
+  -- Filter to logs without an instance, or by instance name when provided
+  CASE WHEN @filter_without_instance::boolean
+       THEN cardinality(instances_agg.instance_names) = 0
+       WHEN @filter_instance_name::text != ''
        THEN @filter_instance_name = ANY(instances_agg.instance_names)
        ELSE true END
 ORDER BY
@@ -360,7 +362,9 @@ WHERE
        THEN wow_log_groups.owner = @filter_user_id 
        ELSE true END
   AND
-  CASE WHEN @filter_instance_name::text != '' 
+  CASE WHEN @filter_without_instance::boolean
+       THEN cardinality(instances_agg.instance_names) = 0
+       WHEN @filter_instance_name::text != ''
        THEN @filter_instance_name = ANY(instances_agg.instance_names)
        ELSE true END;
 
@@ -390,7 +394,8 @@ ORDER BY name ASC;
 SELECT
   sqlc.embed(wow_log_groups),
   files_agg.files,
-  instances_output.output AS processing_output
+  instances_output.output AS processing_output,
+  parsed_bytes_agg.parsed_bytes
 FROM
   wow_log_groups
     LEFT JOIN LATERAL (
@@ -458,6 +463,13 @@ FROM
         ), '[]'::jsonb)
     ) AS output
     ) instances_output ON true
+
+    LEFT JOIN LATERAL (
+    SELECT COALESCE(SUM(octet_length(lie.events)), 0)::bigint AS parsed_bytes
+    FROM log_instance_events lie
+    JOIN log_instances li ON li.id = lie.instance_id
+    WHERE li.log_group_id = wow_log_groups.id
+    ) parsed_bytes_agg ON true
 WHERE
   wow_log_groups.owner = $1
   AND (

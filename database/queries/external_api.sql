@@ -153,3 +153,110 @@ LEFT JOIN LATERAL (
 ORDER BY d.started_at DESC, d.id DESC
 LIMIT @result_limit
 OFFSET @result_offset;
+
+
+-- name: ListExternalAPIRecentInstances :many
+SELECT
+    li.id,
+    li.hashed_slug,
+    COALESCE(NULLIF(btrim(li.name), ''), NULLIF(btrim(sm.instance_name), ''), li.name)::text AS name,
+    li.realm_id,
+    wsr.server_id,
+    wsr.name::text AS realm_name,
+    li.guild_id,
+    COALESCE(g.name, '')::text AS guild_name,
+    wlg.created_at AS uploaded_at,
+    COALESCE(
+        (SELECT MIN(lie.start_time) FROM log_instance_encounters lie WHERE lie.instance_id = li.id),
+        wlg.created_at
+    )::timestamptz AS started_at,
+    COALESCE(
+        (SELECT MAX(lie.end_time) FROM log_instance_encounters lie WHERE lie.instance_id = li.id),
+        wlg.created_at
+    )::timestamptz AS ended_at,
+    (SELECT COUNT(*) FROM log_instance_players lip WHERE lip.instance_id = li.id)::bigint AS player_count,
+    (SELECT COUNT(*) FROM log_instance_encounters lie WHERE lie.instance_id = li.id AND lie.boss = true)::bigint AS boss_count,
+    (SELECT COUNT(*) FROM log_instance_encounters lie WHERE lie.instance_id = li.id AND lie.boss = true AND lie.kill_type IN ('clean', 'partial'))::bigint AS boss_kills,
+    EXISTS (
+        SELECT 1 FROM log_instance_youtube_timestamped yt
+        WHERE yt.log_instance_id = li.id OR yt.instance_slug = li.hashed_slug
+    )::boolean AS has_youtube_video,
+    li.difficulty_name,
+    li.max_players,
+    li.recorder_name
+FROM log_instances li
+JOIN parsed_log_group plg ON plg.id = li.log_group_id
+JOIN wow_log_groups wlg ON wlg.id = plg.id
+LEFT JOIN server_upload_meta sm ON sm.log_group_id = li.log_group_id
+JOIN wow_server_realms wsr ON wsr.id = li.realm_id
+LEFT JOIN guilds g ON g.id = li.guild_id
+WHERE (
+        @after_date::timestamptz IS NULL
+        OR COALESCE(
+            (SELECT MIN(lie.start_time) FROM log_instance_encounters lie WHERE lie.instance_id = li.id),
+            wlg.created_at
+        ) >= @after_date::timestamptz
+    )
+  AND (@upload_after::timestamptz IS NULL OR wlg.created_at >= @upload_after::timestamptz)
+  AND (
+        COALESCE(cardinality(@instance_names::text[]), 0) = 0
+        OR COALESCE(NULLIF(btrim(li.name), ''), NULLIF(btrim(sm.instance_name), ''), li.name) = ANY(@instance_names::text[])
+    )
+  AND (@realm_id::uuid = '00000000-0000-0000-0000-000000000000'::uuid OR li.realm_id = @realm_id::uuid)
+  AND (@guild_id::uuid = '00000000-0000-0000-0000-000000000000'::uuid OR li.guild_id = @guild_id::uuid)
+  AND (
+        @has_video::text = ''
+        OR (@has_video::text = 'true' AND EXISTS (
+            SELECT 1 FROM log_instance_youtube_timestamped yt
+            WHERE yt.log_instance_id = li.id OR yt.instance_slug = li.hashed_slug
+        ))
+        OR (@has_video::text = 'false' AND NOT EXISTS (
+            SELECT 1 FROM log_instance_youtube_timestamped yt
+            WHERE yt.log_instance_id = li.id OR yt.instance_slug = li.hashed_slug
+        ))
+    )
+ORDER BY started_at DESC, li.id DESC
+LIMIT @result_limit
+OFFSET @result_offset;
+
+
+-- name: ListExternalAPILeaderboardDuplicateLogs :many
+-- Returns the logs excluded by duplicate-group deduplication for each selected
+-- leaderboard instance. The selected instance is the canonical leaderboard log
+-- for the requested timing mode; every other member of its duplicate group is
+-- returned here, including unqualified runs.
+SELECT
+    selected.id AS selected_instance_id,
+    duplicate.id,
+    duplicate.hashed_slug,
+    COALESCE(CASE
+        WHEN @use_ranked_timing::boolean THEN duplicate_speedrun.boss_to_boss_duration_ms
+        ELSE duplicate_speedrun.ranked_duration_ms
+    END, 0)::bigint AS duration_ms,
+    CASE
+        WHEN @use_ranked_timing::boolean THEN duplicate_speedrun.boss_to_boss_start_time
+        ELSE duplicate_speedrun.ranked_start_time
+    END::timestamptz AS start_time,
+    CASE
+        WHEN @use_ranked_timing::boolean THEN duplicate_speedrun.boss_to_boss_completion_time
+        ELSE duplicate_speedrun.ranked_completion_time
+    END::timestamptz AS completion_time,
+    duplicate.parser_version,
+    COALESCE(duplicate_speedrun.addon_version, '')::text AS addon_version,
+    (youtube.video_url IS NOT NULL)::boolean AS has_youtube_video,
+    COALESCE(youtube.video_url, '')::text AS youtube_url
+FROM log_instances selected
+JOIN log_instances duplicate
+  ON duplicate.duplicate_group_id = selected.duplicate_group_id
+ AND duplicate.id != selected.id
+JOIN wow_server_realms duplicate_realm ON duplicate_realm.id = duplicate.realm_id
+LEFT JOIN instance_speedruns duplicate_speedrun ON duplicate_speedrun.instance_id = duplicate.id
+LEFT JOIN LATERAL (
+    SELECT yt.video_url
+    FROM log_instance_youtube_timestamped yt
+    WHERE yt.log_instance_id = duplicate.id OR yt.instance_slug = duplicate.hashed_slug
+    LIMIT 1
+) youtube ON true
+WHERE selected.id = ANY(@selected_instance_ids::uuid[])
+  AND selected.duplicate_group_id IS NOT NULL
+ORDER BY selected.id, duplicate.id;

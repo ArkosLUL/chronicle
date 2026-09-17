@@ -37,10 +37,11 @@ type parsesQuerier interface {
 }
 
 type instanceParsePlayerInfo struct {
-	name  string
-	class string
-	spec  string
-	role  string
+	name    string
+	class   string
+	spec    string
+	subSpec string
+	role    string
 	// encounter -> ranking row (the instance's own metric values)
 	bosses map[string]database.ListRankingsForInstanceRow
 }
@@ -293,11 +294,12 @@ func handleInstanceParsesWithStore(store parsesQuerier, logger *slog.Logger, w h
 		p, exists := players[m.PlayerGuid]
 		if !exists {
 			p = &instanceParsePlayerInfo{
-				name:   m.PlayerName,
-				class:  m.PlayerClass,
-				spec:   m.PlayerSpec,
-				role:   m.PlayerRole,
-				bosses: make(map[string]database.ListRankingsForInstanceRow),
+				name:    m.PlayerName,
+				class:   m.PlayerClass,
+				spec:    m.PlayerSpec,
+				subSpec: m.PlayerSubSpec,
+				role:    m.PlayerRole,
+				bosses:  make(map[string]database.ListRankingsForInstanceRow),
 			}
 			players[m.PlayerGuid] = p
 			playerOrder = append(playerOrder, m.PlayerGuid)
@@ -319,12 +321,13 @@ func handleInstanceParsesWithStore(store parsesQuerier, logger *slog.Logger, w h
 		p := players[playerGUID]
 
 		sdkPlayer := chroniclesdk.InstanceParsePlayer{
-			PlayerGUID:  playerGUID,
-			PlayerName:  p.name,
-			PlayerClass: normalizeClassName(p.class),
-			PlayerSpec:  p.spec,
-			PlayerRole:  p.role,
-			Bosses:      make([]chroniclesdk.InstanceParseBoss, 0, len(p.bosses)),
+			PlayerGUID:    playerGUID,
+			PlayerName:    p.name,
+			PlayerClass:   normalizeClassName(p.class),
+			PlayerSpec:    p.spec,
+			PlayerSubSpec: p.subSpec,
+			PlayerRole:    p.role,
+			Bosses:        make([]chroniclesdk.InstanceParseBoss, 0, len(p.bosses)),
 		}
 
 		// Check unknown spec in spec mode.
@@ -371,14 +374,15 @@ func handleInstanceParsesWithStore(store parsesQuerier, logger *slog.Logger, w h
 				// bucket (e.g. all Fury Warriors on one boss), so cache cohort
 				// slices per bucket key for the duration of this request to
 				// avoid an N+1 query pattern across players.
-				var playerSpec pgtype.Text
+				var playerSpec, playerSubSpec pgtype.Text
 				if snapshotCohortMode == parsepolicy.CohortModeSpec {
 					playerSpec = pgtype.Text{String: p.spec, Valid: true}
+					playerSubSpec = pgtype.Text{String: p.subSpec, Valid: true}
 				}
 
-				bucketKey := fmt.Sprintf("%s|%s|%d|%s|%s",
+				bucketKey := fmt.Sprintf("%s|%s|%d|%s|%s|%s",
 					encName, memberRow.DifficultyName, memberRow.MaxPlayers,
-					memberRow.PlayerClass, playerSpec.String)
+					memberRow.PlayerClass, playerSpec.String, playerSubSpec.String)
 				cohort, cached := cohortCache[bucketKey]
 				if !cached {
 					cohortRows, cErr := store.GetSnapshotCohortValues(ctx, database.GetSnapshotCohortValuesParams{
@@ -389,6 +393,7 @@ func handleInstanceParsesWithStore(store parsesQuerier, logger *slog.Logger, w h
 						MaxPlayers:     memberRow.MaxPlayers,
 						PlayerClass:    memberRow.PlayerClass,
 						PlayerSpec:     playerSpec,
+						PlayerSubSpec:  playerSubSpec,
 					})
 					if cErr != nil {
 						logger.Error("failed to load cohort values",
@@ -516,11 +521,12 @@ func buildPersistedInstanceParsePlayers(
 		player, exists := players[ranking.PlayerGuid]
 		if !exists {
 			player = &instanceParsePlayerInfo{
-				name:   ranking.PlayerName,
-				class:  ranking.PlayerClass,
-				spec:   ranking.PlayerSpec,
-				role:   ranking.PlayerRole,
-				bosses: make(map[string]database.ListRankingsForInstanceRow),
+				name:    ranking.PlayerName,
+				class:   ranking.PlayerClass,
+				spec:    ranking.PlayerSpec,
+				subSpec: ranking.PlayerSubSpec,
+				role:    ranking.PlayerRole,
+				bosses:  make(map[string]database.ListRankingsForInstanceRow),
 			}
 			players[ranking.PlayerGuid] = player
 			playerOrder = append(playerOrder, ranking.PlayerGuid)
@@ -543,12 +549,13 @@ func buildPersistedInstanceParsePlayers(
 	for _, playerGUID := range playerOrder {
 		player := players[playerGUID]
 		sdkPlayer := chroniclesdk.InstanceParsePlayer{
-			PlayerGUID:  playerGUID,
-			PlayerName:  player.name,
-			PlayerClass: normalizeClassName(player.class),
-			PlayerSpec:  player.spec,
-			PlayerRole:  player.role,
-			Bosses:      make([]chroniclesdk.InstanceParseBoss, 0, len(player.bosses)),
+			PlayerGUID:    playerGUID,
+			PlayerName:    player.name,
+			PlayerClass:   normalizeClassName(player.class),
+			PlayerSpec:    player.spec,
+			PlayerSubSpec: player.subSpec,
+			PlayerRole:    player.role,
+			Bosses:        make([]chroniclesdk.InstanceParseBoss, 0, len(player.bosses)),
 		}
 
 		unknownSpec := cohortMode == parsepolicy.CohortModeSpec && (player.spec == "" || strings.EqualFold(player.spec, "unknown"))

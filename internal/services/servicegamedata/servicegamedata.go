@@ -75,14 +75,16 @@ func datasetIDFromContext(ctx context.Context) uuid.UUID {
 
 func (s *Service) setupRoutes(_ *authz.Authz) {
 	s.router.Get("/tooltip/item/{item_id}", s.handleItemTooltip)
+	s.router.Get("/tooltip/gem/{enchant_id}", s.handleGemTooltip)
 	s.router.Get("/display/item/{item_id}", s.handleItemDisplay)
 	s.router.Get("/sim/item/{item_id}", s.handleItemSim)
 
-	// Rate limit search endpoints: burst 30, refill 5/min (one token every 12s).
-	searchLimiter := newIPLimiter(rate.Every(12*time.Second), 30)
+	// Rate limit search endpoints: burst 30, refill 30/min (one token every 2s).
+	searchLimiter := newIPLimiter(rate.Every(2*time.Second), 30)
 	s.router.With(searchLimiter.middleware).Get("/search/items", s.handleSearchItems)
 	s.router.With(searchLimiter.middleware).Get("/search/creatures", s.handleSearchCreatures)
 	s.router.With(searchLimiter.middleware).Get("/search/item-sets", s.handleSearchItemSets)
+	s.router.With(searchLimiter.middleware).Get("/search/enchantments", s.handleSearchEnchantments)
 	s.router.Get("/item-set", s.handleGetItemSetDetail)
 }
 

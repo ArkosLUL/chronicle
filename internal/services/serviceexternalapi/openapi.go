@@ -13,7 +13,13 @@ type OpenAPIDocument struct {
 	OpenAPI string                                 `json:"openapi"`
 	Info    OpenAPIInfo                            `json:"info"`
 	Servers []OpenAPIServer                        `json:"servers"`
+	Tags    []OpenAPITag                           `json:"tags,omitempty"`
 	Paths   map[string]map[string]OpenAPIOperation `json:"paths"`
+}
+
+type OpenAPITag struct {
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
 }
 
 type OpenAPIInfo struct {
@@ -27,6 +33,7 @@ type OpenAPIServer struct {
 }
 
 type OpenAPIOperation struct {
+	Tags        []string                   `json:"tags,omitempty"`
 	Summary     string                     `json:"summary"`
 	Description string                     `json:"description,omitempty"`
 	Parameters  []OpenAPIParameter         `json:"parameters,omitempty"`
@@ -53,7 +60,8 @@ type OpenAPIResponse struct {
 }
 
 type OpenAPIMediaType struct {
-	Example any `json:"example,omitempty"`
+	Schema  *OpenAPISchema `json:"schema,omitempty"`
+	Example any            `json:"example,omitempty"`
 }
 
 func newOpenAPIDocument() OpenAPIDocument {
@@ -65,17 +73,39 @@ func newOpenAPIDocument() OpenAPIDocument {
 			Version:     "1.0.0",
 		},
 		Servers: []OpenAPIServer{{URL: "/api/external/v1"}},
-		Paths:   make(map[string]map[string]OpenAPIOperation),
+		Tags: []OpenAPITag{
+			{Name: "Explore", Description: "Discover servers, realms, recent raids, and leaderboards."},
+			{Name: "Characters", Description: "Look up characters and their raid history."},
+			{Name: "Raid Instance", Description: "Inspect one parsed raid instance and its data."},
+			{Name: "General", Description: "API health and contract endpoints."},
+		},
+		Paths: make(map[string]map[string]OpenAPIOperation),
 	}
 }
 
 func (s *Service) register(method, path string, operation OpenAPIOperation, handler http.HandlerFunc) {
+	s.registerWithRateLimitCost(method, path, externalStandardRequestCost, operation, handler)
+}
+
+func (s *Service) registerWithRateLimitCost(method, path string, cost int, operation OpenAPIOperation, handler http.HandlerFunc) {
 	method = strings.ToLower(method)
+	if path != "/health" {
+		operation.Responses["429"] = OpenAPIResponse{
+			Description: "The client IP has exceeded the external API rate limit.",
+		}
+	}
 	if s.openapi.Paths[path] == nil {
 		s.openapi.Paths[path] = make(map[string]OpenAPIOperation)
 	}
 	s.openapi.Paths[path][method] = operation
-	s.router.Method(strings.ToUpper(method), path, handler)
+
+	var routeHandler http.Handler = handler
+	if path == "/health" {
+		routeHandler = s.rateLimiter.statusMiddleware(routeHandler)
+	} else {
+		routeHandler = s.rateLimiter.middlewareWithCost(cost, routeHandler)
+	}
+	s.router.Method(strings.ToUpper(method), path, routeHandler)
 }
 
 func (s *Service) openAPISpec(w http.ResponseWriter, r *http.Request) {

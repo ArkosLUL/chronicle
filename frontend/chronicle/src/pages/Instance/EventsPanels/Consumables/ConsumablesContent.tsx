@@ -6,7 +6,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
-import { ChevronDown, ChevronRight, HelpCircle, Hourglass } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, HelpCircle, Hourglass } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { iconUrl } from "@/config/iconUrl";
 import { usePortalContainer } from "@/components/ui/PortalContainerContext";
@@ -25,11 +25,17 @@ import {
   CONFIDENCE_LABELS,
   consumableDisplayName,
   EVIDENCE_KIND_LABELS,
+  isPreCombatUse,
+  isPrePotUse,
+  PRE_COMBAT_DESCRIPTION,
+  PRE_POT_DESCRIPTION,
   type ConsumableUse,
   type ConsumablesResult,
 } from "./consumables.processor";
+import { HintTooltip, TooltipContent, TooltipTrigger } from "@/components/ui/Tooltip/tooltip";
 import { useCachedValue } from "@/hooks/useCachedValue";
 import { buildConsumablesTokens, parseConsumablesTokens } from "./consumablesTokens";
+import { paginateConsumables } from "./consumablesPagination";
 
 // ============================================================================
 // Helpers
@@ -57,13 +63,17 @@ interface ConfidenceBadgeConfig {
   color: string;
   bgColor: string;
   label: string;
+  description?: string;
 }
 
 /** Badge per display state: strongest confidence, with an "At Pull" override
  * when the use was never directly observed. */
 function badgeForUse(use: ConsumableUse): ConfidenceBadgeConfig {
+  if (use.kinds.includes(9)) {
+    return { color: "text-sky-400", bgColor: "bg-sky-500/15", label: "Pre-Combat", description: PRE_COMBAT_DESCRIPTION };
+  }
   if (use.activeAtPullOnly) {
-    return { color: "text-sky-400", bgColor: "bg-sky-500/15", label: "At Pull" };
+    return { color: "text-sky-400", bgColor: "bg-sky-500/15", label: "At Pull", description: PRE_POT_DESCRIPTION };
   }
   switch (use.bestConfidence) {
     case 1:
@@ -81,10 +91,17 @@ function badgeForUse(use: ConsumableUse): ConfidenceBadgeConfig {
 
 function ConfidenceBadge({ use }: { use: ConsumableUse }) {
   const config = badgeForUse(use);
-  return (
-    <span className={cn("inline-flex items-center px-1.5 py-0.5 rounded text-2xs font-medium", config.bgColor, config.color)}>
+  const badge = (
+    <span className={cn("inline-flex items-center whitespace-nowrap px-1.5 py-0.5 rounded text-2xs font-medium", config.bgColor, config.color)}>
       {config.label}
     </span>
+  );
+  if (!config.description) return badge;
+  return (
+    <HintTooltip>
+      <TooltipTrigger asChild>{badge}</TooltipTrigger>
+      <TooltipContent className="max-w-64">{config.description}</TooltipContent>
+    </HintTooltip>
   );
 }
 
@@ -338,25 +355,40 @@ function EvidenceDetails({ use, encounterNames }: { use: ConsumableUse; encounte
 // ============================================================================
 
 // ============================================================================
-// Pre-pull toggle
+// Pre-encounter timing filters
 // ============================================================================
 
-function PrePullToggle({ enabled, onToggle }: { enabled: boolean; onToggle: () => void }) {
+function TimingToggle({
+  label,
+  description,
+  enabled,
+  onToggle,
+}: {
+  label: string;
+  description: string;
+  enabled: boolean;
+  onToggle: () => void;
+}) {
   return (
-    <button
-      type="button"
-      onClick={onToggle}
-      className={cn(
-        "flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-all cursor-pointer border",
-        enabled
-          ? "bg-sky-500/15 border-sky-400 text-sky-400"
-          : "bg-red-500/10 border-red-500/60 text-red-400 line-through",
-      )}
-      title={enabled ? "Hide uses only seen active at pull" : "Show uses only seen active at pull"}
-    >
-      <Hourglass className="h-3 w-3" />
-      <span className="hidden sm:inline">Pre-Pull</span>
-    </button>
+    <HintTooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-pressed={enabled}
+          className={cn(
+            "flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-all cursor-pointer border",
+            enabled
+              ? "bg-sky-500/15 border-sky-400 text-sky-400"
+              : "bg-red-500/10 border-red-500/60 text-red-400 line-through",
+          )}
+        >
+          <Hourglass className="h-3 w-3" />
+          <span className="hidden sm:inline">{label}</span>
+        </button>
+      </TooltipTrigger>
+      <TooltipContent className="max-w-64">{description}</TooltipContent>
+    </HintTooltip>
   );
 }
 
@@ -368,11 +400,11 @@ export const ConsumablesContent = (props: ConsumablesContentProps) => {
   // Initialize from the persisted panelOption (mount-only).
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const initial = useMemo(() => parseConsumablesTokens(panelOption), []);
-  const [showPrePull, setShowPrePull] = useState(initial.showPrePull);
+  const [timingFilters, setTimingFilters] = useState(initial);
 
-  const togglePrePull = useCallback(() => {
-    setShowPrePull((prev) => {
-      const next = !prev;
+  const toggleTimingFilter = useCallback((key: "showPreCombat" | "showPrePot") => {
+    setTimingFilters((previous) => {
+      const next = { ...previous, [key]: !previous[key] };
       setPanelOption?.(buildConsumablesTokens(panelOption, next));
       return next;
     });
@@ -416,9 +448,24 @@ export const ConsumablesContent = (props: ConsumablesContentProps) => {
     if (!cachedResult) return [];
     return [...cachedResult.uses.values()]
       .map((use) => resolveConsumableUse(use, disambiguationMap))
-      .filter((use) => showPrePull || !use.activeAtPullOnly)
+      .filter((use) => timingFilters.showPreCombat || !isPreCombatUse(use))
+      .filter((use) => timingFilters.showPrePot || !isPrePotUse(use))
       .sort((a, b) => a.dateMilli - b.dateMilli);
-  }, [cachedResult, showPrePull, disambiguationMap]);
+  }, [cachedResult, timingFilters, disambiguationMap]);
+
+  // This log can contain thousands of rows. Keep the mounted table bounded so
+  // unrelated React updates do not repeatedly traverse and paint the full log.
+  const [requestedPage, setRequestedPage] = useState(0);
+  const page = useMemo(() => paginateConsumables(sortedUses, requestedPage), [sortedUses, requestedPage]);
+  useEffect(() => {
+    if (requestedPage !== page.page) setRequestedPage(page.page);
+  }, [page.page, requestedPage]);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const goToPage = useCallback((nextPage: number) => {
+    setRequestedPage(nextPage);
+    const viewport = scrollAreaRef.current?.querySelector<HTMLElement>("[data-slot='scroll-area-viewport']");
+    if (viewport) viewport.scrollTop = 0;
+  }, []);
 
   const effectiveProps = {
     ...props,
@@ -429,24 +476,67 @@ export const ConsumablesContent = (props: ConsumablesContentProps) => {
   return (
     <GenericPanel {...effectiveProps}>
       <div className="flex flex-col h-full min-h-0">
-        <div className="flex items-center justify-between mb-2 gap-2 shrink-0">
+        <div className="mb-2 flex shrink-0 items-center justify-between gap-2">
           <div className="text-xs text-muted-foreground">
             Uses: <span className="font-medium text-foreground">{sortedUses.length}</span>
+            {page.pageCount > 1 && (
+              <span className="ml-2 text-muted-foreground/60">
+                {page.start + 1}-{page.end}
+              </span>
+            )}
             {(cachedResult?.unknownUseIds.size ?? 0) > 0 && (
               <span className="ml-2 text-muted-foreground/60" title="Uses Chronicle could not map to a known item">
                 {cachedResult!.unknownUseIds.size} unmapped
               </span>
             )}
           </div>
-          <PrePullToggle enabled={showPrePull} onToggle={togglePrePull} />
+          <div className="flex items-center gap-1.5">
+            {page.pageCount > 1 && (
+              <div className="flex items-center gap-0.5" aria-label="Consumables log pages">
+                <button
+                  type="button"
+                  onClick={() => goToPage(page.page - 1)}
+                  disabled={page.page === 0}
+                  className="rounded border border-border p-1 text-muted-foreground transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+                  aria-label="Previous consumables page"
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" />
+                </button>
+                <span className="min-w-12 text-center font-mono text-2xs text-muted-foreground">
+                  {page.page + 1}/{page.pageCount}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => goToPage(page.page + 1)}
+                  disabled={page.page === page.pageCount - 1}
+                  className="rounded border border-border p-1 text-muted-foreground transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+                  aria-label="Next consumables page"
+                >
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )}
+            <TimingToggle
+              label="Pre-Combat"
+              description={PRE_COMBAT_DESCRIPTION}
+              enabled={timingFilters.showPreCombat}
+              onToggle={() => toggleTimingFilter("showPreCombat")}
+            />
+            <TimingToggle
+              label="Pre-Pot"
+              description={PRE_POT_DESCRIPTION}
+              enabled={timingFilters.showPrePot}
+              onToggle={() => toggleTimingFilter("showPrePot")}
+            />
+          </div>
         </div>
 
         {sortedUses.length === 0 ? (
           <div className="text-xs text-muted-foreground py-4 text-center">
-            {loading ? "Loading..." : "No consumable uses recorded"}
+            {loading || props.processing ? "Loading..." : "No consumable uses recorded"}
           </div>
         ) : (
-          <ScrollArea className="flex-1 min-h-0">
+          <ScrollArea ref={scrollAreaRef} className="flex-1 min-h-0">
             <table className="w-full text-xs">
               <thead className="sticky top-0 bg-card">
                 <tr className="border-b border-border text-muted-foreground">
@@ -460,7 +550,7 @@ export const ConsumablesContent = (props: ConsumablesContentProps) => {
                 </tr>
               </thead>
               <tbody>
-                {sortedUses.map((use) => {
+                {page.items.map((use) => {
                   const encounterName = encounterNames.get(use.encounterID) || "Unknown";
                   const player = context.instance.players?.[use.player];
                   const isExpanded = expanded.has(use.consumeId);

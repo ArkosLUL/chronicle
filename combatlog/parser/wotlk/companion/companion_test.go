@@ -2,6 +2,7 @@ package companion
 
 import (
 	"log/slog"
+	"strings"
 	"testing"
 	"time"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/common/messages"
+	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/combatant"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 )
@@ -42,7 +44,7 @@ func TestFeed_MultiSlotMessage(t *testing.T) {
 	p := newTestParser()
 
 	// First slot: starts the message, no closing ']'.
-	msgs, err := p.Feed(testTS, `[4P0x060000000008DCCC;G1.51396.3820.41398.40014.0.0.0.264:2.50633.0.0.0.0.0.0`)
+	msgs, err := p.Feed(testTS, `[4P0x060000000008DCCC;G1.51396.3820.3637.3454.0.0.0.264:2.50633.0.0.0.0.0.0`)
 	require.NoError(t, err)
 	assert.Empty(t, msgs, "should not produce messages yet")
 
@@ -121,6 +123,22 @@ func TestFeed_OrphanContinuation(t *testing.T) {
 	msgs, err := p.Feed(testTS, `~.245:5.51398.3832.41398.40051.0.0.0.264]`)
 	require.NoError(t, err)
 	assert.Empty(t, msgs)
+}
+
+func TestFeed_RecoversBinPackedMessageAfterOrphanContinuation(t *testing.T) {
+	t.Parallel()
+	p := newTestParser()
+
+	field := `~orphaned player data][9Z:Vault of Archavon,raid,2,25 Player,25,0,0,0,0,Wintergrasp Fortress][0P0x000000000009A654;T1,2,2305000`
+	msgs, err := p.Feed(testTS, field)
+	require.NoError(t, err)
+	require.Len(t, msgs, 1)
+
+	z, ok := msgs[0].(*messages.Zone)
+	require.True(t, ok)
+	assert.Equal(t, "vault of archavon", z.Name)
+	assert.Equal(t, "25 Player", z.DifficultyName)
+	assert.Equal(t, 25, z.MaxPlayers)
 }
 
 func TestIsCompanionMessage(t *testing.T) {
@@ -241,6 +259,7 @@ func TestParseHeader(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, "0.1", v.Versions["chronicle_companion_wotlk"])
 	assert.Equal(t, "3.3.5a", v.Versions["wow"])
+	assert.Equal(t, "a8f3", v.SessionID)
 }
 
 func TestParseHeaderClockInfo(t *testing.T) {
@@ -265,6 +284,110 @@ func TestParseLegacyHeaderHasNoClockInfo(t *testing.T) {
 	_, err := p.Feed(testTS, `[0H:0.1,Icecrown,enUS,3.3.5a,12340,a8f3]`)
 	require.NoError(t, err)
 	assert.Nil(t, p.RealmClockInfo())
+}
+
+// --- Vehicle tests ---
+
+func TestParseVehicleControl(t *testing.T) {
+	t.Parallel()
+	p := newTestParser()
+	observedAt := time.Date(2026, 8, 9, 2, 41, 8, 452000000, time.UTC)
+
+	msgs, err := p.Feed(observedAt, `[8V1786243259341,A,0xF15000812400008F,0x000000000000000B,Salvaged Siege Engine,Chroniclee]`)
+	require.NoError(t, err)
+	require.Len(t, msgs, 1)
+
+	change, ok := msgs[0].(*messages.VehicleControl)
+	require.True(t, ok)
+	assert.Equal(t, messages.VehicleControlAssign, change.Action)
+	assert.Equal(t, time.UnixMilli(1786243259341), change.Date())
+	assert.Equal(t, observedAt, change.ObservedAt)
+	assert.Equal(t, uint64(0), change.Ordinal)
+	assert.Equal(t, guid.GUID(0xF15000812400008F), change.VehicleGUID)
+	assert.Equal(t, guid.GUID(0x000000000000000B), change.ControllerGUID)
+	assert.Equal(t, "Salvaged Siege Engine", change.VehicleName)
+	assert.Equal(t, "Chroniclee", change.ControllerName)
+}
+
+func TestParseVehicleControlPreservesDecodedOrder(t *testing.T) {
+	t.Parallel()
+	p := newTestParser()
+	field := `[4V1786243310992,R,0xF15000812B000090,0x000000000000000B,Salvaged Siege Turret,Chroniclee]` +
+		`[5V1786243310992,A,0xF15000812B000090,0x000000000000000C,Salvaged Siege Turret,Chroniclea]`
+
+	msgs, err := p.Feed(testTS, field)
+	require.NoError(t, err)
+	require.Len(t, msgs, 2)
+
+	release := msgs[0].(*messages.VehicleControl)
+	assignment := msgs[1].(*messages.VehicleControl)
+	assert.Equal(t, messages.VehicleControlRelease, release.Action)
+	assert.Equal(t, uint64(0), release.Ordinal)
+	assert.Equal(t, messages.VehicleControlAssign, assignment.Action)
+	assert.Equal(t, uint64(1), assignment.Ordinal)
+}
+
+func TestParseVehicleControlRejectsMalformedPayloads(t *testing.T) {
+	t.Parallel()
+	p := newTestParser()
+
+	tests := []string{
+		"not-a-timestamp,A,0xF15000812400008F,0x000000000000000B,Engine,Player",
+		"1786243259341,X,0xF15000812400008F,0x000000000000000B,Engine,Player",
+		"1786243259341,A,,0x000000000000000B,Engine,Player",
+		"1786243259341,A,not-a-guid,0x000000000000000B,Engine,Player",
+		"1786243259341,A,0xF15000812400008F,0x000000000000000B,Engine",
+	}
+	for _, payload := range tests {
+		_, err := p.parseVehicle(testTS, payload, 0)
+		require.Error(t, err, payload)
+	}
+}
+
+// --- Raid group tests ---
+
+func TestParseRaidGroup(t *testing.T) {
+	t.Parallel()
+	p := newTestParser()
+	fields := make([]string, messages.RaidGroupCount*messages.RaidGroupSize)
+	fields[0] = "B"
+	fields[4] = "C"
+	fields[5] = "D"
+	fields[39] = "60000000008DCCC"
+
+	msgs, err := p.Feed(testTS, `[7RG:`+strings.Join(fields, ",")+`]`)
+	require.NoError(t, err)
+	require.Len(t, msgs, 1)
+
+	raidGroup, ok := msgs[0].(*messages.RaidGroup)
+	require.True(t, ok)
+	assert.Equal(t, testTS, raidGroup.Date())
+	assert.Equal(t, guid.GUID(0xB), raidGroup.Groups[0][0])
+	assert.Equal(t, guid.GUID(0xC), raidGroup.Groups[0][4])
+	assert.Equal(t, guid.GUID(0xD), raidGroup.Groups[1][0])
+	assert.Equal(t, guid.GUID(0x060000000008DCCC), raidGroup.Groups[7][4])
+	assert.Equal(t, []guid.GUID{0xB, 0xC, 0xD, 0x060000000008DCCC}, raidGroup.Affects())
+	assert.True(t, p.SawRaidGroup())
+}
+
+func TestParseRaidGroupRejectsMalformedPayloads(t *testing.T) {
+	t.Parallel()
+
+	validFields := make([]string, messages.RaidGroupCount*messages.RaidGroupSize)
+	validFields[0] = "B"
+
+	tests := []string{
+		"G:" + strings.Join(validFields[:len(validFields)-1], ","),
+		"G:" + strings.Join(append([]string{"not-a-guid"}, validFields[1:]...), ","),
+		"G:" + strings.Join(append([]string{"0"}, validFields[1:]...), ","),
+		":" + strings.Join(validFields, ","),
+	}
+	for _, payload := range tests {
+		p := newTestParser()
+		_, err := p.parseRaidGroup(testTS, payload)
+		require.Error(t, err, payload)
+		assert.False(t, p.SawRaidGroup())
+	}
 }
 
 // --- Loot tests ---
@@ -335,7 +458,7 @@ func TestParsePlayer_Gear(t *testing.T) {
 	t.Parallel()
 	p := newTestParser()
 
-	msgs, err := p.Feed(testTS, `[5P0x060000000008DCCC;G1.51396.3820.41398.40014.0.0.0.264:2.50633.0.0.0.0.0.0.245]`)
+	msgs, err := p.Feed(testTS, `[5P0x060000000008DCCC;G1.51396.3820.3637.3454.0.0.0.264:2.50633.0.0.0.0.0.0.245]`)
 	require.NoError(t, err)
 	require.Len(t, msgs, 1)
 
@@ -347,7 +470,7 @@ func TestParsePlayer_Gear(t *testing.T) {
 	assert.Equal(t, 51396, g0.ItemID)
 	require.NotNil(t, g0.EnchantID)
 	assert.Equal(t, 3820, *g0.EnchantID)
-	assert.Equal(t, [4]int{41398, 40014, 0, 0}, g0.Gems)
+	assert.Equal(t, [4]int{3637, 3454, 0, 0}, g0.GemEnchantIDs)
 	assert.Equal(t, 264, g0.ItemLevel)
 
 	// Slot 2 = Neck (index 1)
@@ -521,6 +644,64 @@ func TestParsePlayer_Pet(t *testing.T) {
 	assert.Equal(t, "Spot", c.PetName)
 }
 
+func TestParsePlayer_VehicleOwnershipDependsOnAddonVersion(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name             string
+		addonVersion     string
+		petGUID          string
+		wantOwnerMessage bool
+	}{
+		{
+			name:             "legacy addon vehicle",
+			addonVersion:     "0.5",
+			petGUID:          "0xF150006C6B0000BB",
+			wantOwnerMessage: true,
+		},
+		{
+			name:             "vehicle tracking addon vehicle",
+			addonVersion:     "0.6",
+			petGUID:          "0xF150006C6B0000BB",
+			wantOwnerMessage: false,
+		},
+		{
+			name:             "vehicle tracking addon non-vehicle",
+			addonVersion:     "0.6",
+			petGUID:          "0xF130006C6B0000BB",
+			wantOwnerMessage: true,
+		},
+		{
+			name:             "newer addon pet",
+			addonVersion:     "0.7",
+			petGUID:          "0xF140006C6B0000BB",
+			wantOwnerMessage: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			p := newTestParser()
+
+			_, err := p.Feed(testTS, `[1H:`+tt.addonVersion+`,Icecrown,enUS,3.3.5a,12340,session]`)
+			require.NoError(t, err)
+			msgs, err := p.Feed(testTS, `[2P0x060000000008DCCC;ECompanion,`+tt.petGUID+`]`)
+			require.NoError(t, err)
+
+			if tt.wantOwnerMessage {
+				require.Len(t, msgs, 2)
+				_, ok := msgs[0].(*messages.NewOwner)
+				require.True(t, ok)
+			} else {
+				require.Len(t, msgs, 1)
+			}
+			_, ok := msgs[len(msgs)-1].(*messages.Combatant)
+			require.True(t, ok)
+		})
+	}
+}
+
 // --- Player data accumulation tests ---
 
 func TestPlayerDataAccumulation(t *testing.T) {
@@ -567,13 +748,13 @@ func TestGearItem_NewFields(t *testing.T) {
 	t.Parallel()
 
 	item := combatant.GearItem{
-		ItemID:    51396,
-		SuffixID:  0,
-		Gems:      [4]int{41398, 40014, 0, 0},
-		ItemLevel: 264,
+		ItemID:        51396,
+		SuffixID:      0,
+		GemEnchantIDs: [4]int{3637, 3454, 0, 0},
+		ItemLevel:     264,
 	}
 	assert.Equal(t, 51396, item.ItemID)
-	assert.Equal(t, [4]int{41398, 40014, 0, 0}, item.Gems)
+	assert.Equal(t, [4]int{3637, 3454, 0, 0}, item.GemEnchantIDs)
 	assert.Equal(t, 264, item.ItemLevel)
 }
 

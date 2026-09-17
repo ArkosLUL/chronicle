@@ -5,19 +5,25 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/Emyrk/chronicle/api/chroniclesdk"
 	"github.com/Emyrk/chronicle/api/db2sdk"
 	"github.com/Emyrk/chronicle/api/httpapi"
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
+	types "github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/database"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 )
 
-const maxCharacterLogsPageSize = 50
+const (
+	maxCharacterLogsPageSize = 50
+	maxLeaderboardPageSize   = 50
+	maxRecentPageSize        = 50
+)
 
 type Server struct {
 	ID          uuid.UUID `json:"id"`
@@ -96,6 +102,38 @@ type CharacterLogsResponse struct {
 	Character  Character      `json:"character"`
 	Logs       []CharacterLog `json:"logs"`
 	Pagination Pagination     `json:"pagination"`
+}
+
+type SpeedrunLeaderboardLog struct {
+	ID              uuid.UUID  `json:"id"`
+	Slug            string     `json:"slug,omitempty"`
+	DurationMs      *int64     `json:"duration_ms,omitempty"`
+	StartTime       *time.Time `json:"start_time,omitempty"`
+	CompletionTime  *time.Time `json:"completion_time,omitempty"`
+	ParserVersion   string     `json:"parser_version,omitempty"`
+	AddonVersion    string     `json:"addon_version,omitempty"`
+	HasYoutubeVideo bool       `json:"has_youtube_video"`
+	YoutubeURL      string     `json:"youtube_url,omitempty"`
+}
+
+type SpeedrunLeaderboardEntry struct {
+	InstanceName     string                   `json:"instance_name"`
+	DifficultyName   string                   `json:"difficulty_name"`
+	GuildID          uuid.UUID                `json:"guild_id"`
+	GuildName        string                   `json:"guild_name"`
+	GuildLogoURL     string                   `json:"guild_logo_url,omitempty"`
+	RealmName        string                   `json:"realm_name"`
+	PlayerCount      int64                    `json:"player_count"`
+	Canonical        SpeedrunLeaderboardLog   `json:"canonical"`
+	IsDuplicate      bool                     `json:"is_duplicate"`
+	DuplicateGroupID *uuid.UUID               `json:"duplicate_group_id,omitempty"`
+	OtherLogs        []SpeedrunLeaderboardLog `json:"other_logs,omitempty"`
+}
+
+type SpeedrunLeaderboardResponse struct {
+	Timing     string                     `json:"timing"`
+	Entries    []SpeedrunLeaderboardEntry `json:"entries"`
+	Pagination Pagination                 `json:"pagination"`
 }
 
 func (s *Service) listServers(w http.ResponseWriter, r *http.Request) {
@@ -213,6 +251,318 @@ func (s *Service) listCharacterLogs(w http.ResponseWriter, r *http.Request) {
 		Character:  character,
 		Logs:       logs,
 		Pagination: Pagination{Page: page, PageSize: pageSize, HasMore: hasMore},
+	})
+}
+
+func (s *Service) listIndividualLeaderboard(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	q := r.URL.Query()
+
+	limit := int64(50)
+	if value := q.Get("limit"); value != "" {
+		if parsed, err := strconv.ParseInt(value, 10, 64); err == nil && parsed > 0 {
+			limit = parsed
+		}
+	}
+	if limit > 200 {
+		limit = 200
+	}
+
+	var offset int64
+	if value := q.Get("offset"); value != "" {
+		offset, _ = strconv.ParseInt(value, 10, 64)
+	}
+
+	class := q.Get("class")
+	if class != "" {
+		class = string(db2sdk.HeroClassToDB(types.HeroClasses(class)))
+	}
+
+	metric := normalizeIndividualLeaderboardMetric(q.Get("metric"))
+	rows, err := s.db.RankingsLeaderboard(ctx, database.RankingsLeaderboardParams{
+		Metric:           metric,
+		QueryOffset:      offset,
+		QueryLimit:       limit,
+		Class:            class,
+		Spec:             q.Get("spec"),
+		SubSpec:          q.Get("sub_spec"),
+		Role:             q.Get("role"),
+		InstanceNames:    splitCSVQuery(q.Get("instance_names")),
+		EncounterNames:   splitCSVQuery(q.Get("encounter_names")),
+		RealmNames:       splitCSVQuery(q.Get("realm_names")),
+		SinceDays:        individualLeaderboardPeriodToDays(q.Get("period")),
+		HideUnknowns:     q.Get("hide_unknowns") == "true",
+		DifficultyNames:  splitCSVQuery(q.Get("difficulty_names")),
+		FilterMaxPlayers: parseIndividualLeaderboardMaxPlayers(q.Get("max_players")),
+	})
+	if err != nil {
+		httpapi.InternalServerError(w, err)
+		return
+	}
+
+	var totalCount int64
+	entries := make([]chroniclesdk.RankingsEntry, 0, len(rows))
+	for _, row := range rows {
+		totalCount = row.TotalCount
+		entry := chroniclesdk.RankingsEntry{
+			EncounterName:  row.EncounterName,
+			InstanceName:   row.InstanceName,
+			PlayerGUID:     row.PlayerGuid,
+			PlayerName:     row.PlayerName,
+			PlayerClass:    strings.ReplaceAll(row.PlayerClass, "_", ""),
+			PlayerSpec:     row.PlayerSpec,
+			PlayerRole:     row.PlayerRole,
+			PlayerLevel:    row.PlayerLevel,
+			DifficultyName: row.DifficultyName,
+			MaxPlayers:     row.MaxPlayers,
+			RealmID:        row.RealmID,
+			RealmName:      row.RealmName,
+			GuildName:      row.GuildName,
+			DamageDone:     row.DamageDone,
+			HealingDone:    row.HealingDone,
+			AbsorbedDone:   row.AbsorbedDone,
+			DurationSecs:   row.DurationSecs,
+			DPS:            row.Dps,
+			HPS:            row.Hps,
+			LogHashedSlug:  row.LogHashedSlug,
+			KilledAt:       row.KilledAt.Time,
+		}
+		if row.AvgIlvl > 0 {
+			value := row.AvgIlvl
+			entry.AvgIlvl = &value
+		}
+		if row.PlayerSubSpec != "" {
+			entry.SubSpec = &row.PlayerSubSpec
+		}
+		if row.TalentLayout != "" {
+			entry.TalentLayout = &row.TalentLayout
+		}
+		entries = append(entries, entry)
+	}
+
+	markLeaderboardCacheable(w)
+	httpapi.Write(ctx, w, http.StatusOK, chroniclesdk.RankingsLeaderboardResponse{
+		Entries:    entries,
+		TotalCount: totalCount,
+	})
+}
+
+func (s *Service) listSpeedrunLeaderboard(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	instanceName := r.URL.Query().Get("instance_name")
+	if instanceName == "" {
+		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
+			Message: "instance_name query parameter is required",
+		})
+		return
+	}
+
+	timing, useRankedTiming, ok := externalSpeedrunTiming(r.URL.Query().Get("timing"))
+	if !ok {
+		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
+			Message: "timing query parameter must be full or boss_to_boss",
+		})
+		return
+	}
+
+	minPlayers, ok := queryNonNegativeInt64(r, "min_players")
+	if !ok {
+		writeInvalidNonNegativeInteger(w, r, "min_players")
+		return
+	}
+	maxPlayers, ok := queryNonNegativeInt64(r, "max_players")
+	if !ok {
+		writeInvalidNonNegativeInteger(w, r, "max_players")
+		return
+	}
+	sinceDays, ok := queryNonNegativeInt64(r, "since_days")
+	if !ok {
+		writeInvalidNonNegativeInteger(w, r, "since_days")
+		return
+	}
+
+	page := queryInt(r, "page", 1)
+	pageSize := queryInt(r, "page_size", maxLeaderboardPageSize)
+	if page < 1 || pageSize < 1 || pageSize > maxLeaderboardPageSize {
+		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
+			Message: "page must be at least 1 and page_size must be between 1 and 50",
+		})
+		return
+	}
+
+	filterDifficulty := r.URL.Query().Has("difficulty_name")
+	rows, err := s.db.SpeedrunLeaderboard(ctx, database.SpeedrunLeaderboardParams{
+		InstanceName:     instanceName,
+		RealmNames:       r.URL.Query()["realm_name"],
+		MinPlayers:       minPlayers,
+		MaxPlayers:       maxPlayers,
+		GuildID:          r.URL.Query().Get("guild_id"),
+		SinceDays:        sinceDays,
+		ResultOffset:     int64((page - 1) * pageSize),
+		ResultLimit:      int64(pageSize + 1),
+		FilterDifficulty: filterDifficulty,
+		DifficultyName:   r.URL.Query().Get("difficulty_name"),
+		UseRankedTiming:  useRankedTiming,
+	})
+	if err != nil {
+		httpapi.InternalServerError(w, err)
+		return
+	}
+
+	hasMore := len(rows) > int(pageSize)
+	if hasMore {
+		rows = rows[:pageSize]
+	}
+
+	selectedIDs := make([]uuid.UUID, 0, len(rows))
+	entries := make([]SpeedrunLeaderboardEntry, 0, len(rows))
+	entryIndexes := make(map[uuid.UUID]int, len(rows))
+	for _, row := range rows {
+		duration := row.DurationMs
+		startTime := row.StartTime.Time
+		completionTime := row.CompletionTime.Time
+		entry := SpeedrunLeaderboardEntry{
+			InstanceName: row.InstanceName, DifficultyName: row.DifficultyName,
+			GuildID: row.GuildID.UUID, GuildName: row.GuildName, GuildLogoURL: row.GuildLogoUrl,
+			RealmName: row.RealmName, PlayerCount: row.PlayerCount,
+			Canonical: SpeedrunLeaderboardLog{
+				ID: row.InstanceID, Slug: row.HashedSlug.String, DurationMs: &duration,
+				StartTime: &startTime, CompletionTime: &completionTime,
+				ParserVersion: row.ParserVersion, AddonVersion: row.AddonVersion,
+				HasYoutubeVideo: row.HasYoutubeVideo, YoutubeURL: row.YoutubeUrl,
+			},
+		}
+		if row.DuplicateGroupID.Valid {
+			groupID := row.DuplicateGroupID.UUID
+			entry.DuplicateGroupID = &groupID
+		}
+		entryIndexes[row.InstanceID] = len(entries)
+		selectedIDs = append(selectedIDs, row.InstanceID)
+		entries = append(entries, entry)
+	}
+
+	if len(selectedIDs) > 0 {
+		duplicates, err := s.db.ListExternalAPILeaderboardDuplicateLogs(ctx, database.ListExternalAPILeaderboardDuplicateLogsParams{
+			UseRankedTiming: useRankedTiming, SelectedInstanceIds: selectedIDs,
+		})
+		if err != nil {
+			httpapi.InternalServerError(w, err)
+			return
+		}
+		for _, duplicate := range duplicates {
+			index, found := entryIndexes[duplicate.SelectedInstanceID]
+			if !found {
+				continue
+			}
+			log := SpeedrunLeaderboardLog{
+				ID: duplicate.ID, Slug: duplicate.HashedSlug.String,
+				ParserVersion: duplicate.ParserVersion, AddonVersion: duplicate.AddonVersion,
+				HasYoutubeVideo: duplicate.HasYoutubeVideo, YoutubeURL: duplicate.YoutubeUrl,
+			}
+			if duplicate.DurationMs > 0 {
+				duration := duplicate.DurationMs
+				log.DurationMs = &duration
+			}
+			if duplicate.StartTime.Valid {
+				startTime := duplicate.StartTime.Time
+				log.StartTime = &startTime
+			}
+			if duplicate.CompletionTime.Valid {
+				completionTime := duplicate.CompletionTime.Time
+				log.CompletionTime = &completionTime
+			}
+			entries[index].OtherLogs = append(entries[index].OtherLogs, log)
+			entries[index].IsDuplicate = true
+		}
+	}
+
+	markLeaderboardCacheable(w)
+	httpapi.Write(ctx, w, http.StatusOK, SpeedrunLeaderboardResponse{
+		Timing: timing, Entries: entries,
+		Pagination: Pagination{Page: page, PageSize: pageSize, HasMore: hasMore},
+	})
+}
+
+// markLeaderboardCacheable makes successful public leaderboard responses
+// eligible for Chronicle's shared CDN cache. The per-client remaining allowance
+// must not be stored in a response that Cloudflare can serve to other clients.
+func markLeaderboardCacheable(w http.ResponseWriter) {
+	w.Header().Set("Cache-Control", "public, max-age=300")
+	w.Header().Del("RateLimit-Remaining")
+}
+
+func normalizeIndividualLeaderboardMetric(metric string) string {
+	if metric == "hps" {
+		return "hps"
+	}
+	return "dps"
+}
+
+func individualLeaderboardPeriodToDays(period string) int64 {
+	switch period {
+	case "7d":
+		return 7
+	case "30d":
+		return 30
+	case "90d":
+		return 90
+	default:
+		return 0
+	}
+}
+
+func parseIndividualLeaderboardMaxPlayers(value string) int16 {
+	if value == "" {
+		return 0
+	}
+	parsed, err := strconv.ParseInt(value, 10, 16)
+	if err != nil || parsed < 0 {
+		return 0
+	}
+	return int16(parsed)
+}
+
+func splitCSVQuery(value string) []string {
+	if value == "" {
+		return nil
+	}
+	parts := strings.Split(value, ",")
+	values := make([]string, 0, len(parts))
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part != "" {
+			values = append(values, part)
+		}
+	}
+	if len(values) == 0 {
+		return nil
+	}
+	return values
+}
+
+func externalSpeedrunTiming(value string) (string, bool, bool) {
+	switch value {
+	case "", "full":
+		return "full", false, true
+	case "boss_to_boss":
+		return "boss_to_boss", true, true
+	default:
+		return "", false, false
+	}
+}
+
+func queryNonNegativeInt64(r *http.Request, name string) (int64, bool) {
+	value := r.URL.Query().Get(name)
+	if value == "" {
+		return 0, true
+	}
+	parsed, err := strconv.ParseInt(value, 10, 64)
+	return parsed, err == nil && parsed >= 0
+}
+
+func writeInvalidNonNegativeInteger(w http.ResponseWriter, r *http.Request, name string) {
+	httpapi.Write(r.Context(), w, http.StatusBadRequest, chroniclesdk.Response{
+		Message: name + " query parameter must be a non-negative integer",
 	})
 }
 

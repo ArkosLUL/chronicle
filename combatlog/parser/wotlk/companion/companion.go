@@ -8,7 +8,10 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/common/messages"
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/realmclock"
+	"github.com/Emyrk/chronicle/internal/semverenc"
 )
+
+const vehicleTrackingAddonVersion = "0.6"
 
 // Parser reassembles and decodes ChronicleCompanionWoTLK addon messages
 // that are smuggled inside the failedType field of SPELL_CAST_FAILED events.
@@ -21,15 +24,18 @@ type Parser struct {
 	logger *slog.Logger
 
 	// Framing reassembly state
-	state   assemblyState
-	buffer  strings.Builder
-	counter byte // last seen message counter digit (0-9)
+	state          assemblyState
+	buffer         strings.Builder
+	counter        byte // last seen message counter digit (0-9)
+	decodedOrdinal uint64
 
 	// Player data accumulation — segments arrive independently,
 	// so we build up per-player state over time.
 	players map[guid.GUID]*PlayerData
 
-	realmClock *realmclock.Info
+	addonVersion string
+	realmClock   *realmclock.Info
+	sawRaidGroup bool
 }
 
 type assemblyState int
@@ -47,10 +53,19 @@ func New(logger *slog.Logger) *Parser {
 	}
 }
 
+func (p *Parser) supportsVehicleTracking() bool {
+	return semverenc.Encode(p.addonVersion) >= semverenc.Encode(vehicleTrackingAddonVersion)
+}
+
 // RealmClockInfo returns the most recently parsed clock data from an extended
 // companion header. Legacy six-field headers leave it nil.
 func (p *Parser) RealmClockInfo() *realmclock.Info {
 	return p.realmClock
+}
+
+// SawRaidGroup reports whether this log contained a valid raid-group payload.
+func (p *Parser) SawRaidGroup() bool {
+	return p.sawRaidGroup
 }
 
 // IsCompanionMessage returns true if the failedType string looks like a
@@ -93,9 +108,11 @@ func (p *Parser) Feed(ts time.Time, failedType string) ([]messages.Message, erro
 		case ch == '~':
 			// Continuation of current message.
 			if p.state != stateAccumulating {
-				// Orphan continuation — ignore.
+				// Ignore the orphaned payload, but keep scanning this field. A later
+				// bin-packed message can still be complete and independently useful.
 				p.logger.Debug("companion: ignoring orphan continuation")
-				return result, nil
+				pos++
+				continue
 			}
 			pos++ // skip '~'
 
@@ -127,7 +144,9 @@ func (p *Parser) consumePayload(ts time.Time, data string) ([]messages.Message, 
 			p.buffer.Reset()
 			p.state = stateIdle
 
-			msgs, err := p.dispatch(ts, payload)
+			ordinal := p.decodedOrdinal
+			p.decodedOrdinal++
+			msgs, err := p.dispatch(ts, payload, ordinal)
 			if err != nil {
 				p.logger.Warn("companion: failed to parse message",
 					slog.String("payload", payload),

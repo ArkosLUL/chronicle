@@ -7,6 +7,8 @@ package database
 import (
 	"context"
 
+	"github.com/Emyrk/chronicle/combatlog/parser/common/raidgroups"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/vehicles"
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -616,7 +618,7 @@ func (q *sqlQuerier) GetUploadKeyByHash(ctx context.Context, secretHash string) 
 }
 
 const getWoWServer = `-- name: GetWoWServer :one
-SELECT id, name, created_by, url, description, tenant_id, default_dataset_id FROM wow_servers WHERE id = $1
+SELECT id, name, created_by, url, description, tenant_id, default_dataset_id, pricing_provider FROM wow_servers WHERE id = $1
 `
 
 func (q *sqlQuerier) GetWoWServer(ctx context.Context, id uuid.UUID) (WowServer, error) {
@@ -630,12 +632,13 @@ func (q *sqlQuerier) GetWoWServer(ctx context.Context, id uuid.UUID) (WowServer,
 		&i.Description,
 		&i.TenantID,
 		&i.DefaultDatasetID,
+		&i.PricingProvider,
 	)
 	return i, err
 }
 
 const getWoWServerByName = `-- name: GetWoWServerByName :one
-SELECT id, name, created_by, url, description, tenant_id, default_dataset_id FROM wow_servers WHERE name = $1
+SELECT id, name, created_by, url, description, tenant_id, default_dataset_id, pricing_provider FROM wow_servers WHERE name = $1
 `
 
 func (q *sqlQuerier) GetWoWServerByName(ctx context.Context, name string) (WowServer, error) {
@@ -649,12 +652,13 @@ func (q *sqlQuerier) GetWoWServerByName(ctx context.Context, name string) (WowSe
 		&i.Description,
 		&i.TenantID,
 		&i.DefaultDatasetID,
+		&i.PricingProvider,
 	)
 	return i, err
 }
 
 const getWoWServerRealm = `-- name: GetWoWServerRealm :one
-SELECT id, server_id, name, created_by, url, description FROM wow_server_realms WHERE id = $1
+SELECT id, server_id, name, created_by, url, description, pricing_route_name, pricing_auction_house FROM wow_server_realms WHERE id = $1
 `
 
 func (q *sqlQuerier) GetWoWServerRealm(ctx context.Context, id uuid.UUID) (WowServerRealm, error) {
@@ -667,12 +671,14 @@ func (q *sqlQuerier) GetWoWServerRealm(ctx context.Context, id uuid.UUID) (WowSe
 		&i.CreatedBy,
 		&i.Url,
 		&i.Description,
+		&i.PricingRouteName,
+		&i.PricingAuctionHouse,
 	)
 	return i, err
 }
 
 const getWoWServerRealmByName = `-- name: GetWoWServerRealmByName :one
-SELECT id, server_id, name, created_by, url, description FROM wow_server_realms WHERE lower(name) = lower($1) LIMIT 1
+SELECT id, server_id, name, created_by, url, description, pricing_route_name, pricing_auction_house FROM wow_server_realms WHERE lower(name) = lower($1) LIMIT 1
 `
 
 func (q *sqlQuerier) GetWoWServerRealmByName(ctx context.Context, name string) (WowServerRealm, error) {
@@ -685,6 +691,8 @@ func (q *sqlQuerier) GetWoWServerRealmByName(ctx context.Context, name string) (
 		&i.CreatedBy,
 		&i.Url,
 		&i.Description,
+		&i.PricingRouteName,
+		&i.PricingAuctionHouse,
 	)
 	return i, err
 }
@@ -726,16 +734,17 @@ func (q *sqlQuerier) InsertUploadKey(ctx context.Context, arg InsertUploadKeyPar
 }
 
 const insertWoWServer = `-- name: InsertWoWServer :one
-INSERT INTO wow_servers (id, name, description, url, created_by)
-VALUES ($1, $2, $3, $4, $5) RETURNING id, name, created_by, url, description, tenant_id, default_dataset_id
+INSERT INTO wow_servers (id, name, description, url, created_by, pricing_provider)
+VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, name, created_by, url, description, tenant_id, default_dataset_id, pricing_provider
 `
 
 type InsertWoWServerParams struct {
-	ID          uuid.UUID     `db:"id" json:"id"`
-	Name        string        `db:"name" json:"name"`
-	Description string        `db:"description" json:"description"`
-	Url         pgtype.Text   `db:"url" json:"url"`
-	CreatedBy   uuid.NullUUID `db:"created_by" json:"created_by"`
+	ID              uuid.UUID     `db:"id" json:"id"`
+	Name            string        `db:"name" json:"name"`
+	Description     string        `db:"description" json:"description"`
+	Url             pgtype.Text   `db:"url" json:"url"`
+	CreatedBy       uuid.NullUUID `db:"created_by" json:"created_by"`
+	PricingProvider pgtype.Text   `db:"pricing_provider" json:"pricing_provider"`
 }
 
 func (q *sqlQuerier) InsertWoWServer(ctx context.Context, arg InsertWoWServerParams) (WowServer, error) {
@@ -745,6 +754,7 @@ func (q *sqlQuerier) InsertWoWServer(ctx context.Context, arg InsertWoWServerPar
 		arg.Description,
 		arg.Url,
 		arg.CreatedBy,
+		arg.PricingProvider,
 	)
 	var i WowServer
 	err := row.Scan(
@@ -755,22 +765,28 @@ func (q *sqlQuerier) InsertWoWServer(ctx context.Context, arg InsertWoWServerPar
 		&i.Description,
 		&i.TenantID,
 		&i.DefaultDatasetID,
+		&i.PricingProvider,
 	)
 	return i, err
 }
 
 const insertWoWServerRealm = `-- name: InsertWoWServerRealm :one
-INSERT INTO wow_server_realms (id, server_id, name, description, url, created_by)
-VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, server_id, name, created_by, url, description
+INSERT INTO wow_server_realms (
+    id, server_id, name, description, url, created_by,
+    pricing_route_name, pricing_auction_house
+)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, server_id, name, created_by, url, description, pricing_route_name, pricing_auction_house
 `
 
 type InsertWoWServerRealmParams struct {
-	ID          uuid.UUID     `db:"id" json:"id"`
-	ServerID    uuid.UUID     `db:"server_id" json:"server_id"`
-	Name        string        `db:"name" json:"name"`
-	Description string        `db:"description" json:"description"`
-	Url         pgtype.Text   `db:"url" json:"url"`
-	CreatedBy   uuid.NullUUID `db:"created_by" json:"created_by"`
+	ID                  uuid.UUID     `db:"id" json:"id"`
+	ServerID            uuid.UUID     `db:"server_id" json:"server_id"`
+	Name                string        `db:"name" json:"name"`
+	Description         string        `db:"description" json:"description"`
+	Url                 pgtype.Text   `db:"url" json:"url"`
+	CreatedBy           uuid.NullUUID `db:"created_by" json:"created_by"`
+	PricingRouteName    pgtype.Text   `db:"pricing_route_name" json:"pricing_route_name"`
+	PricingAuctionHouse pgtype.Text   `db:"pricing_auction_house" json:"pricing_auction_house"`
 }
 
 func (q *sqlQuerier) InsertWoWServerRealm(ctx context.Context, arg InsertWoWServerRealmParams) (WowServerRealm, error) {
@@ -781,6 +797,8 @@ func (q *sqlQuerier) InsertWoWServerRealm(ctx context.Context, arg InsertWoWServ
 		arg.Description,
 		arg.Url,
 		arg.CreatedBy,
+		arg.PricingRouteName,
+		arg.PricingAuctionHouse,
 	)
 	var i WowServerRealm
 	err := row.Scan(
@@ -790,12 +808,14 @@ func (q *sqlQuerier) InsertWoWServerRealm(ctx context.Context, arg InsertWoWServ
 		&i.CreatedBy,
 		&i.Url,
 		&i.Description,
+		&i.PricingRouteName,
+		&i.PricingAuctionHouse,
 	)
 	return i, err
 }
 
 const listAllWoWServerRealms = `-- name: ListAllWoWServerRealms :many
-SELECT id, server_id, name, created_by, url, description FROM wow_server_realms ORDER BY name
+SELECT id, server_id, name, created_by, url, description, pricing_route_name, pricing_auction_house FROM wow_server_realms ORDER BY name
 `
 
 func (q *sqlQuerier) ListAllWoWServerRealms(ctx context.Context) ([]WowServerRealm, error) {
@@ -814,6 +834,8 @@ func (q *sqlQuerier) ListAllWoWServerRealms(ctx context.Context) ([]WowServerRea
 			&i.CreatedBy,
 			&i.Url,
 			&i.Description,
+			&i.PricingRouteName,
+			&i.PricingAuctionHouse,
 		); err != nil {
 			return nil, err
 		}
@@ -868,7 +890,7 @@ func (q *sqlQuerier) ListUploadKeysByRealm(ctx context.Context, realmID uuid.UUI
 
 const listWoWServerRealms = `-- name: ListWoWServerRealms :many
 
-SELECT id, server_id, name, created_by, url, description FROM wow_server_realms WHERE server_id = $1 ORDER BY name
+SELECT id, server_id, name, created_by, url, description, pricing_route_name, pricing_auction_house FROM wow_server_realms WHERE server_id = $1 ORDER BY name
 `
 
 // Realms
@@ -888,6 +910,8 @@ func (q *sqlQuerier) ListWoWServerRealms(ctx context.Context, serverID uuid.UUID
 			&i.CreatedBy,
 			&i.Url,
 			&i.Description,
+			&i.PricingRouteName,
+			&i.PricingAuctionHouse,
 		); err != nil {
 			return nil, err
 		}
@@ -901,7 +925,7 @@ func (q *sqlQuerier) ListWoWServerRealms(ctx context.Context, serverID uuid.UUID
 
 const listWoWServers = `-- name: ListWoWServers :many
 
-SELECT id, name, created_by, url, description, tenant_id, default_dataset_id FROM wow_servers ORDER BY name
+SELECT id, name, created_by, url, description, tenant_id, default_dataset_id, pricing_provider FROM wow_servers ORDER BY name
 `
 
 // Servers
@@ -922,6 +946,7 @@ func (q *sqlQuerier) ListWoWServers(ctx context.Context) ([]WowServer, error) {
 			&i.Description,
 			&i.TenantID,
 			&i.DefaultDatasetID,
+			&i.PricingProvider,
 		); err != nil {
 			return nil, err
 		}
@@ -934,7 +959,7 @@ func (q *sqlQuerier) ListWoWServers(ctx context.Context) ([]WowServer, error) {
 }
 
 const listWoWServersByTenantID = `-- name: ListWoWServersByTenantID :many
-SELECT id, name, created_by, url, description, tenant_id, default_dataset_id FROM wow_servers WHERE tenant_id = $1 ORDER BY name
+SELECT id, name, created_by, url, description, tenant_id, default_dataset_id, pricing_provider FROM wow_servers WHERE tenant_id = $1 ORDER BY name
 `
 
 func (q *sqlQuerier) ListWoWServersByTenantID(ctx context.Context, tenantID uuid.NullUUID) ([]WowServer, error) {
@@ -954,6 +979,7 @@ func (q *sqlQuerier) ListWoWServersByTenantID(ctx context.Context, tenantID uuid
 			&i.Description,
 			&i.TenantID,
 			&i.DefaultDatasetID,
+			&i.PricingProvider,
 		); err != nil {
 			return nil, err
 		}
@@ -994,16 +1020,18 @@ const updateWoWServer = `-- name: UpdateWoWServer :one
 UPDATE wow_servers SET
     name = $1,
     description = $2,
-    url = $3
-WHERE id = $4
-RETURNING id, name, created_by, url, description, tenant_id, default_dataset_id
+    url = $3,
+    pricing_provider = $4
+WHERE id = $5
+RETURNING id, name, created_by, url, description, tenant_id, default_dataset_id, pricing_provider
 `
 
 type UpdateWoWServerParams struct {
-	Name        string      `db:"name" json:"name"`
-	Description string      `db:"description" json:"description"`
-	Url         pgtype.Text `db:"url" json:"url"`
-	ID          uuid.UUID   `db:"id" json:"id"`
+	Name            string      `db:"name" json:"name"`
+	Description     string      `db:"description" json:"description"`
+	Url             pgtype.Text `db:"url" json:"url"`
+	PricingProvider pgtype.Text `db:"pricing_provider" json:"pricing_provider"`
+	ID              uuid.UUID   `db:"id" json:"id"`
 }
 
 func (q *sqlQuerier) UpdateWoWServer(ctx context.Context, arg UpdateWoWServerParams) (WowServer, error) {
@@ -1011,6 +1039,7 @@ func (q *sqlQuerier) UpdateWoWServer(ctx context.Context, arg UpdateWoWServerPar
 		arg.Name,
 		arg.Description,
 		arg.Url,
+		arg.PricingProvider,
 		arg.ID,
 	)
 	var i WowServer
@@ -1022,6 +1051,7 @@ func (q *sqlQuerier) UpdateWoWServer(ctx context.Context, arg UpdateWoWServerPar
 		&i.Description,
 		&i.TenantID,
 		&i.DefaultDatasetID,
+		&i.PricingProvider,
 	)
 	return i, err
 }
@@ -1030,16 +1060,20 @@ const updateWoWServerRealm = `-- name: UpdateWoWServerRealm :one
 UPDATE wow_server_realms SET
     name = $1,
     description = $2,
-    url = $3
-WHERE id = $4
-RETURNING id, server_id, name, created_by, url, description
+    url = $3,
+    pricing_route_name = $4,
+    pricing_auction_house = $5
+WHERE id = $6
+RETURNING id, server_id, name, created_by, url, description, pricing_route_name, pricing_auction_house
 `
 
 type UpdateWoWServerRealmParams struct {
-	Name        string      `db:"name" json:"name"`
-	Description string      `db:"description" json:"description"`
-	Url         pgtype.Text `db:"url" json:"url"`
-	ID          uuid.UUID   `db:"id" json:"id"`
+	Name                string      `db:"name" json:"name"`
+	Description         string      `db:"description" json:"description"`
+	Url                 pgtype.Text `db:"url" json:"url"`
+	PricingRouteName    pgtype.Text `db:"pricing_route_name" json:"pricing_route_name"`
+	PricingAuctionHouse pgtype.Text `db:"pricing_auction_house" json:"pricing_auction_house"`
+	ID                  uuid.UUID   `db:"id" json:"id"`
 }
 
 func (q *sqlQuerier) UpdateWoWServerRealm(ctx context.Context, arg UpdateWoWServerRealmParams) (WowServerRealm, error) {
@@ -1047,6 +1081,8 @@ func (q *sqlQuerier) UpdateWoWServerRealm(ctx context.Context, arg UpdateWoWServ
 		arg.Name,
 		arg.Description,
 		arg.Url,
+		arg.PricingRouteName,
+		arg.PricingAuctionHouse,
 		arg.ID,
 	)
 	var i WowServerRealm
@@ -1057,6 +1093,8 @@ func (q *sqlQuerier) UpdateWoWServerRealm(ctx context.Context, arg UpdateWoWServ
 		&i.CreatedBy,
 		&i.Url,
 		&i.Description,
+		&i.PricingRouteName,
+		&i.PricingAuctionHouse,
 	)
 	return i, err
 }
@@ -1160,12 +1198,15 @@ WITH RECURSIVE roots AS (
     JOIN dbc_spells spell
       ON spell.dataset_id = graph.dataset_id
      AND spell.spell_id = graph.spell_id
-    CROSS JOIN LATERAL unnest(ARRAY[
-        spell.effect_trigger_spell_0,
-        spell.effect_trigger_spell_1,
-        spell.effect_trigger_spell_2
-    ]) AS triggered(spell_id)
-    WHERE triggered.spell_id <> 0
+    CROSS JOIN LATERAL (VALUES
+        (spell.effect_0, spell.effect_trigger_spell_0),
+        (spell.effect_1, spell.effect_trigger_spell_1),
+        (spell.effect_2, spell.effect_trigger_spell_2)
+    ) AS triggered(effect, spell_id)
+    -- A learn-spell effect names the taught spell in this field; it does not
+    -- execute that spell and must not create a consumable buff edge.
+    WHERE triggered.effect <> 36
+      AND triggered.spell_id <> 0
       AND NOT triggered.spell_id = ANY(graph.path)
       AND cardinality(graph.path) < 8
 )
@@ -1193,6 +1234,40 @@ func (q *sqlQuerier) InsertDerivedConsumableBuffs(ctx context.Context, datasetID
 }
 
 const insertDerivedConsumables = `-- name: InsertDerivedConsumables :execrows
+WITH eligible_item_spells AS (
+    SELECT
+        wit.dataset_id,
+        wit.entry AS item_id,
+        array_agg(slot.spell_id ORDER BY slot.slot) AS item_spell_ids
+    FROM world_item_template wit
+    CROSS JOIN LATERAL (VALUES
+        (1, wit.spellid_1, wit.spelltrigger_1),
+        (2, wit.spellid_2, wit.spelltrigger_2),
+        (3, wit.spellid_3, wit.spelltrigger_3),
+        (4, wit.spellid_4, wit.spelltrigger_4),
+        (5, wit.spellid_5, wit.spelltrigger_5)
+    ) AS slot(slot, spell_id, trigger)
+    WHERE wit.dataset_id = $1
+      AND slot.spell_id <> 0
+      AND slot.trigger = 0
+      -- Codices can list both a learn-spell wrapper and the taught class spell
+      -- as on-use slots. Reject the whole item when any on-use slot teaches a
+      -- spell, otherwise the taught aura remains as a false consumable effect.
+      AND NOT EXISTS (
+          SELECT 1
+          FROM dbc_spells learn_spell
+          WHERE learn_spell.dataset_id = wit.dataset_id
+            AND learn_spell.spell_id = ANY(ARRAY[
+                CASE WHEN wit.spelltrigger_1 = 0 THEN wit.spellid_1 ELSE 0 END,
+                CASE WHEN wit.spelltrigger_2 = 0 THEN wit.spellid_2 ELSE 0 END,
+                CASE WHEN wit.spelltrigger_3 = 0 THEN wit.spellid_3 ELSE 0 END,
+                CASE WHEN wit.spelltrigger_4 = 0 THEN wit.spellid_4 ELSE 0 END,
+                CASE WHEN wit.spelltrigger_5 = 0 THEN wit.spellid_5 ELSE 0 END
+            ])
+            AND 36 IN (learn_spell.effect_0, learn_spell.effect_1, learn_spell.effect_2)
+      )
+    GROUP BY wit.dataset_id, wit.entry
+)
 INSERT INTO dbc_consumables (
     dataset_id,
     item_id,
@@ -1207,14 +1282,11 @@ SELECT
     wit.name,
     wit.quality,
     COALESCE(NULLIF(wdi.icon, ''), dbi.inventory_icon ->> 0, '')::text,
-    ARRAY_REMOVE(ARRAY[
-        CASE WHEN wit.class = 0 OR wit.spelltrigger_1 = 0 THEN wit.spellid_1 ELSE 0 END,
-        CASE WHEN wit.class = 0 OR wit.spelltrigger_2 = 0 THEN wit.spellid_2 ELSE 0 END,
-        CASE WHEN wit.class = 0 OR wit.spelltrigger_3 = 0 THEN wit.spellid_3 ELSE 0 END,
-        CASE WHEN wit.class = 0 OR wit.spelltrigger_4 = 0 THEN wit.spellid_4 ELSE 0 END,
-        CASE WHEN wit.class = 0 OR wit.spelltrigger_5 = 0 THEN wit.spellid_5 ELSE 0 END
-    ], 0)::int[]
+    eligible.item_spell_ids
 FROM world_item_template wit
+JOIN eligible_item_spells eligible
+  ON eligible.dataset_id = wit.dataset_id
+ AND eligible.item_id = wit.entry
 LEFT JOIN world_display_info wdi
     ON wdi.dataset_id = wit.dataset_id AND wdi.id = wit.display_id
 LEFT JOIN dbc_item_display_info dbi
@@ -1249,13 +1321,7 @@ WHERE wit.dataset_id = $1
                   SELECT 1
                   FROM dbc_spells spell
                   WHERE spell.dataset_id = wit.dataset_id
-                    AND (
-                        (spell.spell_id = wit.spellid_1 AND wit.spelltrigger_1 = 0) OR
-                        (spell.spell_id = wit.spellid_2 AND wit.spelltrigger_2 = 0) OR
-                        (spell.spell_id = wit.spellid_3 AND wit.spelltrigger_3 = 0) OR
-                        (spell.spell_id = wit.spellid_4 AND wit.spelltrigger_4 = 0) OR
-                        (spell.spell_id = wit.spellid_5 AND wit.spelltrigger_5 = 0)
-                    )
+                    AND spell.spell_id = ANY(eligible.item_spell_ids)
                     AND (
                         spell.effect_0 IN (6, 174) OR
                         spell.effect_1 IN (6, 174) OR
@@ -1265,12 +1331,19 @@ WHERE wit.dataset_id = $1
           )
       )
   )
-  AND (
-      wit.spellid_1 <> 0 OR
-      wit.spellid_2 <> 0 OR
-      wit.spellid_3 <> 0 OR
-      wit.spellid_4 <> 0 OR
-      wit.spellid_5 <> 0
+  -- Mount items are reusable utility items, not consumables. Their use spell
+  -- applies a mounted aura directly, which otherwise matches the generic aura
+  -- fallback for non-stackable consumables.
+  AND NOT EXISTS (
+      SELECT 1
+      FROM dbc_spells mount_spell
+      WHERE mount_spell.dataset_id = wit.dataset_id
+        AND mount_spell.spell_id = ANY(eligible.item_spell_ids)
+        AND 78 IN (
+            mount_spell.effect_aura_0,
+            mount_spell.effect_aura_1,
+            mount_spell.effect_aura_2
+        )
   )
 `
 
@@ -1678,6 +1751,7 @@ SELECT
     (SELECT COUNT(*) FROM dbc_extra_attack_spells WHERE dataset_id = $1)::INT AS extra_attacks_count,
     (SELECT COUNT(*) FROM dbc_duration_modifiers WHERE dataset_id = $1)::INT AS duration_modifiers_count,
     (SELECT COUNT(*) FROM dbc_periodic_spells WHERE dataset_id = $1)::INT AS periodic_spells_count,
+    (SELECT COUNT(*) FROM dbc_vulnerability_spells WHERE dataset_id = $1)::INT AS vulnerability_spells_count,
     (SELECT COUNT(*) FROM dbc_cooldown_spells WHERE dataset_id = $1)::INT AS cooldowns_count,
     (SELECT COUNT(*) FROM dbc_spell_description_variables WHERE dataset_id = $1)::INT AS desc_variables_count,
     (SELECT COUNT(*) FROM dbc_affected_aura_durations WHERE dataset_id = $1)::INT AS affected_aura_durations_count,
@@ -1703,6 +1777,7 @@ type GetDatasetImportSummaryRow struct {
 	ExtraAttacksCount          int32 `db:"extra_attacks_count" json:"extra_attacks_count"`
 	DurationModifiersCount     int32 `db:"duration_modifiers_count" json:"duration_modifiers_count"`
 	PeriodicSpellsCount        int32 `db:"periodic_spells_count" json:"periodic_spells_count"`
+	VulnerabilitySpellsCount   int32 `db:"vulnerability_spells_count" json:"vulnerability_spells_count"`
 	CooldownsCount             int32 `db:"cooldowns_count" json:"cooldowns_count"`
 	DescVariablesCount         int32 `db:"desc_variables_count" json:"desc_variables_count"`
 	AffectedAuraDurationsCount int32 `db:"affected_aura_durations_count" json:"affected_aura_durations_count"`
@@ -1733,6 +1808,7 @@ func (q *sqlQuerier) GetDatasetImportSummary(ctx context.Context, datasetID uuid
 		&i.ExtraAttacksCount,
 		&i.DurationModifiersCount,
 		&i.PeriodicSpellsCount,
+		&i.VulnerabilitySpellsCount,
 		&i.CooldownsCount,
 		&i.DescVariablesCount,
 		&i.AffectedAuraDurationsCount,
@@ -1863,12 +1939,19 @@ func (q *sqlQuerier) ListTenantsByDataset(ctx context.Context, defaultDatasetID 
 }
 
 const resolveDatasetByRealm = `-- name: ResolveDatasetByRealm :one
-SELECT COALESCE(s.default_dataset_id, t.default_dataset_id) AS dataset_id
+SELECT
+    s.default_dataset_id AS server_dataset_id,
+    t.default_dataset_id AS tenant_dataset_id
 FROM wow_server_realms r
 JOIN wow_servers s ON s.id = r.server_id
 LEFT JOIN tenants t ON t.id = s.tenant_id
 WHERE r.id = $1
 `
+
+type ResolveDatasetByRealmRow struct {
+	ServerDatasetID uuid.NullUUID `db:"server_dataset_id" json:"server_dataset_id"`
+	TenantDatasetID uuid.NullUUID `db:"tenant_dataset_id" json:"tenant_dataset_id"`
+}
 
 // Resolves the dataset for a realm. Precedence:
 //
@@ -1877,11 +1960,11 @@ WHERE r.id = $1
 // The result is NULL when neither is set (and when the realm is unknown the
 // query returns no rows); in both cases the caller falls back to the
 // compiled-in default dataset.
-func (q *sqlQuerier) ResolveDatasetByRealm(ctx context.Context, id uuid.UUID) (uuid.NullUUID, error) {
+func (q *sqlQuerier) ResolveDatasetByRealm(ctx context.Context, id uuid.UUID) (ResolveDatasetByRealmRow, error) {
 	row := q.db.QueryRow(ctx, resolveDatasetByRealm, id)
-	var dataset_id uuid.NullUUID
-	err := row.Scan(&dataset_id)
-	return dataset_id, err
+	var i ResolveDatasetByRealmRow
+	err := row.Scan(&i.ServerDatasetID, &i.TenantDatasetID)
+	return i, err
 }
 
 const resolveDatasetWithFlavorByRealm = `-- name: ResolveDatasetWithFlavorByRealm :one
@@ -1889,7 +1972,10 @@ SELECT d.id AS dataset_id, d.default_flavor, COALESCE(t.additional_flavor, '{}')
 FROM wow_server_realms r
 JOIN wow_servers s ON s.id = r.server_id
 LEFT JOIN tenants t ON t.id = s.tenant_id
-JOIN datasets d ON d.id = COALESCE(s.default_dataset_id, t.default_dataset_id)
+JOIN datasets d ON d.id = COALESCE(
+    NULLIF(s.default_dataset_id, '00000000-0000-0000-0000-000000000000'::uuid),
+    NULLIF(t.default_dataset_id, '00000000-0000-0000-0000-000000000000'::uuid)
+)
 WHERE r.id = $1
 `
 
@@ -1998,6 +2084,682 @@ type UpsertDatasetTalentTreesParams struct {
 func (q *sqlQuerier) UpsertDatasetTalentTrees(ctx context.Context, arg UpsertDatasetTalentTreesParams) error {
 	_, err := q.db.Exec(ctx, upsertDatasetTalentTrees, arg.DatasetID, arg.Data)
 	return err
+}
+
+const claimDiscordAnnouncementDelivery = `-- name: ClaimDiscordAnnouncementDelivery :one
+UPDATE guild_discord_log_announcements
+SET delivery_attempted_at = NOW(),
+    updated_at = NOW()
+WHERE id = $1
+  AND discord_message_id IS NULL
+  AND delivery_attempted_at IS NULL
+RETURNING id, guild_id, run_id, discord_channel_id, discord_message_id, delivery_attempted_at, created_at, updated_at, delivery_error
+`
+
+func (q *sqlQuerier) ClaimDiscordAnnouncementDelivery(ctx context.Context, id uuid.UUID) (GuildDiscordLogAnnouncement, error) {
+	row := q.db.QueryRow(ctx, claimDiscordAnnouncementDelivery, id)
+	var i GuildDiscordLogAnnouncement
+	err := row.Scan(
+		&i.ID,
+		&i.GuildID,
+		&i.RunID,
+		&i.DiscordChannelID,
+		&i.DiscordMessageID,
+		&i.DeliveryAttemptedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeliveryError,
+	)
+	return i, err
+}
+
+const deleteDiscordAnnouncement = `-- name: DeleteDiscordAnnouncement :exec
+DELETE FROM guild_discord_log_announcements WHERE id = $1
+`
+
+func (q *sqlQuerier) DeleteDiscordAnnouncement(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteDiscordAnnouncement, id)
+	return err
+}
+
+const deleteDiscordAnnouncementSource = `-- name: DeleteDiscordAnnouncementSource :exec
+DELETE FROM guild_discord_log_announcement_sources
+WHERE log_group_id = $1 AND instance_ordinal = $2
+`
+
+type DeleteDiscordAnnouncementSourceParams struct {
+	LogGroupID      uuid.UUID `db:"log_group_id" json:"log_group_id"`
+	InstanceOrdinal int32     `db:"instance_ordinal" json:"instance_ordinal"`
+}
+
+func (q *sqlQuerier) DeleteDiscordAnnouncementSource(ctx context.Context, arg DeleteDiscordAnnouncementSourceParams) error {
+	_, err := q.db.Exec(ctx, deleteDiscordAnnouncementSource, arg.LogGroupID, arg.InstanceOrdinal)
+	return err
+}
+
+const getDiscordAnnouncement = `-- name: GetDiscordAnnouncement :one
+SELECT id, guild_id, run_id, discord_channel_id, discord_message_id, delivery_attempted_at, created_at, updated_at, delivery_error FROM guild_discord_log_announcements WHERE id = $1
+`
+
+func (q *sqlQuerier) GetDiscordAnnouncement(ctx context.Context, id uuid.UUID) (GuildDiscordLogAnnouncement, error) {
+	row := q.db.QueryRow(ctx, getDiscordAnnouncement, id)
+	var i GuildDiscordLogAnnouncement
+	err := row.Scan(
+		&i.ID,
+		&i.GuildID,
+		&i.RunID,
+		&i.DiscordChannelID,
+		&i.DiscordMessageID,
+		&i.DeliveryAttemptedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeliveryError,
+	)
+	return i, err
+}
+
+const getDiscordAnnouncementByRun = `-- name: GetDiscordAnnouncementByRun :one
+SELECT id, guild_id, run_id, discord_channel_id, discord_message_id, delivery_attempted_at, created_at, updated_at, delivery_error
+FROM guild_discord_log_announcements
+WHERE guild_id = $1 AND run_id = $2
+`
+
+type GetDiscordAnnouncementByRunParams struct {
+	GuildID uuid.UUID `db:"guild_id" json:"guild_id"`
+	RunID   uuid.UUID `db:"run_id" json:"run_id"`
+}
+
+func (q *sqlQuerier) GetDiscordAnnouncementByRun(ctx context.Context, arg GetDiscordAnnouncementByRunParams) (GuildDiscordLogAnnouncement, error) {
+	row := q.db.QueryRow(ctx, getDiscordAnnouncementByRun, arg.GuildID, arg.RunID)
+	var i GuildDiscordLogAnnouncement
+	err := row.Scan(
+		&i.ID,
+		&i.GuildID,
+		&i.RunID,
+		&i.DiscordChannelID,
+		&i.DiscordMessageID,
+		&i.DeliveryAttemptedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeliveryError,
+	)
+	return i, err
+}
+
+const getDiscordAnnouncementSource = `-- name: GetDiscordAnnouncementSource :one
+
+SELECT
+  s.announcement_id, s.log_group_id, s.instance_ordinal, s.instance_slug, s.created_at, s.updated_at,
+  a.id, a.guild_id, a.run_id, a.discord_channel_id, a.discord_message_id, a.delivery_attempted_at, a.created_at, a.updated_at, a.delivery_error
+FROM guild_discord_log_announcement_sources s
+JOIN guild_discord_log_announcements a ON a.id = s.announcement_id
+WHERE s.log_group_id = $1
+  AND s.instance_ordinal = $2
+`
+
+type GetDiscordAnnouncementSourceParams struct {
+	LogGroupID      uuid.UUID `db:"log_group_id" json:"log_group_id"`
+	InstanceOrdinal int32     `db:"instance_ordinal" json:"instance_ordinal"`
+}
+
+type GetDiscordAnnouncementSourceRow struct {
+	GuildDiscordLogAnnouncementSource GuildDiscordLogAnnouncementSource `db:"guild_discord_log_announcement_source" json:"guild_discord_log_announcement_source"`
+	GuildDiscordLogAnnouncement       GuildDiscordLogAnnouncement       `db:"guild_discord_log_announcement" json:"guild_discord_log_announcement"`
+}
+
+// Discord raid-log announcements
+func (q *sqlQuerier) GetDiscordAnnouncementSource(ctx context.Context, arg GetDiscordAnnouncementSourceParams) (GetDiscordAnnouncementSourceRow, error) {
+	row := q.db.QueryRow(ctx, getDiscordAnnouncementSource, arg.LogGroupID, arg.InstanceOrdinal)
+	var i GetDiscordAnnouncementSourceRow
+	err := row.Scan(
+		&i.GuildDiscordLogAnnouncementSource.AnnouncementID,
+		&i.GuildDiscordLogAnnouncementSource.LogGroupID,
+		&i.GuildDiscordLogAnnouncementSource.InstanceOrdinal,
+		&i.GuildDiscordLogAnnouncementSource.InstanceSlug,
+		&i.GuildDiscordLogAnnouncementSource.CreatedAt,
+		&i.GuildDiscordLogAnnouncementSource.UpdatedAt,
+		&i.GuildDiscordLogAnnouncement.ID,
+		&i.GuildDiscordLogAnnouncement.GuildID,
+		&i.GuildDiscordLogAnnouncement.RunID,
+		&i.GuildDiscordLogAnnouncement.DiscordChannelID,
+		&i.GuildDiscordLogAnnouncement.DiscordMessageID,
+		&i.GuildDiscordLogAnnouncement.DeliveryAttemptedAt,
+		&i.GuildDiscordLogAnnouncement.CreatedAt,
+		&i.GuildDiscordLogAnnouncement.UpdatedAt,
+		&i.GuildDiscordLogAnnouncement.DeliveryError,
+	)
+	return i, err
+}
+
+const getDiscordAnnouncementSourceBySlug = `-- name: GetDiscordAnnouncementSourceBySlug :one
+SELECT
+  s.announcement_id, s.log_group_id, s.instance_ordinal, s.instance_slug, s.created_at, s.updated_at,
+  a.id, a.guild_id, a.run_id, a.discord_channel_id, a.discord_message_id, a.delivery_attempted_at, a.created_at, a.updated_at, a.delivery_error
+FROM guild_discord_log_announcement_sources s
+JOIN guild_discord_log_announcements a ON a.id = s.announcement_id
+WHERE s.instance_slug = $1
+`
+
+type GetDiscordAnnouncementSourceBySlugRow struct {
+	GuildDiscordLogAnnouncementSource GuildDiscordLogAnnouncementSource `db:"guild_discord_log_announcement_source" json:"guild_discord_log_announcement_source"`
+	GuildDiscordLogAnnouncement       GuildDiscordLogAnnouncement       `db:"guild_discord_log_announcement" json:"guild_discord_log_announcement"`
+}
+
+func (q *sqlQuerier) GetDiscordAnnouncementSourceBySlug(ctx context.Context, instanceSlug pgtype.Text) (GetDiscordAnnouncementSourceBySlugRow, error) {
+	row := q.db.QueryRow(ctx, getDiscordAnnouncementSourceBySlug, instanceSlug)
+	var i GetDiscordAnnouncementSourceBySlugRow
+	err := row.Scan(
+		&i.GuildDiscordLogAnnouncementSource.AnnouncementID,
+		&i.GuildDiscordLogAnnouncementSource.LogGroupID,
+		&i.GuildDiscordLogAnnouncementSource.InstanceOrdinal,
+		&i.GuildDiscordLogAnnouncementSource.InstanceSlug,
+		&i.GuildDiscordLogAnnouncementSource.CreatedAt,
+		&i.GuildDiscordLogAnnouncementSource.UpdatedAt,
+		&i.GuildDiscordLogAnnouncement.ID,
+		&i.GuildDiscordLogAnnouncement.GuildID,
+		&i.GuildDiscordLogAnnouncement.RunID,
+		&i.GuildDiscordLogAnnouncement.DiscordChannelID,
+		&i.GuildDiscordLogAnnouncement.DiscordMessageID,
+		&i.GuildDiscordLogAnnouncement.DeliveryAttemptedAt,
+		&i.GuildDiscordLogAnnouncement.CreatedAt,
+		&i.GuildDiscordLogAnnouncement.UpdatedAt,
+		&i.GuildDiscordLogAnnouncement.DeliveryError,
+	)
+	return i, err
+}
+
+const getLogGroupInstanceIDByOrdinal = `-- name: GetLogGroupInstanceIDByOrdinal :one
+SELECT li.id
+FROM log_instances li
+WHERE li.log_group_id = $1
+ORDER BY li.start_time ASC NULLS LAST, li.id ASC
+LIMIT 1 OFFSET $2
+`
+
+type GetLogGroupInstanceIDByOrdinalParams struct {
+	LogGroupID      uuid.UUID `db:"log_group_id" json:"log_group_id"`
+	InstanceOrdinal int32     `db:"instance_ordinal" json:"instance_ordinal"`
+}
+
+func (q *sqlQuerier) GetLogGroupInstanceIDByOrdinal(ctx context.Context, arg GetLogGroupInstanceIDByOrdinalParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, getLogGroupInstanceIDByOrdinal, arg.LogGroupID, arg.InstanceOrdinal)
+	var id uuid.UUID
+	err := row.Scan(&id)
+	return id, err
+}
+
+const getLogInstanceForDiscordAnnouncement = `-- name: GetLogInstanceForDiscordAnnouncement :one
+SELECT id, realm_id, log_group_id, name, hashed_slug, guild_id, start_time, end_time, capabilities, versions, recorder_name, recorder_guid, parser_version, duplicate_group_id, difficulty_name, max_players, dynamic_difficulty, vehicle_control_intervals, category FROM log_instances WHERE id = $1
+`
+
+func (q *sqlQuerier) GetLogInstanceForDiscordAnnouncement(ctx context.Context, id uuid.UUID) (LogInstance, error) {
+	row := q.db.QueryRow(ctx, getLogInstanceForDiscordAnnouncement, id)
+	var i LogInstance
+	err := row.Scan(
+		&i.ID,
+		&i.RealmID,
+		&i.LogGroupID,
+		&i.Name,
+		&i.HashedSlug,
+		&i.GuildID,
+		&i.StartTime,
+		&i.EndTime,
+		&i.Capabilities,
+		&i.Versions,
+		&i.RecorderName,
+		&i.RecorderGuid,
+		&i.ParserVersion,
+		&i.DuplicateGroupID,
+		&i.DifficultyName,
+		&i.MaxPlayers,
+		&i.DynamicDifficulty,
+		&i.VehicleControlIntervals,
+		&i.Category,
+	)
+	return i, err
+}
+
+const listDiscordAnnouncementEncounters = `-- name: ListDiscordAnnouncementEncounters :many
+SELECT DISTINCT ON (lie.name)
+  lie.name, lie.kill_type, lie.start_time, lie.end_time
+FROM log_instance_encounters lie
+WHERE lie.instance_id = $1
+  AND lie.boss = TRUE
+ORDER BY
+  lie.name,
+  (lie.kill_type IN ('clean', 'partial')) DESC,
+  lie.end_time DESC,
+  lie.id DESC
+`
+
+type ListDiscordAnnouncementEncountersRow struct {
+	Name      string             `db:"name" json:"name"`
+	KillType  KillType           `db:"kill_type" json:"kill_type"`
+	StartTime pgtype.Timestamptz `db:"start_time" json:"start_time"`
+	EndTime   pgtype.Timestamptz `db:"end_time" json:"end_time"`
+}
+
+func (q *sqlQuerier) ListDiscordAnnouncementEncounters(ctx context.Context, instanceID uuid.UUID) ([]ListDiscordAnnouncementEncountersRow, error) {
+	rows, err := q.db.Query(ctx, listDiscordAnnouncementEncounters, instanceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListDiscordAnnouncementEncountersRow
+	for rows.Next() {
+		var i ListDiscordAnnouncementEncountersRow
+		if err := rows.Scan(
+			&i.Name,
+			&i.KillType,
+			&i.StartTime,
+			&i.EndTime,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listDiscordAnnouncementSources = `-- name: ListDiscordAnnouncementSources :many
+SELECT announcement_id, log_group_id, instance_ordinal, instance_slug, created_at, updated_at
+FROM guild_discord_log_announcement_sources
+WHERE announcement_id = $1
+ORDER BY created_at, log_group_id, instance_ordinal
+`
+
+func (q *sqlQuerier) ListDiscordAnnouncementSources(ctx context.Context, announcementID uuid.UUID) ([]GuildDiscordLogAnnouncementSource, error) {
+	rows, err := q.db.Query(ctx, listDiscordAnnouncementSources, announcementID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GuildDiscordLogAnnouncementSource
+	for rows.Next() {
+		var i GuildDiscordLogAnnouncementSource
+		if err := rows.Scan(
+			&i.AnnouncementID,
+			&i.LogGroupID,
+			&i.InstanceOrdinal,
+			&i.InstanceSlug,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listGuildDiscordAnnouncementAttempts = `-- name: ListGuildDiscordAnnouncementAttempts :many
+SELECT
+  a.id, a.guild_id, a.run_id, a.discord_channel_id, a.discord_message_id, a.delivery_attempted_at, a.created_at, a.updated_at, a.delivery_error,
+  source.instance_slug
+FROM guild_discord_log_announcements a
+LEFT JOIN LATERAL (
+  SELECT s.instance_slug
+  FROM guild_discord_log_announcement_sources s
+  WHERE s.announcement_id = a.id
+  ORDER BY s.created_at ASC, s.log_group_id ASC, s.instance_ordinal ASC
+  LIMIT 1
+) source ON TRUE
+WHERE a.guild_id = $1
+ORDER BY COALESCE(a.delivery_attempted_at, a.created_at) DESC, a.created_at DESC, a.id DESC
+LIMIT $3 OFFSET $2
+`
+
+type ListGuildDiscordAnnouncementAttemptsParams struct {
+	GuildID     uuid.UUID `db:"guild_id" json:"guild_id"`
+	OffsetCount int32     `db:"offset_count" json:"offset_count"`
+	LimitCount  int32     `db:"limit_count" json:"limit_count"`
+}
+
+type ListGuildDiscordAnnouncementAttemptsRow struct {
+	GuildDiscordLogAnnouncement GuildDiscordLogAnnouncement `db:"guild_discord_log_announcement" json:"guild_discord_log_announcement"`
+	InstanceSlug                pgtype.Text                 `db:"instance_slug" json:"instance_slug"`
+}
+
+func (q *sqlQuerier) ListGuildDiscordAnnouncementAttempts(ctx context.Context, arg ListGuildDiscordAnnouncementAttemptsParams) ([]ListGuildDiscordAnnouncementAttemptsRow, error) {
+	rows, err := q.db.Query(ctx, listGuildDiscordAnnouncementAttempts, arg.GuildID, arg.OffsetCount, arg.LimitCount)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListGuildDiscordAnnouncementAttemptsRow
+	for rows.Next() {
+		var i ListGuildDiscordAnnouncementAttemptsRow
+		if err := rows.Scan(
+			&i.GuildDiscordLogAnnouncement.ID,
+			&i.GuildDiscordLogAnnouncement.GuildID,
+			&i.GuildDiscordLogAnnouncement.RunID,
+			&i.GuildDiscordLogAnnouncement.DiscordChannelID,
+			&i.GuildDiscordLogAnnouncement.DiscordMessageID,
+			&i.GuildDiscordLogAnnouncement.DeliveryAttemptedAt,
+			&i.GuildDiscordLogAnnouncement.CreatedAt,
+			&i.GuildDiscordLogAnnouncement.UpdatedAt,
+			&i.GuildDiscordLogAnnouncement.DeliveryError,
+			&i.InstanceSlug,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listInstancesForDiscordAnnouncement = `-- name: ListInstancesForDiscordAnnouncement :many
+SELECT
+  li.id,
+  li.log_group_id,
+  li.name,
+  li.hashed_slug,
+  li.start_time,
+  li.end_time,
+  li.recorder_name,
+  li.max_players,
+  li.difficulty_name,
+  li.category,
+  wlg.created_at AS uploaded_at,
+  u.username AS uploader_name,
+  wsr.name AS realm_name,
+  g.name AS guild_name,
+  t.slug AS tenant_slug,
+  COALESCE(
+    CASE
+      WHEN sr.instance_id IS NOT NULL AND li.end_time > li.start_time
+        THEN (EXTRACT(EPOCH FROM (li.end_time - li.start_time)) * 1000)::bigint
+    END,
+    0
+  )::bigint AS clear_duration_ms,
+  COALESCE(guild_average.avg_duration_ms, 0)::bigint AS guild_avg_duration_ms,
+  (SELECT COUNT(*) FROM log_instance_players lip WHERE lip.instance_id = li.id)::int AS player_count
+FROM log_instances li
+JOIN wow_log_groups wlg ON wlg.id = li.log_group_id
+JOIN users u ON u.id = wlg.owner
+LEFT JOIN wow_server_realms wsr ON wsr.id = li.realm_id
+LEFT JOIN wow_servers ws ON ws.id = wsr.server_id
+LEFT JOIN tenants t ON t.id = ws.tenant_id
+LEFT JOIN guilds g ON g.id = li.guild_id
+LEFT JOIN instance_speedruns sr ON sr.instance_id = li.id AND sr.qualified = TRUE
+LEFT JOIN LATERAL (
+  SELECT AVG(previous.duration_ms)::bigint AS avg_duration_ms
+  FROM (
+    SELECT DISTINCT ON (COALESCE(previous_li.duplicate_group_id, previous_li.id))
+      (EXTRACT(EPOCH FROM (previous_li.end_time - previous_li.start_time)) * 1000)::bigint AS duration_ms
+    FROM instance_speedruns previous_sr
+    JOIN log_instances previous_li ON previous_li.id = previous_sr.instance_id
+    WHERE previous_sr.guild_id = li.guild_id
+      AND previous_sr.instance_name = li.name
+      AND previous_li.difficulty_name = li.difficulty_name
+      AND previous_li.max_players = li.max_players
+      AND previous_sr.qualified = TRUE
+      AND previous_li.end_time > previous_li.start_time
+      AND COALESCE(previous_li.duplicate_group_id, previous_li.id) != COALESCE(li.duplicate_group_id, li.id)
+    ORDER BY COALESCE(previous_li.duplicate_group_id, previous_li.id), previous_li.end_time - previous_li.start_time ASC
+  ) previous
+) guild_average ON TRUE
+WHERE COALESCE(li.duplicate_group_id, li.id) = $1::uuid
+ORDER BY wlg.created_at ASC, li.start_time ASC NULLS LAST, li.id ASC
+`
+
+type ListInstancesForDiscordAnnouncementRow struct {
+	ID                 uuid.UUID          `db:"id" json:"id"`
+	LogGroupID         uuid.UUID          `db:"log_group_id" json:"log_group_id"`
+	Name               string             `db:"name" json:"name"`
+	HashedSlug         pgtype.Text        `db:"hashed_slug" json:"hashed_slug"`
+	StartTime          pgtype.Timestamptz `db:"start_time" json:"start_time"`
+	EndTime            pgtype.Timestamptz `db:"end_time" json:"end_time"`
+	RecorderName       string             `db:"recorder_name" json:"recorder_name"`
+	MaxPlayers         int32              `db:"max_players" json:"max_players"`
+	DifficultyName     string             `db:"difficulty_name" json:"difficulty_name"`
+	Category           pgtype.Text        `db:"category" json:"category"`
+	UploadedAt         pgtype.Timestamptz `db:"uploaded_at" json:"uploaded_at"`
+	UploaderName       string             `db:"uploader_name" json:"uploader_name"`
+	RealmName          pgtype.Text        `db:"realm_name" json:"realm_name"`
+	GuildName          pgtype.Text        `db:"guild_name" json:"guild_name"`
+	TenantSlug         pgtype.Text        `db:"tenant_slug" json:"tenant_slug"`
+	ClearDurationMs    int64              `db:"clear_duration_ms" json:"clear_duration_ms"`
+	GuildAvgDurationMs int64              `db:"guild_avg_duration_ms" json:"guild_avg_duration_ms"`
+	PlayerCount        int32              `db:"player_count" json:"player_count"`
+}
+
+func (q *sqlQuerier) ListInstancesForDiscordAnnouncement(ctx context.Context, runID uuid.UUID) ([]ListInstancesForDiscordAnnouncementRow, error) {
+	rows, err := q.db.Query(ctx, listInstancesForDiscordAnnouncement, runID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListInstancesForDiscordAnnouncementRow
+	for rows.Next() {
+		var i ListInstancesForDiscordAnnouncementRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.LogGroupID,
+			&i.Name,
+			&i.HashedSlug,
+			&i.StartTime,
+			&i.EndTime,
+			&i.RecorderName,
+			&i.MaxPlayers,
+			&i.DifficultyName,
+			&i.Category,
+			&i.UploadedAt,
+			&i.UploaderName,
+			&i.RealmName,
+			&i.GuildName,
+			&i.TenantSlug,
+			&i.ClearDurationMs,
+			&i.GuildAvgDurationMs,
+			&i.PlayerCount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const moveDiscordAnnouncementSources = `-- name: MoveDiscordAnnouncementSources :exec
+UPDATE guild_discord_log_announcement_sources
+SET announcement_id = $1,
+    updated_at = NOW()
+WHERE announcement_id = $2
+`
+
+type MoveDiscordAnnouncementSourcesParams struct {
+	ToAnnouncementID   uuid.UUID `db:"to_announcement_id" json:"to_announcement_id"`
+	FromAnnouncementID uuid.UUID `db:"from_announcement_id" json:"from_announcement_id"`
+}
+
+func (q *sqlQuerier) MoveDiscordAnnouncementSources(ctx context.Context, arg MoveDiscordAnnouncementSourcesParams) error {
+	_, err := q.db.Exec(ctx, moveDiscordAnnouncementSources, arg.ToAnnouncementID, arg.FromAnnouncementID)
+	return err
+}
+
+const setDiscordAnnouncementDeliveryError = `-- name: SetDiscordAnnouncementDeliveryError :exec
+UPDATE guild_discord_log_announcements
+SET delivery_error = $1,
+    updated_at = NOW()
+WHERE id = $2
+`
+
+type SetDiscordAnnouncementDeliveryErrorParams struct {
+	DeliveryError pgtype.Text `db:"delivery_error" json:"delivery_error"`
+	ID            uuid.UUID   `db:"id" json:"id"`
+}
+
+func (q *sqlQuerier) SetDiscordAnnouncementDeliveryError(ctx context.Context, arg SetDiscordAnnouncementDeliveryErrorParams) error {
+	_, err := q.db.Exec(ctx, setDiscordAnnouncementDeliveryError, arg.DeliveryError, arg.ID)
+	return err
+}
+
+const setDiscordAnnouncementMessage = `-- name: SetDiscordAnnouncementMessage :one
+UPDATE guild_discord_log_announcements
+SET discord_channel_id = $1,
+    discord_message_id = $2,
+    delivery_error = NULL,
+    updated_at = NOW()
+WHERE id = $3
+RETURNING id, guild_id, run_id, discord_channel_id, discord_message_id, delivery_attempted_at, created_at, updated_at, delivery_error
+`
+
+type SetDiscordAnnouncementMessageParams struct {
+	DiscordChannelID string      `db:"discord_channel_id" json:"discord_channel_id"`
+	DiscordMessageID pgtype.Text `db:"discord_message_id" json:"discord_message_id"`
+	ID               uuid.UUID   `db:"id" json:"id"`
+}
+
+func (q *sqlQuerier) SetDiscordAnnouncementMessage(ctx context.Context, arg SetDiscordAnnouncementMessageParams) (GuildDiscordLogAnnouncement, error) {
+	row := q.db.QueryRow(ctx, setDiscordAnnouncementMessage, arg.DiscordChannelID, arg.DiscordMessageID, arg.ID)
+	var i GuildDiscordLogAnnouncement
+	err := row.Scan(
+		&i.ID,
+		&i.GuildID,
+		&i.RunID,
+		&i.DiscordChannelID,
+		&i.DiscordMessageID,
+		&i.DeliveryAttemptedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeliveryError,
+	)
+	return i, err
+}
+
+const updateDiscordAnnouncementRun = `-- name: UpdateDiscordAnnouncementRun :one
+UPDATE guild_discord_log_announcements
+SET run_id = $1,
+    updated_at = NOW()
+WHERE id = $2
+RETURNING id, guild_id, run_id, discord_channel_id, discord_message_id, delivery_attempted_at, created_at, updated_at, delivery_error
+`
+
+type UpdateDiscordAnnouncementRunParams struct {
+	RunID uuid.UUID `db:"run_id" json:"run_id"`
+	ID    uuid.UUID `db:"id" json:"id"`
+}
+
+func (q *sqlQuerier) UpdateDiscordAnnouncementRun(ctx context.Context, arg UpdateDiscordAnnouncementRunParams) (GuildDiscordLogAnnouncement, error) {
+	row := q.db.QueryRow(ctx, updateDiscordAnnouncementRun, arg.RunID, arg.ID)
+	var i GuildDiscordLogAnnouncement
+	err := row.Scan(
+		&i.ID,
+		&i.GuildID,
+		&i.RunID,
+		&i.DiscordChannelID,
+		&i.DiscordMessageID,
+		&i.DeliveryAttemptedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeliveryError,
+	)
+	return i, err
+}
+
+const upsertDiscordAnnouncement = `-- name: UpsertDiscordAnnouncement :one
+INSERT INTO guild_discord_log_announcements (
+  guild_id, run_id, discord_channel_id
+) VALUES ($1, $2, $3)
+ON CONFLICT (guild_id, run_id) DO UPDATE SET
+  updated_at = NOW()
+RETURNING id, guild_id, run_id, discord_channel_id, discord_message_id, delivery_attempted_at, created_at, updated_at, delivery_error
+`
+
+type UpsertDiscordAnnouncementParams struct {
+	GuildID          uuid.UUID `db:"guild_id" json:"guild_id"`
+	RunID            uuid.UUID `db:"run_id" json:"run_id"`
+	DiscordChannelID string    `db:"discord_channel_id" json:"discord_channel_id"`
+}
+
+func (q *sqlQuerier) UpsertDiscordAnnouncement(ctx context.Context, arg UpsertDiscordAnnouncementParams) (GuildDiscordLogAnnouncement, error) {
+	row := q.db.QueryRow(ctx, upsertDiscordAnnouncement, arg.GuildID, arg.RunID, arg.DiscordChannelID)
+	var i GuildDiscordLogAnnouncement
+	err := row.Scan(
+		&i.ID,
+		&i.GuildID,
+		&i.RunID,
+		&i.DiscordChannelID,
+		&i.DiscordMessageID,
+		&i.DeliveryAttemptedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeliveryError,
+	)
+	return i, err
+}
+
+const upsertDiscordAnnouncementSource = `-- name: UpsertDiscordAnnouncementSource :one
+INSERT INTO guild_discord_log_announcement_sources (
+  announcement_id, log_group_id, instance_ordinal, instance_slug
+) VALUES (
+  $1, $2, $3, $4
+)
+ON CONFLICT (log_group_id, instance_ordinal) DO UPDATE SET
+  announcement_id = EXCLUDED.announcement_id,
+  instance_slug = EXCLUDED.instance_slug,
+  updated_at = NOW()
+RETURNING announcement_id, log_group_id, instance_ordinal, instance_slug, created_at, updated_at
+`
+
+type UpsertDiscordAnnouncementSourceParams struct {
+	AnnouncementID  uuid.UUID   `db:"announcement_id" json:"announcement_id"`
+	LogGroupID      uuid.UUID   `db:"log_group_id" json:"log_group_id"`
+	InstanceOrdinal int32       `db:"instance_ordinal" json:"instance_ordinal"`
+	InstanceSlug    pgtype.Text `db:"instance_slug" json:"instance_slug"`
+}
+
+func (q *sqlQuerier) UpsertDiscordAnnouncementSource(ctx context.Context, arg UpsertDiscordAnnouncementSourceParams) (GuildDiscordLogAnnouncementSource, error) {
+	row := q.db.QueryRow(ctx, upsertDiscordAnnouncementSource,
+		arg.AnnouncementID,
+		arg.LogGroupID,
+		arg.InstanceOrdinal,
+		arg.InstanceSlug,
+	)
+	var i GuildDiscordLogAnnouncementSource
+	err := row.Scan(
+		&i.AnnouncementID,
+		&i.LogGroupID,
+		&i.InstanceOrdinal,
+		&i.InstanceSlug,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getParsedBytesByOwner = `-- name: GetParsedBytesByOwner :one
+SELECT
+  COALESCE(SUM(octet_length(lie.events)), 0)::bigint AS parsed_bytes,
+  COUNT(DISTINCT lie.instance_id)::bigint AS parsed_instance_count
+FROM log_instance_events lie
+JOIN log_instances li ON li.id = lie.instance_id
+JOIN wow_log_groups wlg ON wlg.id = li.log_group_id
+WHERE wlg.owner = $1
+`
+
+type GetParsedBytesByOwnerRow struct {
+	ParsedBytes         int64 `db:"parsed_bytes" json:"parsed_bytes"`
+	ParsedInstanceCount int64 `db:"parsed_instance_count" json:"parsed_instance_count"`
+}
+
+func (q *sqlQuerier) GetParsedBytesByOwner(ctx context.Context, owner uuid.UUID) (GetParsedBytesByOwnerRow, error) {
+	row := q.db.QueryRow(ctx, getParsedBytesByOwner, owner)
+	var i GetParsedBytesByOwnerRow
+	err := row.Scan(&i.ParsedBytes, &i.ParsedInstanceCount)
+	return i, err
 }
 
 const instanceEvent = `-- name: InstanceEvent :one
@@ -2243,6 +3005,97 @@ func (q *sqlQuerier) ListExternalAPICharacterLogs(ctx context.Context, arg ListE
 	return items, nil
 }
 
+const listExternalAPILeaderboardDuplicateLogs = `-- name: ListExternalAPILeaderboardDuplicateLogs :many
+SELECT
+    selected.id AS selected_instance_id,
+    duplicate.id,
+    duplicate.hashed_slug,
+    COALESCE(CASE
+        WHEN $1::boolean THEN duplicate_speedrun.boss_to_boss_duration_ms
+        ELSE duplicate_speedrun.ranked_duration_ms
+    END, 0)::bigint AS duration_ms,
+    CASE
+        WHEN $1::boolean THEN duplicate_speedrun.boss_to_boss_start_time
+        ELSE duplicate_speedrun.ranked_start_time
+    END::timestamptz AS start_time,
+    CASE
+        WHEN $1::boolean THEN duplicate_speedrun.boss_to_boss_completion_time
+        ELSE duplicate_speedrun.ranked_completion_time
+    END::timestamptz AS completion_time,
+    duplicate.parser_version,
+    COALESCE(duplicate_speedrun.addon_version, '')::text AS addon_version,
+    (youtube.video_url IS NOT NULL)::boolean AS has_youtube_video,
+    COALESCE(youtube.video_url, '')::text AS youtube_url
+FROM log_instances selected
+JOIN log_instances duplicate
+  ON duplicate.duplicate_group_id = selected.duplicate_group_id
+ AND duplicate.id != selected.id
+JOIN wow_server_realms duplicate_realm ON duplicate_realm.id = duplicate.realm_id
+LEFT JOIN instance_speedruns duplicate_speedrun ON duplicate_speedrun.instance_id = duplicate.id
+LEFT JOIN LATERAL (
+    SELECT yt.video_url
+    FROM log_instance_youtube_timestamped yt
+    WHERE yt.log_instance_id = duplicate.id OR yt.instance_slug = duplicate.hashed_slug
+    LIMIT 1
+) youtube ON true
+WHERE selected.id = ANY($2::uuid[])
+  AND selected.duplicate_group_id IS NOT NULL
+ORDER BY selected.id, duplicate.id
+`
+
+type ListExternalAPILeaderboardDuplicateLogsParams struct {
+	UseRankedTiming     bool        `db:"use_ranked_timing" json:"use_ranked_timing"`
+	SelectedInstanceIds []uuid.UUID `db:"selected_instance_ids" json:"selected_instance_ids"`
+}
+
+type ListExternalAPILeaderboardDuplicateLogsRow struct {
+	SelectedInstanceID uuid.UUID          `db:"selected_instance_id" json:"selected_instance_id"`
+	ID                 uuid.UUID          `db:"id" json:"id"`
+	HashedSlug         pgtype.Text        `db:"hashed_slug" json:"hashed_slug"`
+	DurationMs         int64              `db:"duration_ms" json:"duration_ms"`
+	StartTime          pgtype.Timestamptz `db:"start_time" json:"start_time"`
+	CompletionTime     pgtype.Timestamptz `db:"completion_time" json:"completion_time"`
+	ParserVersion      string             `db:"parser_version" json:"parser_version"`
+	AddonVersion       string             `db:"addon_version" json:"addon_version"`
+	HasYoutubeVideo    bool               `db:"has_youtube_video" json:"has_youtube_video"`
+	YoutubeUrl         string             `db:"youtube_url" json:"youtube_url"`
+}
+
+// Returns the logs excluded by duplicate-group deduplication for each selected
+// leaderboard instance. The selected instance is the canonical leaderboard log
+// for the requested timing mode; every other member of its duplicate group is
+// returned here, including unqualified runs.
+func (q *sqlQuerier) ListExternalAPILeaderboardDuplicateLogs(ctx context.Context, arg ListExternalAPILeaderboardDuplicateLogsParams) ([]ListExternalAPILeaderboardDuplicateLogsRow, error) {
+	rows, err := q.db.Query(ctx, listExternalAPILeaderboardDuplicateLogs, arg.UseRankedTiming, arg.SelectedInstanceIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListExternalAPILeaderboardDuplicateLogsRow
+	for rows.Next() {
+		var i ListExternalAPILeaderboardDuplicateLogsRow
+		if err := rows.Scan(
+			&i.SelectedInstanceID,
+			&i.ID,
+			&i.HashedSlug,
+			&i.DurationMs,
+			&i.StartTime,
+			&i.CompletionTime,
+			&i.ParserVersion,
+			&i.AddonVersion,
+			&i.HasYoutubeVideo,
+			&i.YoutubeUrl,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listExternalAPIRealms = `-- name: ListExternalAPIRealms :many
 SELECT
     wsr.id,
@@ -2279,6 +3132,151 @@ func (q *sqlQuerier) ListExternalAPIRealms(ctx context.Context, server string) (
 			&i.Name,
 			&i.Description,
 			&i.Url,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listExternalAPIRecentInstances = `-- name: ListExternalAPIRecentInstances :many
+SELECT
+    li.id,
+    li.hashed_slug,
+    COALESCE(NULLIF(btrim(li.name), ''), NULLIF(btrim(sm.instance_name), ''), li.name)::text AS name,
+    li.realm_id,
+    wsr.server_id,
+    wsr.name::text AS realm_name,
+    li.guild_id,
+    COALESCE(g.name, '')::text AS guild_name,
+    wlg.created_at AS uploaded_at,
+    COALESCE(
+        (SELECT MIN(lie.start_time) FROM log_instance_encounters lie WHERE lie.instance_id = li.id),
+        wlg.created_at
+    )::timestamptz AS started_at,
+    COALESCE(
+        (SELECT MAX(lie.end_time) FROM log_instance_encounters lie WHERE lie.instance_id = li.id),
+        wlg.created_at
+    )::timestamptz AS ended_at,
+    (SELECT COUNT(*) FROM log_instance_players lip WHERE lip.instance_id = li.id)::bigint AS player_count,
+    (SELECT COUNT(*) FROM log_instance_encounters lie WHERE lie.instance_id = li.id AND lie.boss = true)::bigint AS boss_count,
+    (SELECT COUNT(*) FROM log_instance_encounters lie WHERE lie.instance_id = li.id AND lie.boss = true AND lie.kill_type IN ('clean', 'partial'))::bigint AS boss_kills,
+    EXISTS (
+        SELECT 1 FROM log_instance_youtube_timestamped yt
+        WHERE yt.log_instance_id = li.id OR yt.instance_slug = li.hashed_slug
+    )::boolean AS has_youtube_video,
+    li.difficulty_name,
+    li.max_players,
+    li.recorder_name
+FROM log_instances li
+JOIN parsed_log_group plg ON plg.id = li.log_group_id
+JOIN wow_log_groups wlg ON wlg.id = plg.id
+LEFT JOIN server_upload_meta sm ON sm.log_group_id = li.log_group_id
+JOIN wow_server_realms wsr ON wsr.id = li.realm_id
+LEFT JOIN guilds g ON g.id = li.guild_id
+WHERE (
+        $1::timestamptz IS NULL
+        OR COALESCE(
+            (SELECT MIN(lie.start_time) FROM log_instance_encounters lie WHERE lie.instance_id = li.id),
+            wlg.created_at
+        ) >= $1::timestamptz
+    )
+  AND ($2::timestamptz IS NULL OR wlg.created_at >= $2::timestamptz)
+  AND (
+        COALESCE(cardinality($3::text[]), 0) = 0
+        OR COALESCE(NULLIF(btrim(li.name), ''), NULLIF(btrim(sm.instance_name), ''), li.name) = ANY($3::text[])
+    )
+  AND ($4::uuid = '00000000-0000-0000-0000-000000000000'::uuid OR li.realm_id = $4::uuid)
+  AND ($5::uuid = '00000000-0000-0000-0000-000000000000'::uuid OR li.guild_id = $5::uuid)
+  AND (
+        $6::text = ''
+        OR ($6::text = 'true' AND EXISTS (
+            SELECT 1 FROM log_instance_youtube_timestamped yt
+            WHERE yt.log_instance_id = li.id OR yt.instance_slug = li.hashed_slug
+        ))
+        OR ($6::text = 'false' AND NOT EXISTS (
+            SELECT 1 FROM log_instance_youtube_timestamped yt
+            WHERE yt.log_instance_id = li.id OR yt.instance_slug = li.hashed_slug
+        ))
+    )
+ORDER BY started_at DESC, li.id DESC
+LIMIT $8
+OFFSET $7
+`
+
+type ListExternalAPIRecentInstancesParams struct {
+	AfterDate     pgtype.Timestamptz `db:"after_date" json:"after_date"`
+	UploadAfter   pgtype.Timestamptz `db:"upload_after" json:"upload_after"`
+	InstanceNames []string           `db:"instance_names" json:"instance_names"`
+	RealmID       uuid.UUID          `db:"realm_id" json:"realm_id"`
+	GuildID       uuid.UUID          `db:"guild_id" json:"guild_id"`
+	HasVideo      string             `db:"has_video" json:"has_video"`
+	ResultOffset  int32              `db:"result_offset" json:"result_offset"`
+	ResultLimit   int32              `db:"result_limit" json:"result_limit"`
+}
+
+type ListExternalAPIRecentInstancesRow struct {
+	ID              uuid.UUID          `db:"id" json:"id"`
+	HashedSlug      pgtype.Text        `db:"hashed_slug" json:"hashed_slug"`
+	Name            string             `db:"name" json:"name"`
+	RealmID         uuid.UUID          `db:"realm_id" json:"realm_id"`
+	ServerID        uuid.UUID          `db:"server_id" json:"server_id"`
+	RealmName       string             `db:"realm_name" json:"realm_name"`
+	GuildID         uuid.NullUUID      `db:"guild_id" json:"guild_id"`
+	GuildName       string             `db:"guild_name" json:"guild_name"`
+	UploadedAt      pgtype.Timestamptz `db:"uploaded_at" json:"uploaded_at"`
+	StartedAt       pgtype.Timestamptz `db:"started_at" json:"started_at"`
+	EndedAt         pgtype.Timestamptz `db:"ended_at" json:"ended_at"`
+	PlayerCount     int64              `db:"player_count" json:"player_count"`
+	BossCount       int64              `db:"boss_count" json:"boss_count"`
+	BossKills       int64              `db:"boss_kills" json:"boss_kills"`
+	HasYoutubeVideo bool               `db:"has_youtube_video" json:"has_youtube_video"`
+	DifficultyName  string             `db:"difficulty_name" json:"difficulty_name"`
+	MaxPlayers      int32              `db:"max_players" json:"max_players"`
+	RecorderName    string             `db:"recorder_name" json:"recorder_name"`
+}
+
+func (q *sqlQuerier) ListExternalAPIRecentInstances(ctx context.Context, arg ListExternalAPIRecentInstancesParams) ([]ListExternalAPIRecentInstancesRow, error) {
+	rows, err := q.db.Query(ctx, listExternalAPIRecentInstances,
+		arg.AfterDate,
+		arg.UploadAfter,
+		arg.InstanceNames,
+		arg.RealmID,
+		arg.GuildID,
+		arg.HasVideo,
+		arg.ResultOffset,
+		arg.ResultLimit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListExternalAPIRecentInstancesRow
+	for rows.Next() {
+		var i ListExternalAPIRecentInstancesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.HashedSlug,
+			&i.Name,
+			&i.RealmID,
+			&i.ServerID,
+			&i.RealmName,
+			&i.GuildID,
+			&i.GuildName,
+			&i.UploadedAt,
+			&i.StartedAt,
+			&i.EndedAt,
+			&i.PlayerCount,
+			&i.BossCount,
+			&i.BossKills,
+			&i.HasYoutubeVideo,
+			&i.DifficultyName,
+			&i.MaxPlayers,
+			&i.RecorderName,
 		); err != nil {
 			return nil, err
 		}
@@ -2454,18 +3452,21 @@ WHERE
        THEN wow_log_groups.owner = $1 
        ELSE true END
   AND
-  CASE WHEN $2::text != '' 
-       THEN $2 = ANY(instances_agg.instance_names)
+  CASE WHEN $2::boolean
+       THEN cardinality(instances_agg.instance_names) = 0
+       WHEN $3::text != ''
+       THEN $3 = ANY(instances_agg.instance_names)
        ELSE true END
 `
 
 type CountAllWoWLogGroupsParams struct {
-	FilterUserID       uuid.UUID `db:"filter_user_id" json:"filter_user_id"`
-	FilterInstanceName string    `db:"filter_instance_name" json:"filter_instance_name"`
+	FilterUserID          uuid.UUID `db:"filter_user_id" json:"filter_user_id"`
+	FilterWithoutInstance bool      `db:"filter_without_instance" json:"filter_without_instance"`
+	FilterInstanceName    string    `db:"filter_instance_name" json:"filter_instance_name"`
 }
 
 func (q *sqlQuerier) CountAllWoWLogGroups(ctx context.Context, arg CountAllWoWLogGroupsParams) (int32, error) {
-	row := q.db.QueryRow(ctx, countAllWoWLogGroups, arg.FilterUserID, arg.FilterInstanceName)
+	row := q.db.QueryRow(ctx, countAllWoWLogGroups, arg.FilterUserID, arg.FilterWithoutInstance, arg.FilterInstanceName)
 	var column_1 int32
 	err := row.Scan(&column_1)
 	return column_1, err
@@ -2711,7 +3712,8 @@ const getWoWLogGroupsByOwner = `-- name: GetWoWLogGroupsByOwner :many
 SELECT
   wow_log_groups.id, wow_log_groups.owner, wow_log_groups.created_at, wow_log_groups.updated_at, wow_log_groups.log_type, wow_log_groups.format, wow_log_groups.flavor,
   files_agg.files,
-  instances_output.output AS processing_output
+  instances_output.output AS processing_output,
+  parsed_bytes_agg.parsed_bytes
 FROM
   wow_log_groups
     LEFT JOIN LATERAL (
@@ -2779,6 +3781,13 @@ FROM
         ), '[]'::jsonb)
     ) AS output
     ) instances_output ON true
+
+    LEFT JOIN LATERAL (
+    SELECT COALESCE(SUM(octet_length(lie.events)), 0)::bigint AS parsed_bytes
+    FROM log_instance_events lie
+    JOIN log_instances li ON li.id = lie.instance_id
+    WHERE li.log_group_id = wow_log_groups.id
+    ) parsed_bytes_agg ON true
 WHERE
   wow_log_groups.owner = $1
   AND (
@@ -2807,6 +3816,7 @@ type GetWoWLogGroupsByOwnerRow struct {
 	WoWLogGroup      WoWLogGroup `db:"wo_wlog_group" json:"wo_wlog_group"`
 	Files            []LogFile   `db:"files" json:"files"`
 	ProcessingOutput []byte      `db:"processing_output" json:"processing_output"`
+	ParsedBytes      int64       `db:"parsed_bytes" json:"parsed_bytes"`
 }
 
 func (q *sqlQuerier) GetWoWLogGroupsByOwner(ctx context.Context, arg GetWoWLogGroupsByOwnerParams) ([]GetWoWLogGroupsByOwnerRow, error) {
@@ -2828,6 +3838,7 @@ func (q *sqlQuerier) GetWoWLogGroupsByOwner(ctx context.Context, arg GetWoWLogGr
 			&i.WoWLogGroup.Flavor,
 			&i.Files,
 			&i.ProcessingOutput,
+			&i.ParsedBytes,
 		); err != nil {
 			return nil, err
 		}
@@ -3209,31 +4220,34 @@ WHERE
        THEN wow_log_groups.owner = $1 
        ELSE true END
   AND
-  -- Filter by instance name (skip if empty string)
-  CASE WHEN $2::text != '' 
-       THEN $2 = ANY(instances_agg.instance_names)
+  -- Filter to logs without an instance, or by instance name when provided
+  CASE WHEN $2::boolean
+       THEN cardinality(instances_agg.instance_names) = 0
+       WHEN $3::text != ''
+       THEN $3 = ANY(instances_agg.instance_names)
        ELSE true END
 ORDER BY
-  CASE WHEN $3::text = 'date' AND $4::text = 'desc' THEN wow_log_groups.created_at END DESC,
-  CASE WHEN $3::text = 'date' AND $4::text = 'asc' THEN wow_log_groups.created_at END ASC,
-  CASE WHEN $3::text = 'user' AND $4::text = 'desc' THEN u.username END DESC NULLS LAST,
-  CASE WHEN $3::text = 'user' AND $4::text = 'asc' THEN u.username END ASC NULLS LAST,
-  CASE WHEN $3::text = 'size' AND $4::text = 'desc' THEN files_agg.total_size_bytes END DESC,
-  CASE WHEN $3::text = 'size' AND $4::text = 'asc' THEN files_agg.total_size_bytes END ASC,
-  CASE WHEN $3::text = 'instance' AND $4::text = 'desc' THEN instances_agg.first_instance_name END DESC NULLS LAST,
-  CASE WHEN $3::text = 'instance' AND $4::text = 'asc' THEN instances_agg.first_instance_name END ASC NULLS LAST,
+  CASE WHEN $4::text = 'date' AND $5::text = 'desc' THEN wow_log_groups.created_at END DESC,
+  CASE WHEN $4::text = 'date' AND $5::text = 'asc' THEN wow_log_groups.created_at END ASC,
+  CASE WHEN $4::text = 'user' AND $5::text = 'desc' THEN u.username END DESC NULLS LAST,
+  CASE WHEN $4::text = 'user' AND $5::text = 'asc' THEN u.username END ASC NULLS LAST,
+  CASE WHEN $4::text = 'size' AND $5::text = 'desc' THEN files_agg.total_size_bytes END DESC,
+  CASE WHEN $4::text = 'size' AND $5::text = 'asc' THEN files_agg.total_size_bytes END ASC,
+  CASE WHEN $4::text = 'instance' AND $5::text = 'desc' THEN instances_agg.first_instance_name END DESC NULLS LAST,
+  CASE WHEN $4::text = 'instance' AND $5::text = 'asc' THEN instances_agg.first_instance_name END ASC NULLS LAST,
   wow_log_groups.id
-LIMIT $6
-OFFSET $5
+LIMIT $7
+OFFSET $6
 `
 
 type ListAllWoWLogGroupsWithOwnerPaginatedParams struct {
-	FilterUserID       uuid.UUID `db:"filter_user_id" json:"filter_user_id"`
-	FilterInstanceName string    `db:"filter_instance_name" json:"filter_instance_name"`
-	SortBy             string    `db:"sort_by" json:"sort_by"`
-	SortOrder          string    `db:"sort_order" json:"sort_order"`
-	OffsetCount        int32     `db:"offset_count" json:"offset_count"`
-	LimitCount         int32     `db:"limit_count" json:"limit_count"`
+	FilterUserID          uuid.UUID `db:"filter_user_id" json:"filter_user_id"`
+	FilterWithoutInstance bool      `db:"filter_without_instance" json:"filter_without_instance"`
+	FilterInstanceName    string    `db:"filter_instance_name" json:"filter_instance_name"`
+	SortBy                string    `db:"sort_by" json:"sort_by"`
+	SortOrder             string    `db:"sort_order" json:"sort_order"`
+	OffsetCount           int32     `db:"offset_count" json:"offset_count"`
+	LimitCount            int32     `db:"limit_count" json:"limit_count"`
 }
 
 type ListAllWoWLogGroupsWithOwnerPaginatedRow struct {
@@ -3249,6 +4263,7 @@ type ListAllWoWLogGroupsWithOwnerPaginatedRow struct {
 func (q *sqlQuerier) ListAllWoWLogGroupsWithOwnerPaginated(ctx context.Context, arg ListAllWoWLogGroupsWithOwnerPaginatedParams) ([]ListAllWoWLogGroupsWithOwnerPaginatedRow, error) {
 	rows, err := q.db.Query(ctx, listAllWoWLogGroupsWithOwnerPaginated,
 		arg.FilterUserID,
+		arg.FilterWithoutInstance,
 		arg.FilterInstanceName,
 		arg.SortBy,
 		arg.SortOrder,
@@ -3422,6 +4437,846 @@ func (q *sqlQuerier) UpdateWoWLogGroupLogType(ctx context.Context, arg UpdateWoW
 	return err
 }
 
+const countUserGearLists = `-- name: CountUserGearLists :one
+SELECT COUNT(*) FROM gear_lists WHERE user_id = $1 AND tenant_id = $2
+`
+
+type CountUserGearListsParams struct {
+	UserID   uuid.UUID `db:"user_id" json:"user_id"`
+	TenantID uuid.UUID `db:"tenant_id" json:"tenant_id"`
+}
+
+func (q *sqlQuerier) CountUserGearLists(ctx context.Context, arg CountUserGearListsParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countUserGearLists, arg.UserID, arg.TenantID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const createGearList = `-- name: CreateGearList :one
+
+INSERT INTO gear_lists (id, user_id, tenant_id, title, description, class_id, spec_name, payload,
+                        forked_from_list_id)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+RETURNING id, user_id, tenant_id, title, description, class_id, spec_name, payload, forked_from_list_id, created_at, updated_at
+`
+
+type CreateGearListParams struct {
+	ID               uuid.UUID     `db:"id" json:"id"`
+	UserID           uuid.UUID     `db:"user_id" json:"user_id"`
+	TenantID         uuid.UUID     `db:"tenant_id" json:"tenant_id"`
+	Title            string        `db:"title" json:"title"`
+	Description      string        `db:"description" json:"description"`
+	ClassID          int32         `db:"class_id" json:"class_id"`
+	SpecName         string        `db:"spec_name" json:"spec_name"`
+	Payload          []byte        `db:"payload" json:"payload"`
+	ForkedFromListID uuid.NullUUID `db:"forked_from_list_id" json:"forked_from_list_id"`
+}
+
+// ============================================================
+// Gear Lists
+// ============================================================
+func (q *sqlQuerier) CreateGearList(ctx context.Context, arg CreateGearListParams) (GearList, error) {
+	row := q.db.QueryRow(ctx, createGearList,
+		arg.ID,
+		arg.UserID,
+		arg.TenantID,
+		arg.Title,
+		arg.Description,
+		arg.ClassID,
+		arg.SpecName,
+		arg.Payload,
+		arg.ForkedFromListID,
+	)
+	var i GearList
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.TenantID,
+		&i.Title,
+		&i.Description,
+		&i.ClassID,
+		&i.SpecName,
+		&i.Payload,
+		&i.ForkedFromListID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const createGearStatWeight = `-- name: CreateGearStatWeight :one
+
+INSERT INTO gear_stat_weights (id, user_id, tenant_id, name, description, class_id, spec_name, weights)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+RETURNING id, user_id, tenant_id, name, description, class_id, spec_name, weights, created_at, updated_at
+`
+
+type CreateGearStatWeightParams struct {
+	ID          uuid.UUID `db:"id" json:"id"`
+	UserID      uuid.UUID `db:"user_id" json:"user_id"`
+	TenantID    uuid.UUID `db:"tenant_id" json:"tenant_id"`
+	Name        string    `db:"name" json:"name"`
+	Description string    `db:"description" json:"description"`
+	ClassID     int32     `db:"class_id" json:"class_id"`
+	SpecName    string    `db:"spec_name" json:"spec_name"`
+	Weights     []byte    `db:"weights" json:"weights"`
+}
+
+// ============================================================
+// Stat Weights
+// ============================================================
+func (q *sqlQuerier) CreateGearStatWeight(ctx context.Context, arg CreateGearStatWeightParams) (GearStatWeight, error) {
+	row := q.db.QueryRow(ctx, createGearStatWeight,
+		arg.ID,
+		arg.UserID,
+		arg.TenantID,
+		arg.Name,
+		arg.Description,
+		arg.ClassID,
+		arg.SpecName,
+		arg.Weights,
+	)
+	var i GearStatWeight
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.TenantID,
+		&i.Name,
+		&i.Description,
+		&i.ClassID,
+		&i.SpecName,
+		&i.Weights,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const deleteGearList = `-- name: DeleteGearList :execrows
+DELETE FROM gear_lists WHERE id = $1 AND user_id = $2 AND tenant_id = $3
+`
+
+type DeleteGearListParams struct {
+	ID       uuid.UUID `db:"id" json:"id"`
+	UserID   uuid.UUID `db:"user_id" json:"user_id"`
+	TenantID uuid.UUID `db:"tenant_id" json:"tenant_id"`
+}
+
+func (q *sqlQuerier) DeleteGearList(ctx context.Context, arg DeleteGearListParams) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteGearList, arg.ID, arg.UserID, arg.TenantID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const deleteGearStatWeight = `-- name: DeleteGearStatWeight :execrows
+DELETE FROM gear_stat_weights WHERE id = $1 AND user_id = $2 AND tenant_id = $3
+`
+
+type DeleteGearStatWeightParams struct {
+	ID       uuid.UUID `db:"id" json:"id"`
+	UserID   uuid.UUID `db:"user_id" json:"user_id"`
+	TenantID uuid.UUID `db:"tenant_id" json:"tenant_id"`
+}
+
+func (q *sqlQuerier) DeleteGearStatWeight(ctx context.Context, arg DeleteGearStatWeightParams) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteGearStatWeight, arg.ID, arg.UserID, arg.TenantID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const getGearListByID = `-- name: GetGearListByID :one
+SELECT id, user_id, tenant_id, title, description, class_id, spec_name, payload, forked_from_list_id, created_at, updated_at FROM gear_lists WHERE id = $1
+`
+
+func (q *sqlQuerier) GetGearListByID(ctx context.Context, id uuid.UUID) (GearList, error) {
+	row := q.db.QueryRow(ctx, getGearListByID, id)
+	var i GearList
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.TenantID,
+		&i.Title,
+		&i.Description,
+		&i.ClassID,
+		&i.SpecName,
+		&i.Payload,
+		&i.ForkedFromListID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getGearStatWeightByID = `-- name: GetGearStatWeightByID :one
+SELECT id, user_id, tenant_id, name, description, class_id, spec_name, weights, created_at, updated_at FROM gear_stat_weights WHERE id = $1
+`
+
+func (q *sqlQuerier) GetGearStatWeightByID(ctx context.Context, id uuid.UUID) (GearStatWeight, error) {
+	row := q.db.QueryRow(ctx, getGearStatWeightByID, id)
+	var i GearStatWeight
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.TenantID,
+		&i.Name,
+		&i.Description,
+		&i.ClassID,
+		&i.SpecName,
+		&i.Weights,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const listGearListsByUser = `-- name: ListGearListsByUser :many
+SELECT id, user_id, tenant_id, title, description, class_id, spec_name, payload, forked_from_list_id, created_at, updated_at FROM gear_lists
+WHERE user_id = $1 AND tenant_id = $2
+ORDER BY updated_at DESC
+`
+
+type ListGearListsByUserParams struct {
+	UserID   uuid.UUID `db:"user_id" json:"user_id"`
+	TenantID uuid.UUID `db:"tenant_id" json:"tenant_id"`
+}
+
+func (q *sqlQuerier) ListGearListsByUser(ctx context.Context, arg ListGearListsByUserParams) ([]GearList, error) {
+	rows, err := q.db.Query(ctx, listGearListsByUser, arg.UserID, arg.TenantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GearList
+	for rows.Next() {
+		var i GearList
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.TenantID,
+			&i.Title,
+			&i.Description,
+			&i.ClassID,
+			&i.SpecName,
+			&i.Payload,
+			&i.ForkedFromListID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listGearStatWeightsByUser = `-- name: ListGearStatWeightsByUser :many
+SELECT id, user_id, tenant_id, name, description, class_id, spec_name, weights, created_at, updated_at FROM gear_stat_weights
+WHERE user_id = $1 AND tenant_id = $2
+ORDER BY updated_at DESC
+`
+
+type ListGearStatWeightsByUserParams struct {
+	UserID   uuid.UUID `db:"user_id" json:"user_id"`
+	TenantID uuid.UUID `db:"tenant_id" json:"tenant_id"`
+}
+
+func (q *sqlQuerier) ListGearStatWeightsByUser(ctx context.Context, arg ListGearStatWeightsByUserParams) ([]GearStatWeight, error) {
+	rows, err := q.db.Query(ctx, listGearStatWeightsByUser, arg.UserID, arg.TenantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GearStatWeight
+	for rows.Next() {
+		var i GearStatWeight
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.TenantID,
+			&i.Name,
+			&i.Description,
+			&i.ClassID,
+			&i.SpecName,
+			&i.Weights,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const updateGearList = `-- name: UpdateGearList :one
+UPDATE gear_lists SET
+  title = COALESCE($1, title),
+  description = COALESCE($2, description),
+  class_id = COALESCE($3, class_id),
+  spec_name = COALESCE($4, spec_name),
+  payload = COALESCE($5, payload),
+  updated_at = now()
+WHERE id = $6 AND user_id = $7 AND tenant_id = $8
+RETURNING id, user_id, tenant_id, title, description, class_id, spec_name, payload, forked_from_list_id, created_at, updated_at
+`
+
+type UpdateGearListParams struct {
+	Title       pgtype.Text `db:"title" json:"title"`
+	Description pgtype.Text `db:"description" json:"description"`
+	ClassID     pgtype.Int4 `db:"class_id" json:"class_id"`
+	SpecName    pgtype.Text `db:"spec_name" json:"spec_name"`
+	Payload     []byte      `db:"payload" json:"payload"`
+	ID          uuid.UUID   `db:"id" json:"id"`
+	UserID      uuid.UUID   `db:"user_id" json:"user_id"`
+	TenantID    uuid.UUID   `db:"tenant_id" json:"tenant_id"`
+}
+
+func (q *sqlQuerier) UpdateGearList(ctx context.Context, arg UpdateGearListParams) (GearList, error) {
+	row := q.db.QueryRow(ctx, updateGearList,
+		arg.Title,
+		arg.Description,
+		arg.ClassID,
+		arg.SpecName,
+		arg.Payload,
+		arg.ID,
+		arg.UserID,
+		arg.TenantID,
+	)
+	var i GearList
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.TenantID,
+		&i.Title,
+		&i.Description,
+		&i.ClassID,
+		&i.SpecName,
+		&i.Payload,
+		&i.ForkedFromListID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const updateGearStatWeight = `-- name: UpdateGearStatWeight :one
+UPDATE gear_stat_weights SET
+  name = COALESCE($1, name),
+  description = COALESCE($2, description),
+  class_id = COALESCE($3, class_id),
+  spec_name = COALESCE($4, spec_name),
+  weights = COALESCE($5, weights),
+  updated_at = now()
+WHERE id = $6 AND user_id = $7 AND tenant_id = $8
+RETURNING id, user_id, tenant_id, name, description, class_id, spec_name, weights, created_at, updated_at
+`
+
+type UpdateGearStatWeightParams struct {
+	Name        pgtype.Text `db:"name" json:"name"`
+	Description pgtype.Text `db:"description" json:"description"`
+	ClassID     pgtype.Int4 `db:"class_id" json:"class_id"`
+	SpecName    pgtype.Text `db:"spec_name" json:"spec_name"`
+	Weights     []byte      `db:"weights" json:"weights"`
+	ID          uuid.UUID   `db:"id" json:"id"`
+	UserID      uuid.UUID   `db:"user_id" json:"user_id"`
+	TenantID    uuid.UUID   `db:"tenant_id" json:"tenant_id"`
+}
+
+func (q *sqlQuerier) UpdateGearStatWeight(ctx context.Context, arg UpdateGearStatWeightParams) (GearStatWeight, error) {
+	row := q.db.QueryRow(ctx, updateGearStatWeight,
+		arg.Name,
+		arg.Description,
+		arg.ClassID,
+		arg.SpecName,
+		arg.Weights,
+		arg.ID,
+		arg.UserID,
+		arg.TenantID,
+	)
+	var i GearStatWeight
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.TenantID,
+		&i.Name,
+		&i.Description,
+		&i.ClassID,
+		&i.SpecName,
+		&i.Weights,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const countUserGearProgressions = `-- name: CountUserGearProgressions :one
+SELECT COUNT(*) FROM gear_progressions WHERE user_id = $1 AND tenant_id = $2
+`
+
+type CountUserGearProgressionsParams struct {
+	UserID   uuid.UUID `db:"user_id" json:"user_id"`
+	TenantID uuid.UUID `db:"tenant_id" json:"tenant_id"`
+}
+
+func (q *sqlQuerier) CountUserGearProgressions(ctx context.Context, arg CountUserGearProgressionsParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countUserGearProgressions, arg.UserID, arg.TenantID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const createGearProgression = `-- name: CreateGearProgression :one
+
+INSERT INTO gear_progressions (id, user_id, tenant_id, title, description, class_id, spec_name, payload)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+RETURNING id, user_id, tenant_id, title, description, class_id, spec_name, payload, created_at, updated_at
+`
+
+type CreateGearProgressionParams struct {
+	ID          uuid.UUID `db:"id" json:"id"`
+	UserID      uuid.UUID `db:"user_id" json:"user_id"`
+	TenantID    uuid.UUID `db:"tenant_id" json:"tenant_id"`
+	Title       string    `db:"title" json:"title"`
+	Description string    `db:"description" json:"description"`
+	ClassID     int32     `db:"class_id" json:"class_id"`
+	SpecName    string    `db:"spec_name" json:"spec_name"`
+	Payload     []byte    `db:"payload" json:"payload"`
+}
+
+// ============================================================
+// Gear Progressions
+// ============================================================
+func (q *sqlQuerier) CreateGearProgression(ctx context.Context, arg CreateGearProgressionParams) (GearProgression, error) {
+	row := q.db.QueryRow(ctx, createGearProgression,
+		arg.ID,
+		arg.UserID,
+		arg.TenantID,
+		arg.Title,
+		arg.Description,
+		arg.ClassID,
+		arg.SpecName,
+		arg.Payload,
+	)
+	var i GearProgression
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.TenantID,
+		&i.Title,
+		&i.Description,
+		&i.ClassID,
+		&i.SpecName,
+		&i.Payload,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const deleteGearProgression = `-- name: DeleteGearProgression :execrows
+DELETE FROM gear_progressions WHERE id = $1 AND user_id = $2 AND tenant_id = $3
+`
+
+type DeleteGearProgressionParams struct {
+	ID       uuid.UUID `db:"id" json:"id"`
+	UserID   uuid.UUID `db:"user_id" json:"user_id"`
+	TenantID uuid.UUID `db:"tenant_id" json:"tenant_id"`
+}
+
+func (q *sqlQuerier) DeleteGearProgression(ctx context.Context, arg DeleteGearProgressionParams) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteGearProgression, arg.ID, arg.UserID, arg.TenantID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const getGearProgressionByID = `-- name: GetGearProgressionByID :one
+SELECT id, user_id, tenant_id, title, description, class_id, spec_name, payload, created_at, updated_at FROM gear_progressions WHERE id = $1
+`
+
+func (q *sqlQuerier) GetGearProgressionByID(ctx context.Context, id uuid.UUID) (GearProgression, error) {
+	row := q.db.QueryRow(ctx, getGearProgressionByID, id)
+	var i GearProgression
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.TenantID,
+		&i.Title,
+		&i.Description,
+		&i.ClassID,
+		&i.SpecName,
+		&i.Payload,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const listGearProgressionsByUser = `-- name: ListGearProgressionsByUser :many
+SELECT id, user_id, tenant_id, title, description, class_id, spec_name, payload, created_at, updated_at FROM gear_progressions
+WHERE user_id = $1 AND tenant_id = $2
+ORDER BY updated_at DESC
+`
+
+type ListGearProgressionsByUserParams struct {
+	UserID   uuid.UUID `db:"user_id" json:"user_id"`
+	TenantID uuid.UUID `db:"tenant_id" json:"tenant_id"`
+}
+
+func (q *sqlQuerier) ListGearProgressionsByUser(ctx context.Context, arg ListGearProgressionsByUserParams) ([]GearProgression, error) {
+	rows, err := q.db.Query(ctx, listGearProgressionsByUser, arg.UserID, arg.TenantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GearProgression
+	for rows.Next() {
+		var i GearProgression
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.TenantID,
+			&i.Title,
+			&i.Description,
+			&i.ClassID,
+			&i.SpecName,
+			&i.Payload,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const updateGearProgression = `-- name: UpdateGearProgression :one
+UPDATE gear_progressions SET
+  title = COALESCE($1, title),
+  description = COALESCE($2, description),
+  class_id = COALESCE($3, class_id),
+  spec_name = COALESCE($4, spec_name),
+  payload = COALESCE($5, payload),
+  updated_at = now()
+WHERE id = $6 AND user_id = $7 AND tenant_id = $8
+RETURNING id, user_id, tenant_id, title, description, class_id, spec_name, payload, created_at, updated_at
+`
+
+type UpdateGearProgressionParams struct {
+	Title       pgtype.Text `db:"title" json:"title"`
+	Description pgtype.Text `db:"description" json:"description"`
+	ClassID     pgtype.Int4 `db:"class_id" json:"class_id"`
+	SpecName    pgtype.Text `db:"spec_name" json:"spec_name"`
+	Payload     []byte      `db:"payload" json:"payload"`
+	ID          uuid.UUID   `db:"id" json:"id"`
+	UserID      uuid.UUID   `db:"user_id" json:"user_id"`
+	TenantID    uuid.UUID   `db:"tenant_id" json:"tenant_id"`
+}
+
+func (q *sqlQuerier) UpdateGearProgression(ctx context.Context, arg UpdateGearProgressionParams) (GearProgression, error) {
+	row := q.db.QueryRow(ctx, updateGearProgression,
+		arg.Title,
+		arg.Description,
+		arg.ClassID,
+		arg.SpecName,
+		arg.Payload,
+		arg.ID,
+		arg.UserID,
+		arg.TenantID,
+	)
+	var i GearProgression
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.TenantID,
+		&i.Title,
+		&i.Description,
+		&i.ClassID,
+		&i.SpecName,
+		&i.Payload,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const gearTrendsSlotEnchants = `-- name: GearTrendsSlotEnchants :many
+WITH representative_instances AS (
+    SELECT DISTINCT ON (COALESCE(li.duplicate_group_id, li.id))
+        li.id
+    FROM log_instances li
+    ORDER BY COALESCE(li.duplicate_group_id, li.id),
+        -- Prefer the upload with the broadest boss-ranking coverage. The group
+        -- anchor is the first upload, but it may be truncated before the final boss.
+        (SELECT COUNT(DISTINCT coverage.encounter_name)
+         FROM encounter_dps_rankings coverage
+         WHERE coverage.instance_id = li.id
+           AND coverage.encounter_id IS NOT NULL) DESC,
+        (li.id = li.duplicate_group_id) DESC NULLS LAST,
+        li.start_time ASC,
+        li.id ASC
+),
+best_parse AS (
+    SELECT DISTINCT ON (edr.realm_id, edr.player_guid)
+        edr.realm_id, edr.player_guid, edr.instance_id, edr.dps
+    FROM encounter_dps_rankings edr
+    JOIN representative_instances ri ON ri.id = edr.instance_id
+    WHERE edr.player_class = $2
+      AND edr.player_spec = $3
+      AND edr.encounter_id IS NOT NULL
+      AND edr.killed_at >= $4::timestamptz
+      AND ($5::text IS NULL OR edr.instance_name = $5)
+      AND ($6::uuid IS NULL OR edr.realm_id = $6)
+    ORDER BY edr.realm_id, edr.player_guid, edr.dps DESC
+),
+top_players AS (
+    SELECT bp.realm_id, bp.player_guid, bp.instance_id
+    FROM best_parse bp
+    ORDER BY bp.dps DESC
+    LIMIT $7
+),
+cohort AS (
+    SELECT h.gear
+    FROM game_player_gear_history h
+    JOIN wow_server_realms wsr ON wsr.id = h.realm_id
+    JOIN top_players tp
+      ON h.player_id = tp.player_guid
+     AND h.realm_id = tp.realm_id
+     AND h.instance_id = tp.instance_id
+),
+slot_enchants AS (
+    SELECT (elem.ordinality - 1)::int AS slot,
+        NULLIF(elem.value ->> 'enchant_id', '')::int AS enchant_id
+    FROM cohort c
+    CROSS JOIN LATERAL jsonb_array_elements(c.gear) WITH ORDINALITY AS elem(value, ordinality)
+    WHERE COALESCE((elem.value ->> 'item_id')::int, 0) > 0
+)
+SELECT
+    se.slot,
+    se.enchant_id::int AS enchant_id,
+    COUNT(*)::int AS wearer_count,
+    (SELECT COUNT(*) FROM cohort)::int AS cohort_size,
+    COALESCE(e.name_lang, '')::text AS enchant_name
+FROM slot_enchants se
+LEFT JOIN dbc_spell_item_enchantment e
+       ON e.dataset_id = $1 AND e.id = se.enchant_id
+WHERE se.enchant_id IS NOT NULL
+GROUP BY se.slot, se.enchant_id, e.name_lang
+ORDER BY se.slot, wearer_count DESC, se.enchant_id
+`
+
+type GearTrendsSlotEnchantsParams struct {
+	DatasetID    uuid.UUID          `db:"dataset_id" json:"dataset_id"`
+	PlayerClass  string             `db:"player_class" json:"player_class"`
+	PlayerSpec   string             `db:"player_spec" json:"player_spec"`
+	Since        pgtype.Timestamptz `db:"since" json:"since"`
+	InstanceName pgtype.Text        `db:"instance_name" json:"instance_name"`
+	RealmID      uuid.NullUUID      `db:"realm_id" json:"realm_id"`
+	TopN         int32              `db:"top_n" json:"top_n"`
+}
+
+type GearTrendsSlotEnchantsRow struct {
+	Slot        int32  `db:"slot" json:"slot"`
+	EnchantID   int32  `db:"enchant_id" json:"enchant_id"`
+	WearerCount int32  `db:"wearer_count" json:"wearer_count"`
+	CohortSize  int32  `db:"cohort_size" json:"cohort_size"`
+	EnchantName string `db:"enchant_name" json:"enchant_name"`
+}
+
+func (q *sqlQuerier) GearTrendsSlotEnchants(ctx context.Context, arg GearTrendsSlotEnchantsParams) ([]GearTrendsSlotEnchantsRow, error) {
+	rows, err := q.db.Query(ctx, gearTrendsSlotEnchants,
+		arg.DatasetID,
+		arg.PlayerClass,
+		arg.PlayerSpec,
+		arg.Since,
+		arg.InstanceName,
+		arg.RealmID,
+		arg.TopN,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GearTrendsSlotEnchantsRow
+	for rows.Next() {
+		var i GearTrendsSlotEnchantsRow
+		if err := rows.Scan(
+			&i.Slot,
+			&i.EnchantID,
+			&i.WearerCount,
+			&i.CohortSize,
+			&i.EnchantName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const gearTrendsSlotItems = `-- name: GearTrendsSlotItems :many
+
+WITH representative_instances AS (
+    SELECT DISTINCT ON (COALESCE(li.duplicate_group_id, li.id))
+        li.id
+    FROM log_instances li
+    ORDER BY COALESCE(li.duplicate_group_id, li.id),
+        -- Prefer the upload with the broadest boss-ranking coverage. The group
+        -- anchor is the first upload, but it may be truncated before the final boss.
+        (SELECT COUNT(DISTINCT coverage.encounter_name)
+         FROM encounter_dps_rankings coverage
+         WHERE coverage.instance_id = li.id
+           AND coverage.encounter_id IS NOT NULL) DESC,
+        (li.id = li.duplicate_group_id) DESC NULLS LAST,
+        li.start_time ASC,
+        li.id ASC
+),
+best_parse AS (
+    SELECT DISTINCT ON (edr.realm_id, edr.player_guid)
+        edr.realm_id, edr.player_guid, edr.instance_id, edr.dps
+    FROM encounter_dps_rankings edr
+    JOIN representative_instances ri ON ri.id = edr.instance_id
+    WHERE edr.player_class = $1
+      AND edr.player_spec = $2
+      AND edr.encounter_id IS NOT NULL
+      AND edr.killed_at >= $3::timestamptz
+      AND ($4::text IS NULL OR edr.instance_name = $4)
+      AND ($5::uuid IS NULL OR edr.realm_id = $5)
+    ORDER BY edr.realm_id, edr.player_guid, edr.dps DESC
+),
+top_players AS (
+    SELECT bp.realm_id, bp.player_guid, bp.instance_id
+    FROM best_parse bp
+    ORDER BY bp.dps DESC
+    LIMIT $6
+),
+cohort AS (
+    SELECT h.gear
+    FROM game_player_gear_history h
+    JOIN wow_server_realms wsr ON wsr.id = h.realm_id
+    JOIN top_players tp
+      ON h.player_id = tp.player_guid
+     AND h.realm_id = tp.realm_id
+     AND h.instance_id = tp.instance_id
+),
+slot_items AS (
+    SELECT (elem.ordinality - 1)::int AS slot,
+        COALESCE((elem.value ->> 'item_id')::int, 0) AS item_id,
+        elem.value ->> 'item_name' AS item_name,
+        COALESCE((elem.value ->> 'item_quality')::int, 0) AS item_quality,
+        COALESCE(elem.value ->> 'item_icon', '') AS item_icon,
+        (elem.value ->> 'item_level')::int AS item_level
+    FROM cohort c
+    CROSS JOIN LATERAL jsonb_array_elements(c.gear) WITH ORDINALITY AS elem(value, ordinality)
+)
+SELECT
+    si.slot,
+    si.item_id::int AS item_id,
+    COUNT(*)::int AS wearer_count,
+    (SELECT COUNT(*) FROM cohort)::int AS cohort_size,
+    COALESCE(MAX(si.item_name), '')::text AS item_name,
+    COALESCE(MAX(si.item_quality), 0)::int AS item_quality,
+    COALESCE(MAX(si.item_icon), '')::text AS item_icon,
+    COALESCE(MAX(si.item_level), 0)::int AS item_level
+FROM slot_items si
+WHERE si.item_id > 0
+GROUP BY si.slot, si.item_id
+ORDER BY si.slot, wearer_count DESC, si.item_id
+`
+
+type GearTrendsSlotItemsParams struct {
+	PlayerClass  string             `db:"player_class" json:"player_class"`
+	PlayerSpec   string             `db:"player_spec" json:"player_spec"`
+	Since        pgtype.Timestamptz `db:"since" json:"since"`
+	InstanceName pgtype.Text        `db:"instance_name" json:"instance_name"`
+	RealmID      uuid.NullUUID      `db:"realm_id" json:"realm_id"`
+	TopN         int32              `db:"top_n" json:"top_n"`
+}
+
+type GearTrendsSlotItemsRow struct {
+	Slot        int32  `db:"slot" json:"slot"`
+	ItemID      int32  `db:"item_id" json:"item_id"`
+	WearerCount int32  `db:"wearer_count" json:"wearer_count"`
+	CohortSize  int32  `db:"cohort_size" json:"cohort_size"`
+	ItemName    string `db:"item_name" json:"item_name"`
+	ItemQuality int32  `db:"item_quality" json:"item_quality"`
+	ItemIcon    string `db:"item_icon" json:"item_icon"`
+	ItemLevel   int32  `db:"item_level" json:"item_level"`
+}
+
+// Observed gear trends: the gear worn by the top leaderboard performances
+// of a class/spec, aggregated per equipment slot.
+//
+// Cohort rules (shared by both queries):
+//   - ranked parses only (encounter_dps_rankings), deduped to one
+//     representative instance per run (duplicate uploads collapse via
+//     COALESCE(duplicate_group_id, id) — the house convention);
+//   - best parse (highest DPS) per unique player, optionally filtered by
+//     raid (instance_name) and realm, then the top @top_n players by that
+//     parse's DPS;
+//   - each player's observation is the gear snapshot from THAT parse's
+//     log instance — what they wore during the performance, not their
+//     latest outfit;
+//   - tenant scoping comes from RLS on encounter_dps_rankings plus the
+//     wow_server_realms join for gear history (which has no RLS).
+//
+// Item name/quality/icon/level are read from the snapshot jsonb itself,
+// so results are self-contained.
+func (q *sqlQuerier) GearTrendsSlotItems(ctx context.Context, arg GearTrendsSlotItemsParams) ([]GearTrendsSlotItemsRow, error) {
+	rows, err := q.db.Query(ctx, gearTrendsSlotItems,
+		arg.PlayerClass,
+		arg.PlayerSpec,
+		arg.Since,
+		arg.InstanceName,
+		arg.RealmID,
+		arg.TopN,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GearTrendsSlotItemsRow
+	for rows.Next() {
+		var i GearTrendsSlotItemsRow
+		if err := rows.Scan(
+			&i.Slot,
+			&i.ItemID,
+			&i.WearerCount,
+			&i.CohortSize,
+			&i.ItemName,
+			&i.ItemQuality,
+			&i.ItemIcon,
+			&i.ItemLevel,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const bulkUpsertGuildPagePanels = `-- name: BulkUpsertGuildPagePanels :exec
 INSERT INTO guild_page_panels (id, tab_id, panel_type, config, position)
 SELECT 
@@ -3446,10 +5301,16 @@ func (q *sqlQuerier) BulkUpsertGuildPagePanels(ctx context.Context, dollar_1 []b
 const countGuilds = `-- name: CountGuilds :one
 SELECT COUNT(*) FROM guilds g
 WHERE ($1::text = '' OR g.name ILIKE '%' || $1 || '%')
+  AND ($2::uuid = '00000000-0000-0000-0000-000000000000' OR g.realm_id = $2)
 `
 
-func (q *sqlQuerier) CountGuilds(ctx context.Context, dollar_1 string) (int64, error) {
-	row := q.db.QueryRow(ctx, countGuilds, dollar_1)
+type CountGuildsParams struct {
+	Search  string    `db:"search" json:"search"`
+	RealmID uuid.UUID `db:"realm_id" json:"realm_id"`
+}
+
+func (q *sqlQuerier) CountGuilds(ctx context.Context, arg CountGuildsParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countGuilds, arg.Search, arg.RealmID)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -3800,15 +5661,17 @@ LEFT JOIN guild_pages gp ON gp.guild_id = g.id
 JOIN wow_server_realms r ON r.id = g.realm_id
 LEFT JOIN game_players gpl ON gpl.guild_id = g.id
 WHERE ($1::text = '' OR g.name ILIKE '%' || $1 || '%')
+  AND ($2::uuid = '00000000-0000-0000-0000-000000000000' OR g.realm_id = $2)
 GROUP BY g.id, gp.id, r.name, gp.theme
 ORDER BY COUNT(gpl.id) DESC, g.name
-LIMIT $2 OFFSET $3
+LIMIT $4 OFFSET $3
 `
 
 type ListGuildsWithPagesParams struct {
-	Column1 string `db:"column_1" json:"column_1"`
-	Limit   int32  `db:"limit" json:"limit"`
-	Offset  int32  `db:"offset" json:"offset"`
+	Search       string    `db:"search" json:"search"`
+	RealmID      uuid.UUID `db:"realm_id" json:"realm_id"`
+	ResultOffset int32     `db:"result_offset" json:"result_offset"`
+	ResultLimit  int32     `db:"result_limit" json:"result_limit"`
 }
 
 type ListGuildsWithPagesRow struct {
@@ -3823,7 +5686,12 @@ type ListGuildsWithPagesRow struct {
 }
 
 func (q *sqlQuerier) ListGuildsWithPages(ctx context.Context, arg ListGuildsWithPagesParams) ([]ListGuildsWithPagesRow, error) {
-	rows, err := q.db.Query(ctx, listGuildsWithPages, arg.Column1, arg.Limit, arg.Offset)
+	rows, err := q.db.Query(ctx, listGuildsWithPages,
+		arg.Search,
+		arg.RealmID,
+		arg.ResultOffset,
+		arg.ResultLimit,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -3958,18 +5826,18 @@ WITH clears AS (
         sr.instance_name,
         li.difficulty_name,
         li.max_players,
-        sr.duration_ms,
-        sr.completion_time
+        sr.ranked_duration_ms::bigint AS duration_ms,
+        sr.ranked_completion_time::timestamptz AS completion_time
     FROM instance_speedruns sr
     JOIN log_instances li ON li.id = sr.instance_id
     JOIN wow_server_realms wsr ON wsr.id = sr.realm_id
     WHERE sr.guild_id = $2::uuid
-      AND sr.duration_ms > 0
+      AND sr.ranked_duration_ms > 0
       AND CASE
-          WHEN $3::bigint > 0 THEN sr.completion_time >= now() - make_interval(days => $3::int)
+          WHEN $3::bigint > 0 THEN sr.ranked_completion_time >= now() - make_interval(days => $3::int)
           ELSE true
       END
-    ORDER BY COALESCE(li.duplicate_group_id, li.id), sr.duration_ms ASC
+    ORDER BY COALESCE(li.duplicate_group_id, li.id), sr.ranked_duration_ms ASC
 ), scored AS (
     SELECT
         c.run_id, c.instance_id, c.instance_slug, c.instance_name, c.difficulty_name, c.max_players, c.duration_ms, c.completion_time,
@@ -4086,18 +5954,39 @@ SELECT
     COALESCE(wsr.name, '') AS realm_name,
     COALESCE(latest.player_spec, '')::text AS player_spec,
     COALESCE(latest.player_role, '')::text AS player_role,
+    COALESCE(latest.spec_roles, '[]'::jsonb)::text AS spec_roles_json,
     COALESCE(scores.avg_parse, -1)::float8 AS avg_parse
 FROM game_players gp
 JOIN wow_server_realms wsr ON wsr.id = gp.realm_id
 LEFT JOIN LATERAL (
-    SELECT psr.player_spec, psr.player_role
-    FROM parse_score_results psr
-    WHERE psr.tenant_id = $1
-      AND psr.player_guid = gp.id::text
-      AND psr.metric = 'dps'
-      AND psr.status IN ('ok', 'low_confidence')
-    ORDER BY psr.killed_at DESC NULLS LAST
-    LIMIT 1
+    SELECT
+        (ARRAY_AGG(combos.player_spec ORDER BY combos.last_seen DESC))[1] AS player_spec,
+        (ARRAY_AGG(combos.player_role ORDER BY combos.last_seen DESC))[1] AS player_role,
+        JSONB_AGG(
+            JSONB_BUILD_OBJECT('spec', combos.player_spec, 'role', combos.player_role)
+            ORDER BY combos.last_seen DESC
+        ) AS spec_roles
+    FROM (
+        SELECT psr.player_spec, psr.player_role, MAX(psr.killed_at) AS last_seen
+        FROM parse_score_results psr
+        WHERE psr.tenant_id = $1
+          AND psr.player_guid = gp.id::text
+          AND psr.status IN ('ok', 'low_confidence')
+          AND psr.instance_id IN (
+              SELECT recent.instance_id
+              FROM (
+                  SELECT psr2.instance_id, MAX(psr2.killed_at) AS latest_kill
+                  FROM parse_score_results psr2
+                  WHERE psr2.tenant_id = $1
+                    AND psr2.player_guid = gp.id::text
+                    AND psr2.status IN ('ok', 'low_confidence')
+                  GROUP BY psr2.instance_id
+                  ORDER BY latest_kill DESC NULLS LAST
+                  LIMIT 3
+              ) recent
+          )
+        GROUP BY psr.player_spec, psr.player_role
+    ) combos
 ) latest ON true
 LEFT JOIN LATERAL (
     SELECT AVG(best.precise_score)::float8 AS avg_parse
@@ -4131,26 +6020,30 @@ type GuildCharacterRosterParams struct {
 }
 
 type GuildCharacterRosterRow struct {
-	ID         guid.GUID          `db:"id" json:"id"`
-	RealmID    uuid.UUID          `db:"realm_id" json:"realm_id"`
-	Name       string             `db:"name" json:"name"`
-	Class      WowPlayableClass   `db:"class" json:"class"`
-	Race       WowPlayableRace    `db:"race" json:"race"`
-	Level      int16              `db:"level" json:"level"`
-	UpdatedAt  pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
-	RealmName  string             `db:"realm_name" json:"realm_name"`
-	PlayerSpec string             `db:"player_spec" json:"player_spec"`
-	PlayerRole string             `db:"player_role" json:"player_role"`
-	AvgParse   float64            `db:"avg_parse" json:"avg_parse"`
+	ID            guid.GUID          `db:"id" json:"id"`
+	RealmID       uuid.UUID          `db:"realm_id" json:"realm_id"`
+	Name          string             `db:"name" json:"name"`
+	Class         WowPlayableClass   `db:"class" json:"class"`
+	Race          WowPlayableRace    `db:"race" json:"race"`
+	Level         int16              `db:"level" json:"level"`
+	UpdatedAt     pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	RealmName     string             `db:"realm_name" json:"realm_name"`
+	PlayerSpec    string             `db:"player_spec" json:"player_spec"`
+	PlayerRole    string             `db:"player_role" json:"player_role"`
+	SpecRolesJson string             `db:"spec_roles_json" json:"spec_roles_json"`
+	AvgParse      float64            `db:"avg_parse" json:"avg_parse"`
 }
 
 // Queries backing guild page panels (roster, top parses, recent raid scores).
 // Returns the guild's characters from raid logs for the guild page "Roster"
 // panel. updated_at is the character's de-facto "last seen"; @seen_within_days
 // hides characters that have gone idle (0 = no filter).
-// Spec/role come from the character's most recent parse; avg_parse averages
-// the best parse per encounter over the last @parse_window_days, using hps
-// for healers and dps for everyone else (-1 when the character has no parses).
+// player_spec/player_role come from the character's most recent parse;
+// spec_roles_json lists every distinct spec+role combo observed across the
+// character's 3 most recent parsed instances (players often swap specs raid
+// to raid), most recent first. avg_parse averages the best parse per
+// encounter over the last @parse_window_days, using hps for healers and dps
+// for everyone else (-1 when the character has no parses).
 // JOINs wow_server_realms so RLS tenant filtering cascades.
 func (q *sqlQuerier) GuildCharacterRoster(ctx context.Context, arg GuildCharacterRosterParams) ([]GuildCharacterRosterRow, error) {
 	rows, err := q.db.Query(ctx, guildCharacterRoster,
@@ -4178,6 +6071,7 @@ func (q *sqlQuerier) GuildCharacterRoster(ctx context.Context, arg GuildCharacte
 			&i.RealmName,
 			&i.PlayerSpec,
 			&i.PlayerRole,
+			&i.SpecRolesJson,
 			&i.AvgParse,
 		); err != nil {
 			return nil, err
@@ -4349,7 +6243,11 @@ func (q *sqlQuerier) GuildRunParseAverages(ctx context.Context, arg GuildRunPars
 }
 
 const guildTopParses = `-- name: GuildTopParses :many
-WITH deduped AS (
+WITH guild_members AS (
+    SELECT gp.id::text AS player_guid
+    FROM game_players gp
+    WHERE gp.guild_id = $3::uuid
+), deduped AS (
     SELECT DISTINCT ON (psr.run_id, psr.encounter_name, psr.player_guid)
         psr.player_guid,
         psr.player_name,
@@ -4367,9 +6265,9 @@ WITH deduped AS (
         psr.display_score,
         psr.killed_at
     FROM parse_score_results psr
+    JOIN guild_members gm ON gm.player_guid = psr.player_guid
     LEFT JOIN log_instances li ON li.id = psr.instance_id
-    WHERE psr.tenant_id = $3
-      AND psr.guild_id = $4::uuid
+    WHERE psr.tenant_id = $4
       AND psr.metric = $5
       AND psr.status IN ('ok', 'low_confidence')
       AND CASE
@@ -4410,8 +6308,8 @@ LIMIT $2
 type GuildTopParsesParams struct {
 	BestPerPlayer bool      `db:"best_per_player" json:"best_per_player"`
 	RowLimit      int32     `db:"row_limit" json:"row_limit"`
-	TenantID      uuid.UUID `db:"tenant_id" json:"tenant_id"`
 	GuildID       uuid.UUID `db:"guild_id" json:"guild_id"`
+	TenantID      uuid.UUID `db:"tenant_id" json:"tenant_id"`
 	Metric        string    `db:"metric" json:"metric"`
 	SinceDays     int64     `db:"since_days" json:"since_days"`
 }
@@ -4434,7 +6332,9 @@ type GuildTopParsesRow struct {
 	KilledAt       pgtype.Timestamptz `db:"killed_at" json:"killed_at"`
 }
 
-// Returns a guild's best parses for the guild page "Top Parses" panel.
+// Returns the current guild members' best parses for the guild page "Top
+// Parses" panel. Membership comes from game_players, matching the roster
+// panel, rather than the guild_id copied onto parse scores at scoring time.
 // Duplicate uploads of the same run collapse to one row per encounter+player
 // (most recently computed scoring wins, matching GetCharacterParseHistory).
 // @best_per_player keeps only each player's single best parse so one player
@@ -4443,8 +6343,8 @@ func (q *sqlQuerier) GuildTopParses(ctx context.Context, arg GuildTopParsesParam
 	rows, err := q.db.Query(ctx, guildTopParses,
 		arg.BestPerPlayer,
 		arg.RowLimit,
-		arg.TenantID,
 		arg.GuildID,
+		arg.TenantID,
 		arg.Metric,
 		arg.SinceDays,
 	)
@@ -4482,6 +6382,295 @@ func (q *sqlQuerier) GuildTopParses(ctx context.Context, arg GuildTopParsesParam
 	return items, nil
 }
 
+const deleteExpiredGuildResourceVisitors = `-- name: DeleteExpiredGuildResourceVisitors :exec
+DELETE FROM guild_resource_recent_visitors
+WHERE viewed_on < (now() AT TIME ZONE 'UTC')::date - 1
+`
+
+func (q *sqlQuerier) DeleteExpiredGuildResourceVisitors(ctx context.Context) error {
+	_, err := q.db.Exec(ctx, deleteExpiredGuildResourceVisitors)
+	return err
+}
+
+const guildResourceAnalytics = `-- name: GuildResourceAnalytics :many
+SELECT
+    stats.resource_kind,
+    stats.resource_key,
+    (CASE
+        WHEN stats.resource_kind IN ('instance', 'instance_member') THEN COALESCE(group_instance.hashed_slug, instance.hashed_slug, stats.resource_key)
+        ELSE stats.resource_key
+    END)::text AS resource_group_key,
+    stats.viewed_on,
+    stats.views,
+    stats.unique_visitors,
+    (CASE
+        WHEN stats.resource_kind = 'guild_page' THEN g.name
+        WHEN stats.resource_kind IN ('instance', 'instance_member') THEN COALESCE(instance.name, stats.resource_key)
+        ELSE stats.resource_key
+    END)::text AS resource_name,
+    (CASE
+        WHEN stats.resource_kind IN ('instance', 'instance_member')
+            THEN COALESCE(group_instance.start_time, instance.start_time)
+        ELSE NULL
+    END)::date AS instance_date
+FROM guild_resource_daily_stats AS stats
+JOIN guilds AS g ON g.id = stats.guild_id
+LEFT JOIN log_instances AS instance
+    ON stats.resource_kind IN ('instance', 'instance_member')
+    AND instance.hashed_slug = stats.resource_key
+LEFT JOIN log_instances AS group_instance
+    ON group_instance.id = instance.duplicate_group_id
+WHERE stats.guild_id = $1
+  AND stats.viewed_on > (now() AT TIME ZONE 'UTC')::date - $2::int
+ORDER BY stats.viewed_on ASC, stats.resource_kind ASC, resource_name ASC
+`
+
+type GuildResourceAnalyticsParams struct {
+	GuildID      uuid.UUID `db:"guild_id" json:"guild_id"`
+	LookbackDays int32     `db:"lookback_days" json:"lookback_days"`
+}
+
+type GuildResourceAnalyticsRow struct {
+	ResourceKind     string      `db:"resource_kind" json:"resource_kind"`
+	ResourceKey      string      `db:"resource_key" json:"resource_key"`
+	ResourceGroupKey string      `db:"resource_group_key" json:"resource_group_key"`
+	ViewedOn         pgtype.Date `db:"viewed_on" json:"viewed_on"`
+	Views            int64       `db:"views" json:"views"`
+	UniqueVisitors   int64       `db:"unique_visitors" json:"unique_visitors"`
+	ResourceName     string      `db:"resource_name" json:"resource_name"`
+	InstanceDate     pgtype.Date `db:"instance_date" json:"instance_date"`
+}
+
+func (q *sqlQuerier) GuildResourceAnalytics(ctx context.Context, arg GuildResourceAnalyticsParams) ([]GuildResourceAnalyticsRow, error) {
+	rows, err := q.db.Query(ctx, guildResourceAnalytics, arg.GuildID, arg.LookbackDays)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GuildResourceAnalyticsRow
+	for rows.Next() {
+		var i GuildResourceAnalyticsRow
+		if err := rows.Scan(
+			&i.ResourceKind,
+			&i.ResourceKey,
+			&i.ResourceGroupKey,
+			&i.ViewedOn,
+			&i.Views,
+			&i.UniqueVisitors,
+			&i.ResourceName,
+			&i.InstanceDate,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const instanceAnalyticsGroupKey = `-- name: InstanceAnalyticsGroupKey :one
+SELECT COALESCE(group_instance.hashed_slug, instance.hashed_slug)::text AS group_key
+FROM log_instances AS instance
+LEFT JOIN log_instances AS group_instance
+    ON group_instance.id = instance.duplicate_group_id
+WHERE instance.id = $1
+  AND instance.hashed_slug IS NOT NULL
+`
+
+func (q *sqlQuerier) InstanceAnalyticsGroupKey(ctx context.Context, instanceID uuid.UUID) (string, error) {
+	row := q.db.QueryRow(ctx, instanceAnalyticsGroupKey, instanceID)
+	var group_key string
+	err := row.Scan(&group_key)
+	return group_key, err
+}
+
+const recordGuildInstanceView = `-- name: RecordGuildInstanceView :exec
+WITH resources AS (
+    SELECT 'instance'::text AS resource_kind, $2::text AS resource_key
+    UNION ALL
+    SELECT 'instance_member'::text, $3::text
+),
+new_unique AS (
+    INSERT INTO guild_resource_recent_visitors (
+        guild_id,
+        resource_kind,
+        resource_key,
+        visitor_id,
+        viewed_on
+    )
+    SELECT
+        $1,
+        resources.resource_kind,
+        resources.resource_key,
+        $4,
+        (now() AT TIME ZONE 'UTC')::date
+    FROM resources
+    ON CONFLICT DO NOTHING
+    RETURNING resource_kind, resource_key
+)
+INSERT INTO guild_resource_daily_stats (
+    guild_id,
+    resource_kind,
+    resource_key,
+    viewed_on,
+    views,
+    unique_visitors
+)
+SELECT
+    $1,
+    resources.resource_kind,
+    resources.resource_key,
+    (now() AT TIME ZONE 'UTC')::date,
+    1,
+    CASE WHEN new_unique.resource_key IS NULL THEN 0 ELSE 1 END
+FROM resources
+LEFT JOIN new_unique USING (resource_kind, resource_key)
+ON CONFLICT (guild_id, resource_kind, resource_key, viewed_on)
+DO UPDATE SET
+    views = guild_resource_daily_stats.views + 1,
+    unique_visitors = guild_resource_daily_stats.unique_visitors + EXCLUDED.unique_visitors
+`
+
+type RecordGuildInstanceViewParams struct {
+	GuildID   uuid.UUID `db:"guild_id" json:"guild_id"`
+	GroupKey  string    `db:"group_key" json:"group_key"`
+	MemberKey string    `db:"member_key" json:"member_key"`
+	VisitorID uuid.UUID `db:"visitor_id" json:"visitor_id"`
+}
+
+func (q *sqlQuerier) RecordGuildInstanceView(ctx context.Context, arg RecordGuildInstanceViewParams) error {
+	_, err := q.db.Exec(ctx, recordGuildInstanceView,
+		arg.GuildID,
+		arg.GroupKey,
+		arg.MemberKey,
+		arg.VisitorID,
+	)
+	return err
+}
+
+const recordGuildResourceView = `-- name: RecordGuildResourceView :exec
+WITH new_unique AS (
+    INSERT INTO guild_resource_recent_visitors (
+        guild_id,
+        resource_kind,
+        resource_key,
+        visitor_id,
+        viewed_on
+    )
+    VALUES (
+        $1,
+        $2,
+        $3,
+        $4,
+        (now() AT TIME ZONE 'UTC')::date
+    )
+    ON CONFLICT DO NOTHING
+    RETURNING 1
+)
+INSERT INTO guild_resource_daily_stats (
+    guild_id,
+    resource_kind,
+    resource_key,
+    viewed_on,
+    views,
+    unique_visitors
+)
+VALUES (
+    $1,
+    $2,
+    $3,
+    (now() AT TIME ZONE 'UTC')::date,
+    1,
+    (SELECT COUNT(*) FROM new_unique)
+)
+ON CONFLICT (guild_id, resource_kind, resource_key, viewed_on)
+DO UPDATE SET
+    views = guild_resource_daily_stats.views + 1,
+    unique_visitors = guild_resource_daily_stats.unique_visitors + EXCLUDED.unique_visitors
+`
+
+type RecordGuildResourceViewParams struct {
+	GuildID      uuid.UUID `db:"guild_id" json:"guild_id"`
+	ResourceKind string    `db:"resource_kind" json:"resource_kind"`
+	ResourceKey  string    `db:"resource_key" json:"resource_key"`
+	VisitorID    uuid.UUID `db:"visitor_id" json:"visitor_id"`
+}
+
+func (q *sqlQuerier) RecordGuildResourceView(ctx context.Context, arg RecordGuildResourceViewParams) error {
+	_, err := q.db.Exec(ctx, recordGuildResourceView,
+		arg.GuildID,
+		arg.ResourceKind,
+		arg.ResourceKey,
+		arg.VisitorID,
+	)
+	return err
+}
+
+const consumeGuildDiscordInstallState = `-- name: ConsumeGuildDiscordInstallState :one
+DELETE FROM guild_discord_install_states
+WHERE state = $1 AND expires_at > NOW()
+RETURNING state, guild_id, user_id, expires_at, created_at
+`
+
+func (q *sqlQuerier) ConsumeGuildDiscordInstallState(ctx context.Context, state string) (GuildDiscordInstallState, error) {
+	row := q.db.QueryRow(ctx, consumeGuildDiscordInstallState, state)
+	var i GuildDiscordInstallState
+	err := row.Scan(
+		&i.State,
+		&i.GuildID,
+		&i.UserID,
+		&i.ExpiresAt,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const countGuildDiscordInstallationsByDiscordGuildID = `-- name: CountGuildDiscordInstallationsByDiscordGuildID :one
+SELECT COUNT(*) FROM guild_discord_installations WHERE discord_guild_id = $1
+`
+
+func (q *sqlQuerier) CountGuildDiscordInstallationsByDiscordGuildID(ctx context.Context, discordGuildID string) (int64, error) {
+	row := q.db.QueryRow(ctx, countGuildDiscordInstallationsByDiscordGuildID, discordGuildID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const createGuildDiscordInstallState = `-- name: CreateGuildDiscordInstallState :one
+
+INSERT INTO guild_discord_install_states (state, guild_id, user_id, expires_at)
+VALUES ($1, $2, $3, $4)
+RETURNING state, guild_id, user_id, expires_at, created_at
+`
+
+type CreateGuildDiscordInstallStateParams struct {
+	State     string             `db:"state" json:"state"`
+	GuildID   uuid.UUID          `db:"guild_id" json:"guild_id"`
+	UserID    uuid.UUID          `db:"user_id" json:"user_id"`
+	ExpiresAt pgtype.Timestamptz `db:"expires_at" json:"expires_at"`
+}
+
+// Discord Integration
+func (q *sqlQuerier) CreateGuildDiscordInstallState(ctx context.Context, arg CreateGuildDiscordInstallStateParams) (GuildDiscordInstallState, error) {
+	row := q.db.QueryRow(ctx, createGuildDiscordInstallState,
+		arg.State,
+		arg.GuildID,
+		arg.UserID,
+		arg.ExpiresAt,
+	)
+	var i GuildDiscordInstallState
+	err := row.Scan(
+		&i.State,
+		&i.GuildID,
+		&i.UserID,
+		&i.ExpiresAt,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const createGuildJoinRequest = `-- name: CreateGuildJoinRequest :one
 
 INSERT INTO guild_join_requests (guild_id, user_id, message)
@@ -4509,6 +6698,29 @@ func (q *sqlQuerier) CreateGuildJoinRequest(ctx context.Context, arg CreateGuild
 	return i, err
 }
 
+const deleteGuildDiscordInstallation = `-- name: DeleteGuildDiscordInstallation :one
+DELETE FROM guild_discord_installations
+WHERE guild_id = $1
+RETURNING guild_id, discord_guild_id, discord_guild_name, installed_by, installed_at, updated_at, announce_raid_logs, announce_raid_logs_scope, announce_raid_logs_channel_id
+`
+
+func (q *sqlQuerier) DeleteGuildDiscordInstallation(ctx context.Context, guildID uuid.UUID) (GuildDiscordInstallation, error) {
+	row := q.db.QueryRow(ctx, deleteGuildDiscordInstallation, guildID)
+	var i GuildDiscordInstallation
+	err := row.Scan(
+		&i.GuildID,
+		&i.DiscordGuildID,
+		&i.DiscordGuildName,
+		&i.InstalledBy,
+		&i.InstalledAt,
+		&i.UpdatedAt,
+		&i.AnnounceRaidLogs,
+		&i.AnnounceRaidLogsScope,
+		&i.AnnounceRaidLogsChannelID,
+	)
+	return i, err
+}
+
 const deleteGuildJoinRequest = `-- name: DeleteGuildJoinRequest :exec
 DELETE FROM guild_join_requests WHERE id = $1 AND guild_id = $2
 `
@@ -4521,6 +6733,27 @@ type DeleteGuildJoinRequestParams struct {
 func (q *sqlQuerier) DeleteGuildJoinRequest(ctx context.Context, arg DeleteGuildJoinRequestParams) error {
 	_, err := q.db.Exec(ctx, deleteGuildJoinRequest, arg.ID, arg.GuildID)
 	return err
+}
+
+const getGuildDiscordInstallation = `-- name: GetGuildDiscordInstallation :one
+SELECT guild_id, discord_guild_id, discord_guild_name, installed_by, installed_at, updated_at, announce_raid_logs, announce_raid_logs_scope, announce_raid_logs_channel_id FROM guild_discord_installations WHERE guild_id = $1
+`
+
+func (q *sqlQuerier) GetGuildDiscordInstallation(ctx context.Context, guildID uuid.UUID) (GuildDiscordInstallation, error) {
+	row := q.db.QueryRow(ctx, getGuildDiscordInstallation, guildID)
+	var i GuildDiscordInstallation
+	err := row.Scan(
+		&i.GuildID,
+		&i.DiscordGuildID,
+		&i.DiscordGuildName,
+		&i.InstalledBy,
+		&i.InstalledAt,
+		&i.UpdatedAt,
+		&i.AnnounceRaidLogs,
+		&i.AnnounceRaidLogsScope,
+		&i.AnnounceRaidLogsChannelID,
+	)
+	return i, err
 }
 
 const getGuildJoinRequestByUser = `-- name: GetGuildJoinRequestByUser :one
@@ -4602,6 +6835,86 @@ func (q *sqlQuerier) ListGuildJoinRequests(ctx context.Context, guildID uuid.UUI
 	return items, nil
 }
 
+const updateGuildDiscordRaidLogAnnouncements = `-- name: UpdateGuildDiscordRaidLogAnnouncements :one
+UPDATE guild_discord_installations SET
+  announce_raid_logs = $2,
+  announce_raid_logs_scope = $3,
+  announce_raid_logs_channel_id = $4,
+  updated_at = NOW()
+WHERE guild_id = $1
+RETURNING guild_id, discord_guild_id, discord_guild_name, installed_by, installed_at, updated_at, announce_raid_logs, announce_raid_logs_scope, announce_raid_logs_channel_id
+`
+
+type UpdateGuildDiscordRaidLogAnnouncementsParams struct {
+	GuildID                   uuid.UUID   `db:"guild_id" json:"guild_id"`
+	AnnounceRaidLogs          bool        `db:"announce_raid_logs" json:"announce_raid_logs"`
+	AnnounceRaidLogsScope     string      `db:"announce_raid_logs_scope" json:"announce_raid_logs_scope"`
+	AnnounceRaidLogsChannelID pgtype.Text `db:"announce_raid_logs_channel_id" json:"announce_raid_logs_channel_id"`
+}
+
+func (q *sqlQuerier) UpdateGuildDiscordRaidLogAnnouncements(ctx context.Context, arg UpdateGuildDiscordRaidLogAnnouncementsParams) (GuildDiscordInstallation, error) {
+	row := q.db.QueryRow(ctx, updateGuildDiscordRaidLogAnnouncements,
+		arg.GuildID,
+		arg.AnnounceRaidLogs,
+		arg.AnnounceRaidLogsScope,
+		arg.AnnounceRaidLogsChannelID,
+	)
+	var i GuildDiscordInstallation
+	err := row.Scan(
+		&i.GuildID,
+		&i.DiscordGuildID,
+		&i.DiscordGuildName,
+		&i.InstalledBy,
+		&i.InstalledAt,
+		&i.UpdatedAt,
+		&i.AnnounceRaidLogs,
+		&i.AnnounceRaidLogsScope,
+		&i.AnnounceRaidLogsChannelID,
+	)
+	return i, err
+}
+
+const upsertGuildDiscordInstallation = `-- name: UpsertGuildDiscordInstallation :one
+INSERT INTO guild_discord_installations (
+  guild_id, discord_guild_id, discord_guild_name, installed_by
+) VALUES ($1, $2, $3, $4)
+ON CONFLICT (guild_id) DO UPDATE SET
+  discord_guild_id = EXCLUDED.discord_guild_id,
+  discord_guild_name = EXCLUDED.discord_guild_name,
+  installed_by = EXCLUDED.installed_by,
+  updated_at = NOW()
+RETURNING guild_id, discord_guild_id, discord_guild_name, installed_by, installed_at, updated_at, announce_raid_logs, announce_raid_logs_scope, announce_raid_logs_channel_id
+`
+
+type UpsertGuildDiscordInstallationParams struct {
+	GuildID          uuid.UUID `db:"guild_id" json:"guild_id"`
+	DiscordGuildID   string    `db:"discord_guild_id" json:"discord_guild_id"`
+	DiscordGuildName string    `db:"discord_guild_name" json:"discord_guild_name"`
+	InstalledBy      uuid.UUID `db:"installed_by" json:"installed_by"`
+}
+
+func (q *sqlQuerier) UpsertGuildDiscordInstallation(ctx context.Context, arg UpsertGuildDiscordInstallationParams) (GuildDiscordInstallation, error) {
+	row := q.db.QueryRow(ctx, upsertGuildDiscordInstallation,
+		arg.GuildID,
+		arg.DiscordGuildID,
+		arg.DiscordGuildName,
+		arg.InstalledBy,
+	)
+	var i GuildDiscordInstallation
+	err := row.Scan(
+		&i.GuildID,
+		&i.DiscordGuildID,
+		&i.DiscordGuildName,
+		&i.InstalledBy,
+		&i.InstalledAt,
+		&i.UpdatedAt,
+		&i.AnnounceRaidLogs,
+		&i.AnnounceRaidLogsScope,
+		&i.AnnounceRaidLogsChannelID,
+	)
+	return i, err
+}
+
 const upsertGuildSettings = `-- name: UpsertGuildSettings :one
 INSERT INTO guild_settings (guild_id, allow_join_requests_until, updated_at)
 VALUES ($1, $2, NOW())
@@ -4620,6 +6933,168 @@ func (q *sqlQuerier) UpsertGuildSettings(ctx context.Context, arg UpsertGuildSet
 	var i GuildSetting
 	err := row.Scan(&i.GuildID, &i.AllowJoinRequestsUntil, &i.UpdatedAt)
 	return i, err
+}
+
+const getItemPricingConfigByRealm = `-- name: GetItemPricingConfigByRealm :one
+SELECT
+    ws.pricing_provider,
+    wsr.pricing_route_name,
+    wsr.pricing_auction_house
+FROM wow_server_realms wsr
+JOIN wow_servers ws ON ws.id = wsr.server_id
+WHERE wsr.id = $1
+`
+
+type GetItemPricingConfigByRealmRow struct {
+	PricingProvider     pgtype.Text `db:"pricing_provider" json:"pricing_provider"`
+	PricingRouteName    pgtype.Text `db:"pricing_route_name" json:"pricing_route_name"`
+	PricingAuctionHouse pgtype.Text `db:"pricing_auction_house" json:"pricing_auction_house"`
+}
+
+func (q *sqlQuerier) GetItemPricingConfigByRealm(ctx context.Context, realmID uuid.UUID) (GetItemPricingConfigByRealmRow, error) {
+	row := q.db.QueryRow(ctx, getItemPricingConfigByRealm, realmID)
+	var i GetItemPricingConfigByRealmRow
+	err := row.Scan(&i.PricingProvider, &i.PricingRouteName, &i.PricingAuctionHouse)
+	return i, err
+}
+
+const listItemPricingRealms = `-- name: ListItemPricingRealms :many
+SELECT
+    wsr.id,
+    ws.name AS server_name,
+    wsr.name AS realm_name,
+    wsr.pricing_auction_house
+FROM wow_server_realms wsr
+JOIN wow_servers ws ON ws.id = wsr.server_id
+WHERE ws.pricing_provider = 'wowauctions'
+  AND wsr.pricing_route_name IS NOT NULL
+  AND wsr.pricing_auction_house IS NOT NULL
+ORDER BY ws.name, wsr.name
+`
+
+type ListItemPricingRealmsRow struct {
+	ID                  uuid.UUID   `db:"id" json:"id"`
+	ServerName          string      `db:"server_name" json:"server_name"`
+	RealmName           string      `db:"realm_name" json:"realm_name"`
+	PricingAuctionHouse pgtype.Text `db:"pricing_auction_house" json:"pricing_auction_house"`
+}
+
+func (q *sqlQuerier) ListItemPricingRealms(ctx context.Context) ([]ListItemPricingRealmsRow, error) {
+	rows, err := q.db.Query(ctx, listItemPricingRealms)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListItemPricingRealmsRow
+	for rows.Next() {
+		var i ListItemPricingRealmsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.ServerName,
+			&i.RealmName,
+			&i.PricingAuctionHouse,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listObservedItemIDsForDate = `-- name: ListObservedItemIDsForDate :many
+SELECT item_id
+FROM item_daily_prices
+WHERE realm_id = $1
+  AND auction_house_faction = $2
+  AND item_id = ANY($3::int[])
+  AND price_date = $4
+`
+
+type ListObservedItemIDsForDateParams struct {
+	RealmID             uuid.UUID   `db:"realm_id" json:"realm_id"`
+	AuctionHouseFaction string      `db:"auction_house_faction" json:"auction_house_faction"`
+	ItemIds             []int32     `db:"item_ids" json:"item_ids"`
+	PriceDate           pgtype.Date `db:"price_date" json:"price_date"`
+}
+
+func (q *sqlQuerier) ListObservedItemIDsForDate(ctx context.Context, arg ListObservedItemIDsForDateParams) ([]int32, error) {
+	rows, err := q.db.Query(ctx, listObservedItemIDsForDate,
+		arg.RealmID,
+		arg.AuctionHouseFaction,
+		arg.ItemIds,
+		arg.PriceDate,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int32
+	for rows.Next() {
+		var item_id int32
+		if err := rows.Scan(&item_id); err != nil {
+			return nil, err
+		}
+		items = append(items, item_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listResolvedItemPrices = `-- name: ListResolvedItemPrices :many
+SELECT DISTINCT ON (item_id)
+    item_id,
+    price_copper,
+    price_date
+FROM item_daily_prices
+WHERE realm_id = $1
+  AND auction_house_faction = $2
+  AND item_id = ANY($3::int[])
+  AND price_copper IS NOT NULL
+  AND price_date >= $4
+ORDER BY item_id, price_date
+`
+
+type ListResolvedItemPricesParams struct {
+	RealmID             uuid.UUID   `db:"realm_id" json:"realm_id"`
+	AuctionHouseFaction string      `db:"auction_house_faction" json:"auction_house_faction"`
+	ItemIds             []int32     `db:"item_ids" json:"item_ids"`
+	RequestedDate       pgtype.Date `db:"requested_date" json:"requested_date"`
+}
+
+type ListResolvedItemPricesRow struct {
+	ItemID      int32       `db:"item_id" json:"item_id"`
+	PriceCopper pgtype.Int8 `db:"price_copper" json:"price_copper"`
+	PriceDate   pgtype.Date `db:"price_date" json:"price_date"`
+}
+
+func (q *sqlQuerier) ListResolvedItemPrices(ctx context.Context, arg ListResolvedItemPricesParams) ([]ListResolvedItemPricesRow, error) {
+	rows, err := q.db.Query(ctx, listResolvedItemPrices,
+		arg.RealmID,
+		arg.AuctionHouseFaction,
+		arg.ItemIds,
+		arg.RequestedDate,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListResolvedItemPricesRow
+	for rows.Next() {
+		var i ListResolvedItemPricesRow
+		if err := rows.Scan(&i.ItemID, &i.PriceCopper, &i.PriceDate); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getLeaderboardVersionRequirements = `-- name: GetLeaderboardVersionRequirements :one
@@ -5106,6 +7581,46 @@ func (q *sqlQuerier) FindDuplicateInstanceCandidates(ctx context.Context, arg Fi
 	return items, nil
 }
 
+const getEncounterPhasesByInstanceID = `-- name: GetEncounterPhasesByInstanceID :many
+SELECT
+  id, encounter_id, key, name, phase_order, start_offset_ms, end_offset_ms, kill_type
+FROM
+  log_instance_encounter_phases
+WHERE
+  encounter_id IN (SELECT id FROM log_instance_encounters WHERE instance_id = $1)
+ORDER BY
+  encounter_id, phase_order
+`
+
+func (q *sqlQuerier) GetEncounterPhasesByInstanceID(ctx context.Context, instanceID uuid.UUID) ([]LogInstanceEncounterPhase, error) {
+	rows, err := q.db.Query(ctx, getEncounterPhasesByInstanceID, instanceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []LogInstanceEncounterPhase
+	for rows.Next() {
+		var i LogInstanceEncounterPhase
+		if err := rows.Scan(
+			&i.ID,
+			&i.EncounterID,
+			&i.Key,
+			&i.Name,
+			&i.PhaseOrder,
+			&i.StartOffsetMs,
+			&i.EndOffsetMs,
+			&i.KillType,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getEncounterSummariesByInstanceID = `-- name: GetEncounterSummariesByInstanceID :many
 SELECT
     lie.id,
@@ -5231,7 +7746,7 @@ func (q *sqlQuerier) GetInstanceEncounterCharacterFights(ctx context.Context, in
 
 const getInstancesByLogGroupID = `-- name: GetInstancesByLogGroupID :many
 SELECT
-  id, realm_id, log_group_id, name, hashed_slug, guild_id, capabilities, versions, recorder_name, recorder_guid, duplicate_group_id, start_time, end_time, difficulty_name, max_players, dynamic_difficulty, realm_name, guild_name, guild_realm_id, guild_created_at, server_name, tenant_name, tenant_slug, tenant_include_in_all, format, flavor
+  id, realm_id, log_group_id, name, hashed_slug, guild_id, capabilities, versions, recorder_name, recorder_guid, duplicate_group_id, start_time, end_time, difficulty_name, max_players, dynamic_difficulty, vehicle_control_intervals, realm_name, guild_name, guild_realm_id, guild_created_at, server_name, tenant_name, tenant_slug, tenant_include_in_all, format, flavor
 FROM
   log_instances_guild
 WHERE
@@ -5264,6 +7779,7 @@ func (q *sqlQuerier) GetInstancesByLogGroupID(ctx context.Context, logGroupID uu
 			&i.DifficultyName,
 			&i.MaxPlayers,
 			&i.DynamicDifficulty,
+			&i.VehicleControlIntervals,
 			&i.RealmName,
 			&i.GuildName,
 			&i.GuildRealmID,
@@ -5329,31 +7845,65 @@ func (q *sqlQuerier) InsertEncounter(ctx context.Context, arg InsertEncounterPar
 	return i, err
 }
 
+const insertEncounterPhase = `-- name: InsertEncounterPhase :exec
+INSERT INTO
+  log_instance_encounter_phases (id, encounter_id, key, name, phase_order, start_offset_ms, end_offset_ms, kill_type)
+VALUES
+  ($1, $2, $3, $4, $5, $6, $7, $8)
+`
+
+type InsertEncounterPhaseParams struct {
+	ID            uuid.UUID `db:"id" json:"id"`
+	EncounterID   uuid.UUID `db:"encounter_id" json:"encounter_id"`
+	Key           string    `db:"key" json:"key"`
+	Name          string    `db:"name" json:"name"`
+	PhaseOrder    int32     `db:"phase_order" json:"phase_order"`
+	StartOffsetMs int64     `db:"start_offset_ms" json:"start_offset_ms"`
+	EndOffsetMs   int64     `db:"end_offset_ms" json:"end_offset_ms"`
+	KillType      KillType  `db:"kill_type" json:"kill_type"`
+}
+
+func (q *sqlQuerier) InsertEncounterPhase(ctx context.Context, arg InsertEncounterPhaseParams) error {
+	_, err := q.db.Exec(ctx, insertEncounterPhase,
+		arg.ID,
+		arg.EncounterID,
+		arg.Key,
+		arg.Name,
+		arg.PhaseOrder,
+		arg.StartOffsetMs,
+		arg.EndOffsetMs,
+		arg.KillType,
+	)
+	return err
+}
+
 const insertInstance = `-- name: InsertInstance :one
 INSERT INTO
-  log_instances (id, realm_id, log_group_id, name, hashed_slug, guild_id, start_time, end_time, capabilities, versions, recorder_name, recorder_guid, parser_version, difficulty_name, max_players, dynamic_difficulty)
+  log_instances (id, realm_id, log_group_id, name, hashed_slug, guild_id, start_time, end_time, capabilities, versions, recorder_name, recorder_guid, parser_version, difficulty_name, max_players, dynamic_difficulty, vehicle_control_intervals, category)
 VALUES
-  ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
-RETURNING id, realm_id, log_group_id, name, hashed_slug, guild_id, start_time, end_time, capabilities, versions, recorder_name, recorder_guid, parser_version, duplicate_group_id, difficulty_name, max_players, dynamic_difficulty
+  ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+RETURNING id, realm_id, log_group_id, name, hashed_slug, guild_id, start_time, end_time, capabilities, versions, recorder_name, recorder_guid, parser_version, duplicate_group_id, difficulty_name, max_players, dynamic_difficulty, vehicle_control_intervals, category
 `
 
 type InsertInstanceParams struct {
-	ID                uuid.UUID          `db:"id" json:"id"`
-	RealmID           uuid.UUID          `db:"realm_id" json:"realm_id"`
-	LogGroupID        uuid.UUID          `db:"log_group_id" json:"log_group_id"`
-	Name              string             `db:"name" json:"name"`
-	HashedSlug        pgtype.Text        `db:"hashed_slug" json:"hashed_slug"`
-	GuildID           uuid.NullUUID      `db:"guild_id" json:"guild_id"`
-	StartTime         pgtype.Timestamptz `db:"start_time" json:"start_time"`
-	EndTime           pgtype.Timestamptz `db:"end_time" json:"end_time"`
-	Capabilities      []string           `db:"capabilities" json:"capabilities"`
-	Versions          VersionsMap        `db:"versions" json:"versions"`
-	RecorderName      string             `db:"recorder_name" json:"recorder_name"`
-	RecorderGuid      string             `db:"recorder_guid" json:"recorder_guid"`
-	ParserVersion     string             `db:"parser_version" json:"parser_version"`
-	DifficultyName    string             `db:"difficulty_name" json:"difficulty_name"`
-	MaxPlayers        int32              `db:"max_players" json:"max_players"`
-	DynamicDifficulty int32              `db:"dynamic_difficulty" json:"dynamic_difficulty"`
+	ID                      uuid.UUID          `db:"id" json:"id"`
+	RealmID                 uuid.UUID          `db:"realm_id" json:"realm_id"`
+	LogGroupID              uuid.UUID          `db:"log_group_id" json:"log_group_id"`
+	Name                    string             `db:"name" json:"name"`
+	HashedSlug              pgtype.Text        `db:"hashed_slug" json:"hashed_slug"`
+	GuildID                 uuid.NullUUID      `db:"guild_id" json:"guild_id"`
+	StartTime               pgtype.Timestamptz `db:"start_time" json:"start_time"`
+	EndTime                 pgtype.Timestamptz `db:"end_time" json:"end_time"`
+	Capabilities            []string           `db:"capabilities" json:"capabilities"`
+	Versions                VersionsMap        `db:"versions" json:"versions"`
+	RecorderName            string             `db:"recorder_name" json:"recorder_name"`
+	RecorderGuid            string             `db:"recorder_guid" json:"recorder_guid"`
+	ParserVersion           string             `db:"parser_version" json:"parser_version"`
+	DifficultyName          string             `db:"difficulty_name" json:"difficulty_name"`
+	MaxPlayers              int32              `db:"max_players" json:"max_players"`
+	DynamicDifficulty       int32              `db:"dynamic_difficulty" json:"dynamic_difficulty"`
+	VehicleControlIntervals vehicles.Metadata  `db:"vehicle_control_intervals" json:"vehicle_control_intervals"`
+	Category                pgtype.Text        `db:"category" json:"category"`
 }
 
 func (q *sqlQuerier) InsertInstance(ctx context.Context, arg InsertInstanceParams) (LogInstance, error) {
@@ -5374,6 +7924,8 @@ func (q *sqlQuerier) InsertInstance(ctx context.Context, arg InsertInstanceParam
 		arg.DifficultyName,
 		arg.MaxPlayers,
 		arg.DynamicDifficulty,
+		arg.VehicleControlIntervals,
+		arg.Category,
 	)
 	var i LogInstance
 	err := row.Scan(
@@ -5394,8 +7946,35 @@ func (q *sqlQuerier) InsertInstance(ctx context.Context, arg InsertInstanceParam
 		&i.DifficultyName,
 		&i.MaxPlayers,
 		&i.DynamicDifficulty,
+		&i.VehicleControlIntervals,
+		&i.Category,
 	)
 	return i, err
+}
+
+const insertInstanceRaidGroupSnapshot = `-- name: InsertInstanceRaidGroupSnapshot :exec
+INSERT INTO log_instance_raid_group_snapshots (
+  instance_id, encounter_id, snapshot_type, observed_at, composition
+) VALUES ($1, $2, $3, $4, $5)
+`
+
+type InsertInstanceRaidGroupSnapshotParams struct {
+	InstanceID   uuid.UUID              `db:"instance_id" json:"instance_id"`
+	EncounterID  uuid.NullUUID          `db:"encounter_id" json:"encounter_id"`
+	SnapshotType RaidGroupSnapshotType  `db:"snapshot_type" json:"snapshot_type"`
+	ObservedAt   pgtype.Timestamptz     `db:"observed_at" json:"observed_at"`
+	Composition  raidgroups.Composition `db:"composition" json:"composition"`
+}
+
+func (q *sqlQuerier) InsertInstanceRaidGroupSnapshot(ctx context.Context, arg InsertInstanceRaidGroupSnapshotParams) error {
+	_, err := q.db.Exec(ctx, insertInstanceRaidGroupSnapshot,
+		arg.InstanceID,
+		arg.EncounterID,
+		arg.SnapshotType,
+		arg.ObservedAt,
+		arg.Composition,
+	)
+	return err
 }
 
 const insertParsedLogGroup = `-- name: InsertParsedLogGroup :exec
@@ -5412,7 +7991,7 @@ func (q *sqlQuerier) InsertParsedLogGroup(ctx context.Context, id uuid.UUID) err
 
 const instance = `-- name: Instance :one
 SELECT
-  id, realm_id, log_group_id, name, hashed_slug, guild_id, capabilities, versions, recorder_name, recorder_guid, duplicate_group_id, start_time, end_time, difficulty_name, max_players, dynamic_difficulty, realm_name, guild_name, guild_realm_id, guild_created_at, server_name, tenant_name, tenant_slug, tenant_include_in_all, format, flavor
+  id, realm_id, log_group_id, name, hashed_slug, guild_id, capabilities, versions, recorder_name, recorder_guid, duplicate_group_id, start_time, end_time, difficulty_name, max_players, dynamic_difficulty, vehicle_control_intervals, realm_name, guild_name, guild_realm_id, guild_created_at, server_name, tenant_name, tenant_slug, tenant_include_in_all, format, flavor
 FROM
   log_instances_guild
 WHERE
@@ -5439,6 +8018,7 @@ func (q *sqlQuerier) Instance(ctx context.Context, id uuid.UUID) (LogInstancesGu
 		&i.DifficultyName,
 		&i.MaxPlayers,
 		&i.DynamicDifficulty,
+		&i.VehicleControlIntervals,
 		&i.RealmName,
 		&i.GuildName,
 		&i.GuildRealmID,
@@ -5455,7 +8035,7 @@ func (q *sqlQuerier) Instance(ctx context.Context, id uuid.UUID) (LogInstancesGu
 
 const instanceBySlug = `-- name: InstanceBySlug :one
 SELECT
-  id, realm_id, log_group_id, name, hashed_slug, guild_id, capabilities, versions, recorder_name, recorder_guid, duplicate_group_id, start_time, end_time, difficulty_name, max_players, dynamic_difficulty, realm_name, guild_name, guild_realm_id, guild_created_at, server_name, tenant_name, tenant_slug, tenant_include_in_all, format, flavor
+  id, realm_id, log_group_id, name, hashed_slug, guild_id, capabilities, versions, recorder_name, recorder_guid, duplicate_group_id, start_time, end_time, difficulty_name, max_players, dynamic_difficulty, vehicle_control_intervals, realm_name, guild_name, guild_realm_id, guild_created_at, server_name, tenant_name, tenant_slug, tenant_include_in_all, format, flavor
 FROM
   log_instances_guild
 WHERE
@@ -5482,6 +8062,7 @@ func (q *sqlQuerier) InstanceBySlug(ctx context.Context, hashedSlug pgtype.Text)
 		&i.DifficultyName,
 		&i.MaxPlayers,
 		&i.DynamicDifficulty,
+		&i.VehicleControlIntervals,
 		&i.RealmName,
 		&i.GuildName,
 		&i.GuildRealmID,
@@ -5520,6 +8101,47 @@ func (q *sqlQuerier) InstancePlayerGUIDsByInstanceID(ctx context.Context, instan
 	return items, nil
 }
 
+const instancePlayerSpecs = `-- name: InstancePlayerSpecs :many
+SELECT encounter_id, player_guid, player_spec, killed_at
+FROM encounter_dps_rankings
+WHERE instance_id = $1
+  AND encounter_id IS NOT NULL
+  AND player_spec NOT IN ('', 'Unknown')
+ORDER BY killed_at ASC, id ASC
+`
+
+type InstancePlayerSpecsRow struct {
+	EncounterID uuid.NullUUID      `db:"encounter_id" json:"encounter_id"`
+	PlayerGuid  string             `db:"player_guid" json:"player_guid"`
+	PlayerSpec  string             `db:"player_spec" json:"player_spec"`
+	KilledAt    pgtype.Timestamptz `db:"killed_at" json:"killed_at"`
+}
+
+func (q *sqlQuerier) InstancePlayerSpecs(ctx context.Context, instanceID uuid.UUID) ([]InstancePlayerSpecsRow, error) {
+	rows, err := q.db.Query(ctx, instancePlayerSpecs, instanceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []InstancePlayerSpecsRow
+	for rows.Next() {
+		var i InstancePlayerSpecsRow
+		if err := rows.Scan(
+			&i.EncounterID,
+			&i.PlayerGuid,
+			&i.PlayerSpec,
+			&i.KilledAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const instancePlayersByInstanceID = `-- name: InstancePlayersByInstanceID :many
 SELECT
   instance_id, unit_guid, name, level, class, race, guild_id
@@ -5546,6 +8168,60 @@ func (q *sqlQuerier) InstancePlayersByInstanceID(ctx context.Context, instanceID
 			&i.Class,
 			&i.Race,
 			&i.GuildID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const instanceRaidGroupSnapshots = `-- name: InstanceRaidGroupSnapshots :many
+SELECT
+  snapshots.id, snapshots.instance_id, snapshots.encounter_id, snapshots.snapshot_type, snapshots.observed_at, snapshots.composition,
+  encounters.name AS encounter_name,
+  encounters.end_time AS killed_at
+FROM log_instance_raid_group_snapshots snapshots
+LEFT JOIN log_instance_encounters encounters ON encounters.id = snapshots.encounter_id
+WHERE snapshots.instance_id = $1
+ORDER BY
+  CASE WHEN snapshots.snapshot_type = 'clean_kill' THEN 0 ELSE 1 END,
+  encounters.end_time ASC NULLS LAST,
+  snapshots.observed_at ASC
+`
+
+type InstanceRaidGroupSnapshotsRow struct {
+	ID            uuid.UUID              `db:"id" json:"id"`
+	InstanceID    uuid.UUID              `db:"instance_id" json:"instance_id"`
+	EncounterID   uuid.NullUUID          `db:"encounter_id" json:"encounter_id"`
+	SnapshotType  RaidGroupSnapshotType  `db:"snapshot_type" json:"snapshot_type"`
+	ObservedAt    pgtype.Timestamptz     `db:"observed_at" json:"observed_at"`
+	Composition   raidgroups.Composition `db:"composition" json:"composition"`
+	EncounterName pgtype.Text            `db:"encounter_name" json:"encounter_name"`
+	KilledAt      pgtype.Timestamptz     `db:"killed_at" json:"killed_at"`
+}
+
+func (q *sqlQuerier) InstanceRaidGroupSnapshots(ctx context.Context, instanceID uuid.UUID) ([]InstanceRaidGroupSnapshotsRow, error) {
+	rows, err := q.db.Query(ctx, instanceRaidGroupSnapshots, instanceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []InstanceRaidGroupSnapshotsRow
+	for rows.Next() {
+		var i InstanceRaidGroupSnapshotsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.InstanceID,
+			&i.EncounterID,
+			&i.SnapshotType,
+			&i.ObservedAt,
+			&i.Composition,
+			&i.EncounterName,
+			&i.KilledAt,
 		); err != nil {
 			return nil, err
 		}
@@ -5790,6 +8466,270 @@ func (q *sqlQuerier) ListInstancesByTimeRange(ctx context.Context, arg ListInsta
 	var items []ListInstancesByTimeRangeRow
 	for rows.Next() {
 		var i ListInstancesByTimeRangeRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Slug,
+			&i.Name,
+			&i.RealmID,
+			&i.RealmName,
+			&i.UploaderID,
+			&i.UploaderName,
+			&i.UploadedAt,
+			&i.FirstEncounterTime,
+			&i.PlayerCount,
+			&i.BossCount,
+			&i.BossKills,
+			&i.DurationMs,
+			&i.CombatDurationMs,
+			&i.GuildID,
+			&i.GuildName,
+			&i.HasYoutubeVideo,
+			&i.DuplicateGroupID,
+			&i.RecorderName,
+			&i.DifficultyName,
+			&i.MaxPlayers,
+			&i.DynamicDifficulty,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listRecentInstanceGroups = `-- name: ListRecentInstanceGroups :many
+WITH matching_runs AS (
+    SELECT DISTINCT COALESCE(li.duplicate_group_id, li.id) AS run_id
+    FROM log_instances li
+    JOIN parsed_log_group plg ON plg.id = li.log_group_id
+    JOIN wow_log_groups wlg ON wlg.id = plg.id
+    LEFT JOIN server_upload_meta sm ON sm.log_group_id = li.log_group_id
+    WHERE (
+          (li.start_time >= $1::timestamptz AND li.start_time < $2::timestamptz)
+          OR (
+              li.start_time IS NULL
+              AND wlg.created_at >= $1::timestamptz
+              AND wlg.created_at < $2::timestamptz
+          )
+      )
+      AND (
+          COALESCE(cardinality($3::text[]), 0) = 0
+          OR COALESCE(NULLIF(btrim(li.name), ''), NULLIF(btrim(sm.instance_name), ''), li.name) = ANY($3::text[])
+      )
+      AND (
+          $4::text = ''
+          OR (
+              $4::text = 'true'
+              AND EXISTS (
+                  SELECT 1
+                  FROM log_instance_youtube_timestamped yt
+                  WHERE yt.log_instance_id = li.id OR yt.instance_slug = li.hashed_slug
+              )
+          )
+          OR (
+              $4::text = 'false'
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM log_instance_youtube_timestamped yt
+                  WHERE yt.log_instance_id = li.id OR yt.instance_slug = li.hashed_slug
+              )
+          )
+      )
+      AND (
+          $5::uuid = '00000000-0000-0000-0000-000000000000'::uuid
+          OR li.realm_id = $5::uuid
+      )
+      AND (
+          $6::uuid = '00000000-0000-0000-0000-000000000000'::uuid
+          OR li.guild_id = $6::uuid
+      )
+      AND (
+          $7::wow_guid = '0x0000000000000000'::wow_guid
+          OR EXISTS (
+              SELECT 1
+              FROM log_instance_players lip_filter
+              WHERE lip_filter.instance_id = li.id
+                AND lip_filter.unit_guid = $7
+          )
+      )
+),
+instance_rows AS (
+    SELECT
+        li.id,
+        li.hashed_slug AS slug,
+        COALESCE(NULLIF(btrim(li.name), ''), NULLIF(btrim(sm.instance_name), ''), li.name) AS name,
+        li.realm_id,
+        wsr.name AS realm_name,
+        wlg.owner AS uploader_id,
+        u.username AS uploader_name,
+        wlg.created_at AS uploaded_at,
+        COALESCE(li.start_time, encounters.first_encounter_time, wlg.created_at)::timestamptz AS first_encounter_time,
+        COALESCE(players.player_count, 0)::bigint AS player_count,
+        COALESCE(encounters.boss_count, 0)::bigint AS boss_count,
+        COALESCE(encounters.encounter_count, 0)::bigint AS encounter_count,
+        COALESCE(encounters.boss_kills, 0)::bigint AS boss_kills,
+        COALESCE(encounters.duration_ms, 0)::float8 AS duration_ms,
+        iom.total_combat_duration_ms AS combat_duration_ms,
+        g.id AS guild_id,
+        g.name AS guild_name,
+        youtube.has_youtube_video,
+        li.duplicate_group_id,
+        COALESCE(li.duplicate_group_id, li.id) AS run_id,
+        li.recorder_name,
+        li.difficulty_name,
+        li.max_players,
+        li.dynamic_difficulty
+    FROM log_instances li
+    JOIN matching_runs ON matching_runs.run_id = COALESCE(li.duplicate_group_id, li.id)
+    JOIN parsed_log_group plg ON plg.id = li.log_group_id
+    JOIN wow_log_groups wlg ON wlg.id = plg.id
+    LEFT JOIN instance_overview_metrics iom ON iom.instance_id = li.id
+    LEFT JOIN server_upload_meta sm ON sm.log_group_id = li.log_group_id
+    JOIN users u ON u.id = wlg.owner
+    JOIN wow_server_realms wsr ON wsr.id = li.realm_id
+    LEFT JOIN guilds g ON g.id = li.guild_id
+    LEFT JOIN LATERAL (
+        SELECT COUNT(*)::bigint AS player_count
+        FROM log_instance_players lip
+        WHERE lip.instance_id = li.id
+    ) players ON true
+    LEFT JOIN LATERAL (
+        SELECT
+            MIN(lie.start_time) AS first_encounter_time,
+            COUNT(*)::bigint AS encounter_count,
+            COUNT(*) FILTER (WHERE lie.boss = true)::bigint AS boss_count,
+            COUNT(*) FILTER (
+                WHERE lie.boss = true
+                  AND lie.kill_type IN ('clean', 'partial')
+            )::bigint AS boss_kills,
+            EXTRACT(EPOCH FROM (MAX(lie.end_time) - MIN(lie.start_time))) * 1000 AS duration_ms
+        FROM log_instance_encounters lie
+        WHERE lie.instance_id = li.id
+    ) encounters ON true
+    LEFT JOIN LATERAL (
+        SELECT EXISTS (
+            SELECT 1
+            FROM log_instance_youtube_timestamped yt
+            WHERE yt.log_instance_id = li.id OR yt.instance_slug = li.hashed_slug
+        ) AS has_youtube_video
+    ) youtube ON true
+),
+ranked_instances AS (
+    SELECT
+        instance_rows.id, instance_rows.slug, instance_rows.name, instance_rows.realm_id, instance_rows.realm_name, instance_rows.uploader_id, instance_rows.uploader_name, instance_rows.uploaded_at, instance_rows.first_encounter_time, instance_rows.player_count, instance_rows.boss_count, instance_rows.encounter_count, instance_rows.boss_kills, instance_rows.duration_ms, instance_rows.combat_duration_ms, instance_rows.guild_id, instance_rows.guild_name, instance_rows.has_youtube_video, instance_rows.duplicate_group_id, instance_rows.run_id, instance_rows.recorder_name, instance_rows.difficulty_name, instance_rows.max_players, instance_rows.dynamic_difficulty,
+        ROW_NUMBER() OVER (
+            PARTITION BY instance_rows.run_id
+            ORDER BY
+                instance_rows.boss_count DESC,
+                instance_rows.encounter_count DESC,
+                (instance_rows.id = instance_rows.duplicate_group_id) DESC NULLS LAST,
+                instance_rows.first_encounter_time ASC,
+                instance_rows.id ASC
+        ) AS representative_rank
+    FROM instance_rows
+    JOIN matching_runs USING (run_id)
+),
+selected_runs AS (
+    SELECT id, run_id, first_encounter_time
+    FROM ranked_instances
+    WHERE representative_rank = 1
+    ORDER BY first_encounter_time DESC, id DESC
+    LIMIT CASE WHEN $9::int > 0 THEN $9 ELSE NULL END
+    OFFSET $8
+)
+SELECT
+    ranked_instances.id,
+    ranked_instances.slug,
+    ranked_instances.name,
+    ranked_instances.realm_id,
+    ranked_instances.realm_name,
+    ranked_instances.uploader_id,
+    ranked_instances.uploader_name,
+    ranked_instances.uploaded_at,
+    ranked_instances.first_encounter_time,
+    ranked_instances.player_count,
+    ranked_instances.boss_count,
+    ranked_instances.boss_kills,
+    ranked_instances.duration_ms,
+    ranked_instances.combat_duration_ms,
+    ranked_instances.guild_id,
+    ranked_instances.guild_name,
+    ranked_instances.has_youtube_video,
+    ranked_instances.duplicate_group_id,
+    ranked_instances.recorder_name,
+    ranked_instances.difficulty_name,
+    ranked_instances.max_players,
+    ranked_instances.dynamic_difficulty
+FROM ranked_instances
+JOIN selected_runs USING (run_id)
+ORDER BY
+    selected_runs.first_encounter_time DESC,
+    selected_runs.id DESC,
+    ranked_instances.representative_rank ASC
+`
+
+type ListRecentInstanceGroupsParams struct {
+	StartTime     pgtype.Timestamptz `db:"start_time" json:"start_time"`
+	EndTime       pgtype.Timestamptz `db:"end_time" json:"end_time"`
+	InstanceNames []string           `db:"instance_names" json:"instance_names"`
+	HasVideo      string             `db:"has_video" json:"has_video"`
+	RealmID       uuid.UUID          `db:"realm_id" json:"realm_id"`
+	GuildID       uuid.UUID          `db:"guild_id" json:"guild_id"`
+	PlayerGuid    guid.GUID          `db:"player_guid" json:"player_guid"`
+	OffsetCount   int32              `db:"offset_count" json:"offset_count"`
+	LimitCount    int32              `db:"limit_count" json:"limit_count"`
+}
+
+type ListRecentInstanceGroupsRow struct {
+	ID                 uuid.UUID          `db:"id" json:"id"`
+	Slug               pgtype.Text        `db:"slug" json:"slug"`
+	Name               string             `db:"name" json:"name"`
+	RealmID            uuid.UUID          `db:"realm_id" json:"realm_id"`
+	RealmName          string             `db:"realm_name" json:"realm_name"`
+	UploaderID         uuid.UUID          `db:"uploader_id" json:"uploader_id"`
+	UploaderName       string             `db:"uploader_name" json:"uploader_name"`
+	UploadedAt         pgtype.Timestamptz `db:"uploaded_at" json:"uploaded_at"`
+	FirstEncounterTime pgtype.Timestamptz `db:"first_encounter_time" json:"first_encounter_time"`
+	PlayerCount        int64              `db:"player_count" json:"player_count"`
+	BossCount          int64              `db:"boss_count" json:"boss_count"`
+	BossKills          int64              `db:"boss_kills" json:"boss_kills"`
+	DurationMs         float64            `db:"duration_ms" json:"duration_ms"`
+	CombatDurationMs   pgtype.Int8        `db:"combat_duration_ms" json:"combat_duration_ms"`
+	GuildID            uuid.NullUUID      `db:"guild_id" json:"guild_id"`
+	GuildName          pgtype.Text        `db:"guild_name" json:"guild_name"`
+	HasYoutubeVideo    bool               `db:"has_youtube_video" json:"has_youtube_video"`
+	DuplicateGroupID   uuid.NullUUID      `db:"duplicate_group_id" json:"duplicate_group_id"`
+	RecorderName       string             `db:"recorder_name" json:"recorder_name"`
+	DifficultyName     string             `db:"difficulty_name" json:"difficulty_name"`
+	MaxPlayers         int32              `db:"max_players" json:"max_players"`
+	DynamicDifficulty  int32              `db:"dynamic_difficulty" json:"dynamic_difficulty"`
+}
+
+// Pages logical runs, then returns every upload in each selected duplicate group.
+// The first row for each run is its representative: most boss encounters, then
+// most total encounters, then the duplicate-group anchor and stable tie-breakers.
+func (q *sqlQuerier) ListRecentInstanceGroups(ctx context.Context, arg ListRecentInstanceGroupsParams) ([]ListRecentInstanceGroupsRow, error) {
+	rows, err := q.db.Query(ctx, listRecentInstanceGroups,
+		arg.StartTime,
+		arg.EndTime,
+		arg.InstanceNames,
+		arg.HasVideo,
+		arg.RealmID,
+		arg.GuildID,
+		arg.PlayerGuid,
+		arg.OffsetCount,
+		arg.LimitCount,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListRecentInstanceGroupsRow
+	for rows.Next() {
+		var i ListRecentInstanceGroupsRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Slug,
@@ -6487,7 +9427,7 @@ func (q *sqlQuerier) GetParseScoreReceiptForInstance(ctx context.Context, instan
 
 const getParseScoreResultsForInstance = `-- name: GetParseScoreResultsForInstance :many
 SELECT DISTINCT ON (psr.run_id, psr.encounter_name, psr.player_guid, psr.snapshot_id, psr.metric)
-    psr.id, psr.tenant_id, psr.instance_id, psr.run_id, psr.snapshot_id, psr.log_group_id, psr.guild_id, psr.encounter_name, psr.player_guid, psr.player_name, psr.player_class, psr.player_spec, psr.player_role, psr.metric, psr.metric_value, psr.precise_score, psr.display_score, psr.rank, psr.sample_size, psr.status, psr.instance_name, psr.difficulty_name, psr.max_players, psr.killed_at, psr.created_at
+    psr.id, psr.tenant_id, psr.instance_id, psr.run_id, psr.snapshot_id, psr.log_group_id, psr.guild_id, psr.encounter_name, psr.player_guid, psr.player_name, psr.player_class, psr.player_spec, psr.player_role, psr.metric, psr.metric_value, psr.precise_score, psr.display_score, psr.rank, psr.sample_size, psr.status, psr.instance_name, psr.difficulty_name, psr.max_players, psr.killed_at, psr.created_at, psr.player_sub_spec
 FROM parse_score_results psr
 WHERE psr.instance_id = $1
 ORDER BY psr.run_id, psr.encounter_name, psr.player_guid, psr.snapshot_id, psr.metric,
@@ -6531,6 +9471,7 @@ func (q *sqlQuerier) GetParseScoreResultsForInstance(ctx context.Context, instan
 			&i.MaxPlayers,
 			&i.KilledAt,
 			&i.CreatedAt,
+			&i.PlayerSubSpec,
 		); err != nil {
 			return nil, err
 		}
@@ -6543,7 +9484,7 @@ func (q *sqlQuerier) GetParseScoreResultsForInstance(ctx context.Context, instan
 }
 
 const getScoringSnapshotBefore = `-- name: GetScoringSnapshotBefore :one
-SELECT id, tenant_id, cutoff, window_start, lookback_days, cohort_mode, policy_version, query_version, min_parser_version_num, min_addon_version_num, status, created_at, published_at, source_row_count, source_watermark
+SELECT id, tenant_id, cutoff, window_start, lookback_days, cohort_mode, policy_version, query_version, min_parser_version_num, min_addon_version_num, status, created_at, published_at, source_row_count, source_watermark, member_count
 FROM ranking_snapshots
 WHERE tenant_id = $1
   AND lookback_days = $2
@@ -6591,12 +9532,13 @@ func (q *sqlQuerier) GetScoringSnapshotBefore(ctx context.Context, arg GetScorin
 		&i.PublishedAt,
 		&i.SourceRowCount,
 		&i.SourceWatermark,
+		&i.MemberCount,
 	)
 	return i, err
 }
 
 const getScoringSnapshotLatest = `-- name: GetScoringSnapshotLatest :one
-SELECT id, tenant_id, cutoff, window_start, lookback_days, cohort_mode, policy_version, query_version, min_parser_version_num, min_addon_version_num, status, created_at, published_at, source_row_count, source_watermark
+SELECT id, tenant_id, cutoff, window_start, lookback_days, cohort_mode, policy_version, query_version, min_parser_version_num, min_addon_version_num, status, created_at, published_at, source_row_count, source_watermark, member_count
 FROM ranking_snapshots
 WHERE tenant_id = $1
   AND lookback_days = $2
@@ -6640,6 +9582,7 @@ func (q *sqlQuerier) GetScoringSnapshotLatest(ctx context.Context, arg GetScorin
 		&i.PublishedAt,
 		&i.SourceRowCount,
 		&i.SourceWatermark,
+		&i.MemberCount,
 	)
 	return i, err
 }
@@ -6706,14 +9649,14 @@ func (q *sqlQuerier) InsertParseScoreReceipt(ctx context.Context, arg InsertPars
 const insertParseScoreResult = `-- name: InsertParseScoreResult :exec
 INSERT INTO parse_score_results (
     tenant_id, instance_id, run_id, snapshot_id, log_group_id, guild_id,
-    encounter_name, player_guid, player_name, player_class, player_spec, player_role,
+    encounter_name, player_guid, player_name, player_class, player_spec, player_sub_spec, player_role,
     metric, metric_value, precise_score, display_score, rank, sample_size, status,
     instance_name, difficulty_name, max_players, killed_at
 ) VALUES (
     $1, $2, $3, $4, $5, $6,
-    $7, $8, $9, $10, $11, $12,
-    $13, $14, $15, $16, $17, $18, $19,
-    $20, $21, $22, $23
+    $7, $8, $9, $10, $11, $12, $13,
+    $14, $15, $16, $17, $18, $19, $20,
+    $21, $22, $23, $24
 )
 `
 
@@ -6729,6 +9672,7 @@ type InsertParseScoreResultParams struct {
 	PlayerName     string             `db:"player_name" json:"player_name"`
 	PlayerClass    string             `db:"player_class" json:"player_class"`
 	PlayerSpec     string             `db:"player_spec" json:"player_spec"`
+	PlayerSubSpec  string             `db:"player_sub_spec" json:"player_sub_spec"`
 	PlayerRole     string             `db:"player_role" json:"player_role"`
 	Metric         string             `db:"metric" json:"metric"`
 	MetricValue    float64            `db:"metric_value" json:"metric_value"`
@@ -6758,6 +9702,7 @@ func (q *sqlQuerier) InsertParseScoreResult(ctx context.Context, arg InsertParse
 		arg.PlayerName,
 		arg.PlayerClass,
 		arg.PlayerSpec,
+		arg.PlayerSubSpec,
 		arg.PlayerRole,
 		arg.Metric,
 		arg.MetricValue,
@@ -6967,7 +9912,7 @@ func (q *sqlQuerier) ListInstancesMissingParseReceiptWithSnapshot(ctx context.Co
 
 const listParseScoreResultsForContract = `-- name: ListParseScoreResultsForContract :many
 SELECT DISTINCT ON (psr.encounter_name, psr.player_guid)
-    psr.id, psr.tenant_id, psr.instance_id, psr.run_id, psr.snapshot_id, psr.log_group_id, psr.guild_id, psr.encounter_name, psr.player_guid, psr.player_name, psr.player_class, psr.player_spec, psr.player_role, psr.metric, psr.metric_value, psr.precise_score, psr.display_score, psr.rank, psr.sample_size, psr.status, psr.instance_name, psr.difficulty_name, psr.max_players, psr.killed_at, psr.created_at
+    psr.id, psr.tenant_id, psr.instance_id, psr.run_id, psr.snapshot_id, psr.log_group_id, psr.guild_id, psr.encounter_name, psr.player_guid, psr.player_name, psr.player_class, psr.player_spec, psr.player_role, psr.metric, psr.metric_value, psr.precise_score, psr.display_score, psr.rank, psr.sample_size, psr.status, psr.instance_name, psr.difficulty_name, psr.max_players, psr.killed_at, psr.created_at, psr.player_sub_spec
 FROM parse_score_results psr
 WHERE psr.tenant_id = $1
   AND psr.instance_id = $2
@@ -7026,6 +9971,7 @@ func (q *sqlQuerier) ListParseScoreResultsForContract(ctx context.Context, arg L
 			&i.MaxPlayers,
 			&i.KilledAt,
 			&i.CreatedAt,
+			&i.PlayerSubSpec,
 		); err != nil {
 			return nil, err
 		}
@@ -7044,6 +9990,12 @@ WITH representative_instances AS (
         COALESCE(li.duplicate_group_id, li.id) AS run_id
     FROM log_instances li
     ORDER BY COALESCE(li.duplicate_group_id, li.id),
+        -- Prefer the upload with the broadest boss-ranking coverage. The group
+        -- anchor is the first upload, but it may be truncated before the final boss.
+        (SELECT COUNT(DISTINCT coverage.encounter_name)
+         FROM encounter_dps_rankings coverage
+         WHERE coverage.instance_id = li.id
+           AND coverage.encounter_id IS NOT NULL) DESC,
         (li.id = li.duplicate_group_id) DESC NULLS LAST,
         li.start_time ASC,
         li.id ASC
@@ -7062,6 +10014,7 @@ eligible AS (
         edr.player_guid,
         edr.player_class,
         edr.player_spec,
+        edr.player_sub_spec,
         edr.difficulty_name,
         edr.max_players,
         edr.killed_at,
@@ -7090,7 +10043,7 @@ eligible AS (
 INSERT INTO ranking_snapshot_members (
     snapshot_id, ranking_id, instance_id, run_id,
     instance_name, encounter_name,
-    player_guid, player_class, player_spec,
+    player_guid, player_class, player_spec, player_sub_spec,
     difficulty_name, max_players,
     killed_at, created_at_ranking,
     damage_done, healing_done, absorbed_done,
@@ -7099,7 +10052,7 @@ INSERT INTO ranking_snapshot_members (
 SELECT
     $1, e.ranking_id, e.instance_id, e.run_id,
     e.instance_name, e.encounter_name,
-    e.player_guid, e.player_class, e.player_spec,
+    e.player_guid, e.player_class, e.player_spec, e.player_sub_spec,
     e.difficulty_name, e.max_players,
     e.killed_at, e.created_at,
     e.damage_done, e.healing_done, e.absorbed_done,
@@ -7156,7 +10109,7 @@ func (q *sqlQuerier) DeleteRankingSnapshots(ctx context.Context, ids []uuid.UUID
 }
 
 const getLatestPublishedSnapshot = `-- name: GetLatestPublishedSnapshot :one
-SELECT id, tenant_id, cutoff, window_start, lookback_days, cohort_mode, policy_version, query_version, min_parser_version_num, min_addon_version_num, status, created_at, published_at, source_row_count, source_watermark
+SELECT id, tenant_id, cutoff, window_start, lookback_days, cohort_mode, policy_version, query_version, min_parser_version_num, min_addon_version_num, status, created_at, published_at, source_row_count, source_watermark, member_count
 FROM ranking_snapshots
 WHERE tenant_id = $1
   AND lookback_days = $2
@@ -7190,12 +10143,13 @@ func (q *sqlQuerier) GetLatestPublishedSnapshot(ctx context.Context, arg GetLate
 		&i.PublishedAt,
 		&i.SourceRowCount,
 		&i.SourceWatermark,
+		&i.MemberCount,
 	)
 	return i, err
 }
 
 const getLatestPublishedSnapshotBefore = `-- name: GetLatestPublishedSnapshotBefore :one
-SELECT id, tenant_id, cutoff, window_start, lookback_days, cohort_mode, policy_version, query_version, min_parser_version_num, min_addon_version_num, status, created_at, published_at, source_row_count, source_watermark
+SELECT id, tenant_id, cutoff, window_start, lookback_days, cohort_mode, policy_version, query_version, min_parser_version_num, min_addon_version_num, status, created_at, published_at, source_row_count, source_watermark, member_count
 FROM ranking_snapshots
 WHERE tenant_id = $1
   AND lookback_days = $2
@@ -7233,12 +10187,13 @@ func (q *sqlQuerier) GetLatestPublishedSnapshotBefore(ctx context.Context, arg G
 		&i.PublishedAt,
 		&i.SourceRowCount,
 		&i.SourceWatermark,
+		&i.MemberCount,
 	)
 	return i, err
 }
 
 const getLatestPublishedSnapshotForGuard = `-- name: GetLatestPublishedSnapshotForGuard :one
-SELECT id, tenant_id, cutoff, window_start, lookback_days, cohort_mode, policy_version, query_version, min_parser_version_num, min_addon_version_num, status, created_at, published_at, source_row_count, source_watermark
+SELECT id, tenant_id, cutoff, window_start, lookback_days, cohort_mode, policy_version, query_version, min_parser_version_num, min_addon_version_num, status, created_at, published_at, source_row_count, source_watermark, member_count
 FROM ranking_snapshots
 WHERE tenant_id = $1
   AND lookback_days = $2
@@ -7285,6 +10240,7 @@ func (q *sqlQuerier) GetLatestPublishedSnapshotForGuard(ctx context.Context, arg
 		&i.PublishedAt,
 		&i.SourceRowCount,
 		&i.SourceWatermark,
+		&i.MemberCount,
 	)
 	return i, err
 }
@@ -7303,7 +10259,7 @@ func (q *sqlQuerier) GetLogInstanceStartTime(ctx context.Context, id uuid.UUID) 
 }
 
 const getPublishedSnapshotForCutoff = `-- name: GetPublishedSnapshotForCutoff :one
-SELECT id, tenant_id, cutoff, window_start, lookback_days, cohort_mode, policy_version, query_version, min_parser_version_num, min_addon_version_num, status, created_at, published_at, source_row_count, source_watermark
+SELECT id, tenant_id, cutoff, window_start, lookback_days, cohort_mode, policy_version, query_version, min_parser_version_num, min_addon_version_num, status, created_at, published_at, source_row_count, source_watermark, member_count
 FROM ranking_snapshots
 WHERE tenant_id = $1
   AND lookback_days = $2
@@ -7352,12 +10308,13 @@ func (q *sqlQuerier) GetPublishedSnapshotForCutoff(ctx context.Context, arg GetP
 		&i.PublishedAt,
 		&i.SourceRowCount,
 		&i.SourceWatermark,
+		&i.MemberCount,
 	)
 	return i, err
 }
 
 const getRankingSnapshot = `-- name: GetRankingSnapshot :one
-SELECT id, tenant_id, cutoff, window_start, lookback_days, cohort_mode, policy_version, query_version, min_parser_version_num, min_addon_version_num, status, created_at, published_at, source_row_count, source_watermark FROM ranking_snapshots WHERE id = $1
+SELECT id, tenant_id, cutoff, window_start, lookback_days, cohort_mode, policy_version, query_version, min_parser_version_num, min_addon_version_num, status, created_at, published_at, source_row_count, source_watermark, member_count FROM ranking_snapshots WHERE id = $1
 `
 
 func (q *sqlQuerier) GetRankingSnapshot(ctx context.Context, id uuid.UUID) (RankingSnapshot, error) {
@@ -7379,6 +10336,7 @@ func (q *sqlQuerier) GetRankingSnapshot(ctx context.Context, id uuid.UUID) (Rank
 		&i.PublishedAt,
 		&i.SourceRowCount,
 		&i.SourceWatermark,
+		&i.MemberCount,
 	)
 	return i, err
 }
@@ -7390,6 +10348,7 @@ SELECT
     edr.player_name,
     rsm.player_class,
     rsm.player_spec,
+    rsm.player_sub_spec,
     rsm.difficulty_name,
     rsm.max_players,
     rsm.killed_at,
@@ -7401,11 +10360,12 @@ WHERE rsm.snapshot_id = $2
   AND rsm.encounter_name = $3
   AND rsm.player_class = $4
   AND ($5::text IS NULL OR rsm.player_spec = $5)
+  AND ($6::text IS NULL OR rsm.player_sub_spec = $6)
   -- Difficulty and raid size are optional viewer filters: unlike the parses
   -- handler (which always knows the viewed row's exact bucket), the debug
   -- viewer may leave them unselected, meaning "any".
-  AND ($6::text IS NULL OR rsm.difficulty_name = $6)
-  AND ($7::smallint IS NULL OR rsm.max_players = $7)
+  AND ($7::text IS NULL OR rsm.difficulty_name = $7)
+  AND ($8::smallint IS NULL OR rsm.max_players = $8)
   AND CASE WHEN $1::text = 'hps' THEN rsm.hps ELSE rsm.dps END > 0
 ORDER BY CASE WHEN $1::text = 'hps' THEN rsm.hps ELSE rsm.dps END DESC
 `
@@ -7416,6 +10376,7 @@ type GetSnapshotCohortDebugParams struct {
 	EncounterName  string      `db:"encounter_name" json:"encounter_name"`
 	PlayerClass    string      `db:"player_class" json:"player_class"`
 	PlayerSpec     pgtype.Text `db:"player_spec" json:"player_spec"`
+	PlayerSubSpec  pgtype.Text `db:"player_sub_spec" json:"player_sub_spec"`
 	DifficultyName pgtype.Text `db:"difficulty_name" json:"difficulty_name"`
 	MaxPlayers     pgtype.Int2 `db:"max_players" json:"max_players"`
 }
@@ -7426,6 +10387,7 @@ type GetSnapshotCohortDebugRow struct {
 	PlayerName     string             `db:"player_name" json:"player_name"`
 	PlayerClass    string             `db:"player_class" json:"player_class"`
 	PlayerSpec     string             `db:"player_spec" json:"player_spec"`
+	PlayerSubSpec  string             `db:"player_sub_spec" json:"player_sub_spec"`
 	DifficultyName string             `db:"difficulty_name" json:"difficulty_name"`
 	MaxPlayers     int16              `db:"max_players" json:"max_players"`
 	KilledAt       pgtype.Timestamptz `db:"killed_at" json:"killed_at"`
@@ -7443,6 +10405,7 @@ func (q *sqlQuerier) GetSnapshotCohortDebug(ctx context.Context, arg GetSnapshot
 		arg.EncounterName,
 		arg.PlayerClass,
 		arg.PlayerSpec,
+		arg.PlayerSubSpec,
 		arg.DifficultyName,
 		arg.MaxPlayers,
 	)
@@ -7459,6 +10422,7 @@ func (q *sqlQuerier) GetSnapshotCohortDebug(ctx context.Context, arg GetSnapshot
 			&i.PlayerName,
 			&i.PlayerClass,
 			&i.PlayerSpec,
+			&i.PlayerSubSpec,
 			&i.DifficultyName,
 			&i.MaxPlayers,
 			&i.KilledAt,
@@ -7487,6 +10451,7 @@ WHERE rsm.snapshot_id = $2
   AND rsm.max_players = $5
   AND rsm.player_class = $6
   AND ($7::text IS NULL OR rsm.player_spec = $7)
+  AND ($8::text IS NULL OR rsm.player_sub_spec = $8)
   -- Only include rows with a positive value for the requested metric so
   -- zero-DPS healers don't appear in DPS cohorts and vice versa.
   AND CASE WHEN $1::text = 'hps' THEN rsm.hps ELSE rsm.dps END > 0
@@ -7500,6 +10465,7 @@ type GetSnapshotCohortValuesParams struct {
 	MaxPlayers     int16       `db:"max_players" json:"max_players"`
 	PlayerClass    string      `db:"player_class" json:"player_class"`
 	PlayerSpec     pgtype.Text `db:"player_spec" json:"player_spec"`
+	PlayerSubSpec  pgtype.Text `db:"player_sub_spec" json:"player_sub_spec"`
 }
 
 type GetSnapshotCohortValuesRow struct {
@@ -7533,6 +10499,7 @@ func (q *sqlQuerier) GetSnapshotCohortValues(ctx context.Context, arg GetSnapsho
 		arg.MaxPlayers,
 		arg.PlayerClass,
 		arg.PlayerSpec,
+		arg.PlayerSubSpec,
 	)
 	if err != nil {
 		return nil, err
@@ -7598,7 +10565,7 @@ INSERT INTO ranking_snapshots (
     $6, $7,
     $8, $9, 'pending',
     $10, $11
-) RETURNING id, tenant_id, cutoff, window_start, lookback_days, cohort_mode, policy_version, query_version, min_parser_version_num, min_addon_version_num, status, created_at, published_at, source_row_count, source_watermark
+) RETURNING id, tenant_id, cutoff, window_start, lookback_days, cohort_mode, policy_version, query_version, min_parser_version_num, min_addon_version_num, status, created_at, published_at, source_row_count, source_watermark, member_count
 `
 
 type InsertRankingSnapshotParams struct {
@@ -7647,6 +10614,7 @@ func (q *sqlQuerier) InsertRankingSnapshot(ctx context.Context, arg InsertRankin
 		&i.PublishedAt,
 		&i.SourceRowCount,
 		&i.SourceWatermark,
+		&i.MemberCount,
 	)
 	return i, err
 }
@@ -7655,7 +10623,7 @@ const insertRankingSnapshotMember = `-- name: InsertRankingSnapshotMember :exec
 INSERT INTO ranking_snapshot_members (
     snapshot_id, ranking_id, instance_id, run_id,
     instance_name, encounter_name,
-    player_guid, player_class, player_spec,
+    player_guid, player_class, player_spec, player_sub_spec,
     difficulty_name, max_players,
     killed_at, created_at_ranking,
     damage_done, healing_done, absorbed_done,
@@ -7663,11 +10631,11 @@ INSERT INTO ranking_snapshot_members (
 ) VALUES (
     $1, $2, $3, $4,
     $5, $6,
-    $7, $8, $9,
-    $10, $11,
-    $12, $13,
-    $14, $15, $16,
-    $17, $18, $19
+    $7, $8, $9, $10,
+    $11, $12,
+    $13, $14,
+    $15, $16, $17,
+    $18, $19, $20
 ) ON CONFLICT (snapshot_id, ranking_id) DO NOTHING
 `
 
@@ -7681,6 +10649,7 @@ type InsertRankingSnapshotMemberParams struct {
 	PlayerGuid       string             `db:"player_guid" json:"player_guid"`
 	PlayerClass      string             `db:"player_class" json:"player_class"`
 	PlayerSpec       string             `db:"player_spec" json:"player_spec"`
+	PlayerSubSpec    string             `db:"player_sub_spec" json:"player_sub_spec"`
 	DifficultyName   string             `db:"difficulty_name" json:"difficulty_name"`
 	MaxPlayers       int16              `db:"max_players" json:"max_players"`
 	KilledAt         pgtype.Timestamptz `db:"killed_at" json:"killed_at"`
@@ -7705,6 +10674,7 @@ func (q *sqlQuerier) InsertRankingSnapshotMember(ctx context.Context, arg Insert
 		arg.PlayerGuid,
 		arg.PlayerClass,
 		arg.PlayerSpec,
+		arg.PlayerSubSpec,
 		arg.DifficultyName,
 		arg.MaxPlayers,
 		arg.KilledAt,
@@ -7720,8 +10690,7 @@ func (q *sqlQuerier) InsertRankingSnapshotMember(ctx context.Context, arg Insert
 }
 
 const listAllSnapshots = `-- name: ListAllSnapshots :many
-SELECT rs.id, rs.tenant_id, rs.cutoff, rs.window_start, rs.lookback_days, rs.cohort_mode, rs.policy_version, rs.query_version, rs.min_parser_version_num, rs.min_addon_version_num, rs.status, rs.created_at, rs.published_at, rs.source_row_count, rs.source_watermark,
-       (SELECT COUNT(*) FROM ranking_snapshot_members WHERE snapshot_id = rs.id) AS member_count,
+SELECT rs.id, rs.tenant_id, rs.cutoff, rs.window_start, rs.lookback_days, rs.cohort_mode, rs.policy_version, rs.query_version, rs.min_parser_version_num, rs.min_addon_version_num, rs.status, rs.created_at, rs.published_at, rs.source_row_count, rs.source_watermark, rs.member_count,
        t.name AS tenant_name
 FROM ranking_snapshots rs
 LEFT JOIN tenants t ON t.id = rs.tenant_id
@@ -7794,23 +10763,25 @@ SELECT DISTINCT
     rsm.encounter_name,
     rsm.player_class,
     rsm.player_spec,
+    rsm.player_sub_spec,
     rsm.difficulty_name,
     rsm.max_players
 FROM ranking_snapshot_members rsm
 WHERE rsm.snapshot_id = $1
-ORDER BY rsm.encounter_name, rsm.player_class, rsm.player_spec
+ORDER BY rsm.encounter_name, rsm.player_class, rsm.player_spec, rsm.player_sub_spec
 `
 
 type ListDistinctCohortBucketsRow struct {
 	EncounterName  string `db:"encounter_name" json:"encounter_name"`
 	PlayerClass    string `db:"player_class" json:"player_class"`
 	PlayerSpec     string `db:"player_spec" json:"player_spec"`
+	PlayerSubSpec  string `db:"player_sub_spec" json:"player_sub_spec"`
 	DifficultyName string `db:"difficulty_name" json:"difficulty_name"`
 	MaxPlayers     int16  `db:"max_players" json:"max_players"`
 }
 
-// Return distinct (encounter_name, player_class, player_spec, difficulty_name, max_players)
-// combinations available in a snapshot, for driving filter dropdowns.
+// Return distinct (encounter_name, player_class, player_spec, player_sub_spec,
+// difficulty_name, max_players) combinations available in a snapshot.
 func (q *sqlQuerier) ListDistinctCohortBuckets(ctx context.Context, snapshotID uuid.UUID) ([]ListDistinctCohortBucketsRow, error) {
 	rows, err := q.db.Query(ctx, listDistinctCohortBuckets, snapshotID)
 	if err != nil {
@@ -7824,6 +10795,7 @@ func (q *sqlQuerier) ListDistinctCohortBuckets(ctx context.Context, snapshotID u
 			&i.EncounterName,
 			&i.PlayerClass,
 			&i.PlayerSpec,
+			&i.PlayerSubSpec,
 			&i.DifficultyName,
 			&i.MaxPlayers,
 		); err != nil {
@@ -7838,8 +10810,7 @@ func (q *sqlQuerier) ListDistinctCohortBuckets(ctx context.Context, snapshotID u
 }
 
 const listPublishedSnapshots = `-- name: ListPublishedSnapshots :many
-SELECT rs.id, rs.tenant_id, rs.cutoff, rs.window_start, rs.lookback_days, rs.cohort_mode, rs.policy_version, rs.query_version, rs.min_parser_version_num, rs.min_addon_version_num, rs.status, rs.created_at, rs.published_at, rs.source_row_count, rs.source_watermark,
-       (SELECT COUNT(*) FROM ranking_snapshot_members WHERE snapshot_id = rs.id) AS member_count
+SELECT rs.id, rs.tenant_id, rs.cutoff, rs.window_start, rs.lookback_days, rs.cohort_mode, rs.policy_version, rs.query_version, rs.min_parser_version_num, rs.min_addon_version_num, rs.status, rs.created_at, rs.published_at, rs.source_row_count, rs.source_watermark, rs.member_count
 FROM ranking_snapshots rs
 WHERE rs.tenant_id = $1
   AND rs.status = 'published'
@@ -7847,35 +10818,17 @@ ORDER BY rs.published_at DESC
 LIMIT 50
 `
 
-type ListPublishedSnapshotsRow struct {
-	ID                  uuid.UUID          `db:"id" json:"id"`
-	TenantID            uuid.UUID          `db:"tenant_id" json:"tenant_id"`
-	Cutoff              pgtype.Timestamptz `db:"cutoff" json:"cutoff"`
-	WindowStart         pgtype.Timestamptz `db:"window_start" json:"window_start"`
-	LookbackDays        int32              `db:"lookback_days" json:"lookback_days"`
-	CohortMode          string             `db:"cohort_mode" json:"cohort_mode"`
-	PolicyVersion       int16              `db:"policy_version" json:"policy_version"`
-	QueryVersion        int16              `db:"query_version" json:"query_version"`
-	MinParserVersionNum int64              `db:"min_parser_version_num" json:"min_parser_version_num"`
-	MinAddonVersionNum  int64              `db:"min_addon_version_num" json:"min_addon_version_num"`
-	Status              string             `db:"status" json:"status"`
-	CreatedAt           pgtype.Timestamptz `db:"created_at" json:"created_at"`
-	PublishedAt         pgtype.Timestamptz `db:"published_at" json:"published_at"`
-	SourceRowCount      int64              `db:"source_row_count" json:"source_row_count"`
-	SourceWatermark     pgtype.Timestamptz `db:"source_watermark" json:"source_watermark"`
-	MemberCount         int64              `db:"member_count" json:"member_count"`
-}
-
-// Return published snapshots for a tenant, most recent first.
-func (q *sqlQuerier) ListPublishedSnapshots(ctx context.Context, tenantID uuid.UUID) ([]ListPublishedSnapshotsRow, error) {
+// Return published snapshots for a tenant, most recent first. member_count is
+// persisted at publication time so this list never scans snapshot members.
+func (q *sqlQuerier) ListPublishedSnapshots(ctx context.Context, tenantID uuid.UUID) ([]RankingSnapshot, error) {
 	rows, err := q.db.Query(ctx, listPublishedSnapshots, tenantID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []ListPublishedSnapshotsRow
+	var items []RankingSnapshot
 	for rows.Next() {
-		var i ListPublishedSnapshotsRow
+		var i RankingSnapshot
 		if err := rows.Scan(
 			&i.ID,
 			&i.TenantID,
@@ -7913,6 +10866,7 @@ SELECT
     edr.player_name,
     edr.player_class,
     edr.player_spec,
+    edr.player_sub_spec,
     edr.player_role,
     edr.difficulty_name,
     edr.max_players,
@@ -7938,6 +10892,7 @@ type ListRankingsForInstanceRow struct {
 	PlayerName     string             `db:"player_name" json:"player_name"`
 	PlayerClass    string             `db:"player_class" json:"player_class"`
 	PlayerSpec     string             `db:"player_spec" json:"player_spec"`
+	PlayerSubSpec  string             `db:"player_sub_spec" json:"player_sub_spec"`
 	PlayerRole     string             `db:"player_role" json:"player_role"`
 	DifficultyName string             `db:"difficulty_name" json:"difficulty_name"`
 	MaxPlayers     int16              `db:"max_players" json:"max_players"`
@@ -7972,6 +10927,7 @@ func (q *sqlQuerier) ListRankingsForInstance(ctx context.Context, instanceID uui
 			&i.PlayerName,
 			&i.PlayerClass,
 			&i.PlayerSpec,
+			&i.PlayerSubSpec,
 			&i.PlayerRole,
 			&i.DifficultyName,
 			&i.MaxPlayers,
@@ -7995,7 +10951,7 @@ func (q *sqlQuerier) ListRankingsForInstance(ctx context.Context, instanceID uui
 }
 
 const listSnapshotMembersByPlayerGUID = `-- name: ListSnapshotMembersByPlayerGUID :many
-SELECT rsm.id, rsm.snapshot_id, rsm.ranking_id, rsm.instance_id, rsm.run_id, rsm.instance_name, rsm.encounter_name, rsm.player_guid, rsm.player_class, rsm.player_spec, rsm.difficulty_name, rsm.max_players, rsm.killed_at, rsm.created_at_ranking, rsm.damage_done, rsm.healing_done, rsm.absorbed_done, rsm.duration_secs, rsm.dps, rsm.hps
+SELECT rsm.id, rsm.snapshot_id, rsm.ranking_id, rsm.instance_id, rsm.run_id, rsm.instance_name, rsm.encounter_name, rsm.player_guid, rsm.player_class, rsm.player_spec, rsm.difficulty_name, rsm.max_players, rsm.killed_at, rsm.created_at_ranking, rsm.damage_done, rsm.healing_done, rsm.absorbed_done, rsm.duration_secs, rsm.dps, rsm.hps, rsm.player_sub_spec
 FROM ranking_snapshot_members rsm
 WHERE rsm.snapshot_id = $1
   AND rsm.player_guid = $2
@@ -8038,6 +10994,7 @@ func (q *sqlQuerier) ListSnapshotMembersByPlayerGUID(ctx context.Context, arg Li
 			&i.DurationSecs,
 			&i.Dps,
 			&i.Hps,
+			&i.PlayerSubSpec,
 		); err != nil {
 			return nil, err
 		}
@@ -8050,7 +11007,7 @@ func (q *sqlQuerier) ListSnapshotMembersByPlayerGUID(ctx context.Context, arg Li
 }
 
 const listSnapshotMembersForInstance = `-- name: ListSnapshotMembersForInstance :many
-SELECT rsm.id, rsm.snapshot_id, rsm.ranking_id, rsm.instance_id, rsm.run_id, rsm.instance_name, rsm.encounter_name, rsm.player_guid, rsm.player_class, rsm.player_spec, rsm.difficulty_name, rsm.max_players, rsm.killed_at, rsm.created_at_ranking, rsm.damage_done, rsm.healing_done, rsm.absorbed_done, rsm.duration_secs, rsm.dps, rsm.hps
+SELECT rsm.id, rsm.snapshot_id, rsm.ranking_id, rsm.instance_id, rsm.run_id, rsm.instance_name, rsm.encounter_name, rsm.player_guid, rsm.player_class, rsm.player_spec, rsm.difficulty_name, rsm.max_players, rsm.killed_at, rsm.created_at_ranking, rsm.damage_done, rsm.healing_done, rsm.absorbed_done, rsm.duration_secs, rsm.dps, rsm.hps, rsm.player_sub_spec
 FROM ranking_snapshot_members rsm
 WHERE rsm.snapshot_id = $1
   AND rsm.instance_id = $2
@@ -8093,6 +11050,7 @@ func (q *sqlQuerier) ListSnapshotMembersForInstance(ctx context.Context, arg Lis
 			&i.DurationSecs,
 			&i.Dps,
 			&i.Hps,
+			&i.PlayerSubSpec,
 		); err != nil {
 			return nil, err
 		}
@@ -8105,7 +11063,7 @@ func (q *sqlQuerier) ListSnapshotMembersForInstance(ctx context.Context, arg Lis
 }
 
 const listSnapshotMembersForInstanceWithNames = `-- name: ListSnapshotMembersForInstanceWithNames :many
-SELECT rsm.id, rsm.snapshot_id, rsm.ranking_id, rsm.instance_id, rsm.run_id, rsm.instance_name, rsm.encounter_name, rsm.player_guid, rsm.player_class, rsm.player_spec, rsm.difficulty_name, rsm.max_players, rsm.killed_at, rsm.created_at_ranking, rsm.damage_done, rsm.healing_done, rsm.absorbed_done, rsm.duration_secs, rsm.dps, rsm.hps,
+SELECT rsm.id, rsm.snapshot_id, rsm.ranking_id, rsm.instance_id, rsm.run_id, rsm.instance_name, rsm.encounter_name, rsm.player_guid, rsm.player_class, rsm.player_spec, rsm.difficulty_name, rsm.max_players, rsm.killed_at, rsm.created_at_ranking, rsm.damage_done, rsm.healing_done, rsm.absorbed_done, rsm.duration_secs, rsm.dps, rsm.hps, rsm.player_sub_spec,
        edr.player_name,
        edr.player_role
 FROM ranking_snapshot_members rsm
@@ -8141,6 +11099,7 @@ type ListSnapshotMembersForInstanceWithNamesRow struct {
 	DurationSecs     float64            `db:"duration_secs" json:"duration_secs"`
 	Dps              float64            `db:"dps" json:"dps"`
 	Hps              float64            `db:"hps" json:"hps"`
+	PlayerSubSpec    string             `db:"player_sub_spec" json:"player_sub_spec"`
 	PlayerName       string             `db:"player_name" json:"player_name"`
 	PlayerRole       string             `db:"player_role" json:"player_role"`
 }
@@ -8176,6 +11135,7 @@ func (q *sqlQuerier) ListSnapshotMembersForInstanceWithNames(ctx context.Context
 			&i.DurationSecs,
 			&i.Dps,
 			&i.Hps,
+			&i.PlayerSubSpec,
 			&i.PlayerName,
 			&i.PlayerRole,
 		); err != nil {
@@ -8191,12 +11151,19 @@ func (q *sqlQuerier) ListSnapshotMembersForInstanceWithNames(ctx context.Context
 
 const publishRankingSnapshot = `-- name: PublishRankingSnapshot :one
 UPDATE ranking_snapshots
-SET status = 'published', published_at = now()
+SET status = 'published',
+    published_at = now(),
+    member_count = (
+        SELECT COUNT(*)
+        FROM ranking_snapshot_members
+        WHERE snapshot_id = $1
+    )
 WHERE id = $1 AND status IN ('pending', 'published')
-RETURNING id, tenant_id, cutoff, window_start, lookback_days, cohort_mode, policy_version, query_version, min_parser_version_num, min_addon_version_num, status, created_at, published_at, source_row_count, source_watermark
+RETURNING id, tenant_id, cutoff, window_start, lookback_days, cohort_mode, policy_version, query_version, min_parser_version_num, min_addon_version_num, status, created_at, published_at, source_row_count, source_watermark, member_count
 `
 
-// Transition a pending snapshot to published. Idempotent on already-published.
+// Transition a pending snapshot to published and persist its exact member count.
+// Idempotent on already-published snapshots.
 func (q *sqlQuerier) PublishRankingSnapshot(ctx context.Context, id uuid.UUID) (RankingSnapshot, error) {
 	row := q.db.QueryRow(ctx, publishRankingSnapshot, id)
 	var i RankingSnapshot
@@ -8216,6 +11183,215 @@ func (q *sqlQuerier) PublishRankingSnapshot(ctx context.Context, id uuid.UUID) (
 		&i.PublishedAt,
 		&i.SourceRowCount,
 		&i.SourceWatermark,
+		&i.MemberCount,
+	)
+	return i, err
+}
+
+const countRaidCompositionsByUser = `-- name: CountRaidCompositionsByUser :one
+SELECT COUNT(*)
+FROM raid_compositions
+WHERE user_id = $1 AND tenant_id = $2
+`
+
+type CountRaidCompositionsByUserParams struct {
+	UserID   uuid.UUID `db:"user_id" json:"user_id"`
+	TenantID uuid.UUID `db:"tenant_id" json:"tenant_id"`
+}
+
+func (q *sqlQuerier) CountRaidCompositionsByUser(ctx context.Context, arg CountRaidCompositionsByUserParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countRaidCompositionsByUser, arg.UserID, arg.TenantID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const createRaidComposition = `-- name: CreateRaidComposition :one
+INSERT INTO raid_compositions (id, user_id, tenant_id, guild_id, name, data, public_view)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
+RETURNING id, user_id, tenant_id, guild_id, name, data, public_view, created_at, updated_at
+`
+
+type CreateRaidCompositionParams struct {
+	ID         uuid.UUID     `db:"id" json:"id"`
+	UserID     uuid.UUID     `db:"user_id" json:"user_id"`
+	TenantID   uuid.UUID     `db:"tenant_id" json:"tenant_id"`
+	GuildID    uuid.NullUUID `db:"guild_id" json:"guild_id"`
+	Name       string        `db:"name" json:"name"`
+	Data       []byte        `db:"data" json:"data"`
+	PublicView bool          `db:"public_view" json:"public_view"`
+}
+
+func (q *sqlQuerier) CreateRaidComposition(ctx context.Context, arg CreateRaidCompositionParams) (RaidComposition, error) {
+	row := q.db.QueryRow(ctx, createRaidComposition,
+		arg.ID,
+		arg.UserID,
+		arg.TenantID,
+		arg.GuildID,
+		arg.Name,
+		arg.Data,
+		arg.PublicView,
+	)
+	var i RaidComposition
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.TenantID,
+		&i.GuildID,
+		&i.Name,
+		&i.Data,
+		&i.PublicView,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const deleteRaidCompositionByID = `-- name: DeleteRaidCompositionByID :execrows
+DELETE FROM raid_compositions
+WHERE id = $1
+`
+
+func (q *sqlQuerier) DeleteRaidCompositionByID(ctx context.Context, id uuid.UUID) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteRaidCompositionByID, id)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const getRaidCompositionByID = `-- name: GetRaidCompositionByID :one
+SELECT id, user_id, tenant_id, guild_id, name, data, public_view, created_at, updated_at
+FROM raid_compositions
+WHERE id = $1
+`
+
+func (q *sqlQuerier) GetRaidCompositionByID(ctx context.Context, id uuid.UUID) (RaidComposition, error) {
+	row := q.db.QueryRow(ctx, getRaidCompositionByID, id)
+	var i RaidComposition
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.TenantID,
+		&i.GuildID,
+		&i.Name,
+		&i.Data,
+		&i.PublicView,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const listRaidCompositionsByUser = `-- name: ListRaidCompositionsByUser :many
+SELECT id, user_id, tenant_id, guild_id, name, data, public_view, created_at, updated_at
+FROM raid_compositions
+WHERE user_id = $1 AND tenant_id = $2
+ORDER BY updated_at DESC
+`
+
+type ListRaidCompositionsByUserParams struct {
+	UserID   uuid.UUID `db:"user_id" json:"user_id"`
+	TenantID uuid.UUID `db:"tenant_id" json:"tenant_id"`
+}
+
+func (q *sqlQuerier) ListRaidCompositionsByUser(ctx context.Context, arg ListRaidCompositionsByUserParams) ([]RaidComposition, error) {
+	rows, err := q.db.Query(ctx, listRaidCompositionsByUser, arg.UserID, arg.TenantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []RaidComposition
+	for rows.Next() {
+		var i RaidComposition
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.TenantID,
+			&i.GuildID,
+			&i.Name,
+			&i.Data,
+			&i.PublicView,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const updateRaidCompositionByID = `-- name: UpdateRaidCompositionByID :one
+UPDATE raid_compositions
+SET
+  name = COALESCE($1, name),
+  guild_id = COALESCE($2, guild_id),
+  data = COALESCE($3, data),
+  updated_at = now()
+WHERE id = $4
+RETURNING id, user_id, tenant_id, guild_id, name, data, public_view, created_at, updated_at
+`
+
+type UpdateRaidCompositionByIDParams struct {
+	Name    pgtype.Text   `db:"name" json:"name"`
+	GuildID uuid.NullUUID `db:"guild_id" json:"guild_id"`
+	Data    []byte        `db:"data" json:"data"`
+	ID      uuid.UUID     `db:"id" json:"id"`
+}
+
+// Ownership is NOT filtered here: SpiceDB gates edit access so granted
+// editors can update too. Handlers must check the edit permission first.
+func (q *sqlQuerier) UpdateRaidCompositionByID(ctx context.Context, arg UpdateRaidCompositionByIDParams) (RaidComposition, error) {
+	row := q.db.QueryRow(ctx, updateRaidCompositionByID,
+		arg.Name,
+		arg.GuildID,
+		arg.Data,
+		arg.ID,
+	)
+	var i RaidComposition
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.TenantID,
+		&i.GuildID,
+		&i.Name,
+		&i.Data,
+		&i.PublicView,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const updateRaidCompositionSharing = `-- name: UpdateRaidCompositionSharing :one
+UPDATE raid_compositions
+SET public_view = $2, updated_at = now()
+WHERE id = $1
+RETURNING id, user_id, tenant_id, guild_id, name, data, public_view, created_at, updated_at
+`
+
+type UpdateRaidCompositionSharingParams struct {
+	ID         uuid.UUID `db:"id" json:"id"`
+	PublicView bool      `db:"public_view" json:"public_view"`
+}
+
+func (q *sqlQuerier) UpdateRaidCompositionSharing(ctx context.Context, arg UpdateRaidCompositionSharingParams) (RaidComposition, error) {
+	row := q.db.QueryRow(ctx, updateRaidCompositionSharing, arg.ID, arg.PublicView)
+	var i RaidComposition
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.TenantID,
+		&i.GuildID,
+		&i.Name,
+		&i.Data,
+		&i.PublicView,
+		&i.CreatedAt,
+		&i.UpdatedAt,
 	)
 	return i, err
 }
@@ -8295,7 +11471,7 @@ func (q *sqlQuerier) HasInstanceDpsRankings(ctx context.Context, instanceID uuid
 const insertEncounterDpsRanking = `-- name: InsertEncounterDpsRanking :exec
 INSERT INTO encounter_dps_rankings (
     encounter_id, instance_id, encounter_name, instance_name,
-    player_guid, player_name, player_class, player_spec, player_role, player_level,
+    player_guid, player_name, player_class, player_spec, player_sub_spec, player_role, player_level,
     talent_build_id, difficulty_name, max_players,
     realm_id, realm_name, guild_id, guild_name,
     damage_done, duration_secs, dps, avg_ilvl,
@@ -8303,12 +11479,12 @@ INSERT INTO encounter_dps_rankings (
     log_hashed_slug, killed_at
 ) VALUES (
     $1, $2, $3, $4,
-    $5, $6, $7, $8, $9, $10,
-    $11, $12, $13,
-    $14, $15, $16, $17,
-    $18, $19, $20, $21,
-    $22, $23, $24,
-    $25, $26
+    $5, $6, $7, $8, $9, $10, $11,
+    $12, $13, $14,
+    $15, $16, $17, $18,
+    $19, $20, $21, $22,
+    $23, $24, $25,
+    $26, $27
 ) ON CONFLICT (encounter_id, player_guid) DO NOTHING
 `
 
@@ -8321,6 +11497,7 @@ type InsertEncounterDpsRankingParams struct {
 	PlayerName     string             `db:"player_name" json:"player_name"`
 	PlayerClass    string             `db:"player_class" json:"player_class"`
 	PlayerSpec     string             `db:"player_spec" json:"player_spec"`
+	PlayerSubSpec  string             `db:"player_sub_spec" json:"player_sub_spec"`
 	PlayerRole     string             `db:"player_role" json:"player_role"`
 	PlayerLevel    int16              `db:"player_level" json:"player_level"`
 	TalentBuildID  uuid.NullUUID      `db:"talent_build_id" json:"talent_build_id"`
@@ -8351,6 +11528,7 @@ func (q *sqlQuerier) InsertEncounterDpsRanking(ctx context.Context, arg InsertEn
 		arg.PlayerName,
 		arg.PlayerClass,
 		arg.PlayerSpec,
+		arg.PlayerSubSpec,
 		arg.PlayerRole,
 		arg.PlayerLevel,
 		arg.TalentBuildID,
@@ -8371,6 +11549,65 @@ func (q *sqlQuerier) InsertEncounterDpsRanking(ctx context.Context, arg InsertEn
 		arg.KilledAt,
 	)
 	return err
+}
+
+const instanceRankingRecords = `-- name: InstanceRankingRecords :many
+SELECT id, encounter_id, instance_id, encounter_name, instance_name, player_guid, player_name, player_class, player_spec, player_role, player_level, talent_build_id, difficulty_name, max_players, realm_id, realm_name, guild_id, guild_name, damage_done, duration_secs, dps, avg_ilvl, log_hashed_slug, killed_at, created_at, healing_done, absorbed_done, hps, player_sub_spec
+FROM encounter_dps_rankings
+WHERE instance_id = $1
+ORDER BY (encounter_id IS NULL), killed_at, encounter_name, player_name
+`
+
+// Raw per-player ranking rows recorded for a single log instance. This intentionally
+// includes zero-value DPS/HPS rows so instance-level ranking issues can be debugged.
+func (q *sqlQuerier) InstanceRankingRecords(ctx context.Context, instanceID uuid.UUID) ([]EncounterDpsRanking, error) {
+	rows, err := q.db.Query(ctx, instanceRankingRecords, instanceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []EncounterDpsRanking
+	for rows.Next() {
+		var i EncounterDpsRanking
+		if err := rows.Scan(
+			&i.ID,
+			&i.EncounterID,
+			&i.InstanceID,
+			&i.EncounterName,
+			&i.InstanceName,
+			&i.PlayerGuid,
+			&i.PlayerName,
+			&i.PlayerClass,
+			&i.PlayerSpec,
+			&i.PlayerRole,
+			&i.PlayerLevel,
+			&i.TalentBuildID,
+			&i.DifficultyName,
+			&i.MaxPlayers,
+			&i.RealmID,
+			&i.RealmName,
+			&i.GuildID,
+			&i.GuildName,
+			&i.DamageDone,
+			&i.DurationSecs,
+			&i.Dps,
+			&i.AvgIlvl,
+			&i.LogHashedSlug,
+			&i.KilledAt,
+			&i.CreatedAt,
+			&i.HealingDone,
+			&i.AbsorbedDone,
+			&i.Hps,
+			&i.PlayerSubSpec,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const pruneStaleRankingsInstanceSummaries = `-- name: PruneStaleRankingsInstanceSummaries :execrows
@@ -8401,7 +11638,19 @@ WITH representative_instances AS (
         li.id,
         COALESCE(li.duplicate_group_id, li.id) AS run_id
     FROM log_instances li
+    JOIN wow_server_realms tenant_realm ON tenant_realm.id = li.realm_id
+    -- Scope representative selection by tenant and instance before calculating
+    -- boss coverage. Without these filters, an instance-specific box plot ranks
+    -- duplicate uploads that will only be discarded later.
+    WHERE (cardinality($2 :: text[]) = 0
+           OR li.name = ANY($2 :: text[]))
     ORDER BY COALESCE(li.duplicate_group_id, li.id),
+        -- Prefer the upload with the broadest boss-ranking coverage. The group
+        -- anchor is the first upload, but it may be truncated before the final boss.
+        (SELECT COUNT(DISTINCT coverage.encounter_name)
+         FROM encounter_dps_rankings coverage
+         WHERE coverage.instance_id = li.id
+           AND coverage.encounter_id IS NOT NULL) DESC,
         (li.id = li.duplicate_group_id) DESC NULLS LAST,
         li.start_time ASC,
         li.id ASC
@@ -8412,6 +11661,7 @@ deduped AS (
         edr.encounter_name,
         edr.player_class,
         edr.player_spec,
+        edr.player_sub_spec,
         edr.realm_id,
         edr.damage_done,
         edr.healing_done,
@@ -8461,18 +11711,20 @@ per_run AS (
     SELECT
         d.player_class,
         d.player_spec,
+        d.player_sub_spec,
         (CASE WHEN $9 :: text = 'hps'
             THEN SUM(d.healing_done + d.absorbed_done)::double precision / NULLIF(SUM(d.duration_secs), 0)
             ELSE SUM(d.damage_done)::double precision / NULLIF(SUM(d.duration_secs), 0)
         END)::double precision AS metric_value
     FROM deduped d
     JOIN realm_encounter_counts rec ON rec.realm_id = d.realm_id
-    GROUP BY d.player_guid, d.run_id, d.player_class, d.player_spec, rec.encounter_count
+    GROUP BY d.player_guid, d.run_id, d.player_class, d.player_spec, d.player_sub_spec, rec.encounter_count
     HAVING COUNT(DISTINCT d.encounter_name) = rec.encounter_count
 )
 SELECT
     s.player_class,
     s.player_spec,
+    s.player_sub_spec,
     s.min_dps,
     s.q1_dps,
     s.median_dps,
@@ -8483,6 +11735,7 @@ FROM (
     SELECT
         d.player_class,
         (CASE WHEN $1 :: bool THEN '' ELSE d.player_spec END)::text AS player_spec,
+        (CASE WHEN $1 :: bool THEN '' ELSE d.player_sub_spec END)::text AS player_sub_spec,
         PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY d.metric_value) AS q1_dps,
         PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY d.metric_value) AS median_dps,
         PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY d.metric_value) AS q3_dps,
@@ -8496,7 +11749,9 @@ FROM (
         COUNT(*)::bigint AS count
     FROM per_run d
     WHERE d.metric_value > 0
-    GROUP BY d.player_class, (CASE WHEN $1 :: bool THEN '' ELSE d.player_spec END)::text
+    GROUP BY d.player_class,
+        (CASE WHEN $1 :: bool THEN '' ELSE d.player_spec END)::text,
+        (CASE WHEN $1 :: bool THEN '' ELSE d.player_sub_spec END)::text
 ) s
 ORDER BY s.median_dps DESC
 `
@@ -8514,14 +11769,15 @@ type RankingsBoxPlotStatsParams struct {
 }
 
 type RankingsBoxPlotStatsRow struct {
-	PlayerClass string  `db:"player_class" json:"player_class"`
-	PlayerSpec  string  `db:"player_spec" json:"player_spec"`
-	MinDps      float64 `db:"min_dps" json:"min_dps"`
-	Q1Dps       float64 `db:"q1_dps" json:"q1_dps"`
-	MedianDps   float64 `db:"median_dps" json:"median_dps"`
-	Q3Dps       float64 `db:"q3_dps" json:"q3_dps"`
-	MaxDps      float64 `db:"max_dps" json:"max_dps"`
-	Count       int64   `db:"count" json:"count"`
+	PlayerClass   string  `db:"player_class" json:"player_class"`
+	PlayerSpec    string  `db:"player_spec" json:"player_spec"`
+	PlayerSubSpec string  `db:"player_sub_spec" json:"player_sub_spec"`
+	MinDps        float64 `db:"min_dps" json:"min_dps"`
+	Q1Dps         float64 `db:"q1_dps" json:"q1_dps"`
+	MedianDps     float64 `db:"median_dps" json:"median_dps"`
+	Q3Dps         float64 `db:"q3_dps" json:"q3_dps"`
+	MaxDps        float64 `db:"max_dps" json:"max_dps"`
+	Count         int64   `db:"count" json:"count"`
 }
 
 // Returns box plot statistics (min, q1, median, q3, max, count) per class/spec.
@@ -8555,6 +11811,7 @@ func (q *sqlQuerier) RankingsBoxPlotStats(ctx context.Context, arg RankingsBoxPl
 		if err := rows.Scan(
 			&i.PlayerClass,
 			&i.PlayerSpec,
+			&i.PlayerSubSpec,
 			&i.MinDps,
 			&i.Q1Dps,
 			&i.MedianDps,
@@ -8612,14 +11869,21 @@ WITH representative_instances AS (
         li.id,
         COALESCE(li.duplicate_group_id, li.id) AS run_id
     FROM log_instances li
+    JOIN wow_server_realms tenant_realm ON tenant_realm.id = li.realm_id
     ORDER BY COALESCE(li.duplicate_group_id, li.id),
+        -- Prefer the upload with the broadest boss-ranking coverage. The group
+        -- anchor is the first upload, but it may be truncated before the final boss.
+        (SELECT COUNT(DISTINCT coverage.encounter_name)
+         FROM encounter_dps_rankings coverage
+         WHERE coverage.instance_id = li.id
+           AND coverage.encounter_id IS NOT NULL) DESC,
         (li.id = li.duplicate_group_id) DESC NULLS LAST,
         li.start_time ASC,
         li.id ASC
 ),
 deduped AS (
     SELECT DISTINCT ON (edr.player_guid, edr.encounter_name, ri.run_id)
-        edr.id, edr.encounter_id, edr.instance_id, edr.encounter_name, edr.instance_name, edr.player_guid, edr.player_name, edr.player_class, edr.player_spec, edr.player_role, edr.player_level, edr.talent_build_id, edr.difficulty_name, edr.max_players, edr.realm_id, edr.realm_name, edr.guild_id, edr.guild_name, edr.damage_done, edr.duration_secs, edr.dps, edr.avg_ilvl, edr.log_hashed_slug, edr.killed_at, edr.created_at, edr.healing_done, edr.absorbed_done, edr.hps
+        edr.id, edr.encounter_id, edr.instance_id, edr.encounter_name, edr.instance_name, edr.player_guid, edr.player_name, edr.player_class, edr.player_spec, edr.player_role, edr.player_level, edr.talent_build_id, edr.difficulty_name, edr.max_players, edr.realm_id, edr.realm_name, edr.guild_id, edr.guild_name, edr.damage_done, edr.duration_secs, edr.dps, edr.avg_ilvl, edr.log_hashed_slug, edr.killed_at, edr.created_at, edr.healing_done, edr.absorbed_done, edr.hps, edr.player_sub_spec
     FROM encounter_dps_rankings edr
     JOIN representative_instances ri ON ri.id = edr.instance_id
     JOIN wow_server_realms wsr ON wsr.id = edr.realm_id
@@ -8652,6 +11916,46 @@ func (q *sqlQuerier) RankingsEncounterList(ctx context.Context, instanceName str
 	for rows.Next() {
 		var i RankingsEncounterListRow
 		if err := rows.Scan(&i.EncounterName, &i.TotalKills, &i.TopDps); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const rankingsFilterOptions = `-- name: RankingsFilterOptions :many
+SELECT DISTINCT
+    edr.player_class,
+    edr.player_spec,
+    edr.player_sub_spec
+FROM encounter_dps_rankings edr
+JOIN wow_server_realms wsr ON wsr.id = edr.realm_id
+WHERE (cardinality($1::text[]) = 0 OR edr.instance_name = ANY($1::text[]))
+  AND edr.player_class <> 'Unknown'
+  AND edr.player_spec <> 'Unknown'
+ORDER BY edr.player_class, edr.player_spec, edr.player_sub_spec
+`
+
+type RankingsFilterOptionsRow struct {
+	PlayerClass   string `db:"player_class" json:"player_class"`
+	PlayerSpec    string `db:"player_spec" json:"player_spec"`
+	PlayerSubSpec string `db:"player_sub_spec" json:"player_sub_spec"`
+}
+
+// Distinct class/spec/sub-spec combinations available to the public rankings UI.
+func (q *sqlQuerier) RankingsFilterOptions(ctx context.Context, instanceNames []string) ([]RankingsFilterOptionsRow, error) {
+	rows, err := q.db.Query(ctx, rankingsFilterOptions, instanceNames)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []RankingsFilterOptionsRow
+	for rows.Next() {
+		var i RankingsFilterOptionsRow
+		if err := rows.Scan(&i.PlayerClass, &i.PlayerSpec, &i.PlayerSubSpec); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -8899,12 +12203,41 @@ func (q *sqlQuerier) RankingsKillTimeStats(ctx context.Context, arg RankingsKill
 }
 
 const rankingsLeaderboard = `-- name: RankingsLeaderboard :many
-WITH representative_instances AS (
+WITH candidate_runs AS (
+    -- Class/spec/sub-spec/role filters usually narrow the leaderboard to a small
+    -- fraction of raid logs. Find those duplicate groups first so representative
+    -- selection does not calculate boss coverage for every matching instance ever uploaded.
+    SELECT DISTINCT COALESCE(li.duplicate_group_id, li.id) AS run_id
+    FROM encounter_dps_rankings candidate
+    JOIN log_instances li ON li.id = candidate.instance_id
+    WHERE ($4 :: text != '' OR $5 :: text != '' OR $6 :: text != '' OR $7 :: text != '')
+      AND (cardinality($8 :: text[]) = 0
+           OR candidate.instance_name = ANY($8 :: text[]))
+      AND ($4 :: text = '' OR candidate.player_class = $4)
+      AND ($5 :: text = '' OR candidate.player_spec = $5)
+      AND ($6 :: text = '' OR candidate.player_sub_spec = $6)
+      AND ($7 :: text = '' OR candidate.player_role = $7)
+),
+representative_instances AS (
     SELECT DISTINCT ON (COALESCE(li.duplicate_group_id, li.id))
         li.id,
         COALESCE(li.duplicate_group_id, li.id) AS run_id
     FROM log_instances li
+    JOIN wow_server_realms tenant_realm ON tenant_realm.id = li.realm_id
+    -- Apply tenant RLS before calculating boss coverage, then avoid unrelated
+    -- instances and duplicate groups that cannot contribute.
+    -- When a player archetype is selected, candidate_runs narrows further.
+    WHERE (cardinality($8 :: text[]) = 0
+           OR li.name = ANY($8 :: text[]))
+      AND (($4 :: text = '' AND $5 :: text = '' AND $6 :: text = '' AND $7 :: text = '')
+           OR COALESCE(li.duplicate_group_id, li.id) IN (SELECT run_id FROM candidate_runs))
     ORDER BY COALESCE(li.duplicate_group_id, li.id),
+        -- Prefer the upload with the broadest boss-ranking coverage. The group
+        -- anchor is the first upload, but it may be truncated before the final boss.
+        (SELECT COUNT(DISTINCT coverage.encounter_name)
+         FROM encounter_dps_rankings coverage
+         WHERE coverage.instance_id = li.id
+           AND coverage.encounter_id IS NOT NULL) DESC,
         (li.id = li.duplicate_group_id) DESC NULLS LAST,
         li.start_time ASC,
         li.id ASC
@@ -8915,6 +12248,7 @@ deduped AS (
         edr.player_name,
         edr.player_class,
         edr.player_spec,
+        edr.player_sub_spec,
         edr.player_role,
         edr.player_level,
         edr.instance_name,
@@ -8939,43 +12273,47 @@ deduped AS (
     JOIN wow_server_realms wsr ON wsr.id = edr.realm_id
     LEFT JOIN talent_builds tb ON tb.id = edr.talent_build_id
     WHERE CASE
-        WHEN cardinality($4 :: text[]) > 0 THEN edr.instance_name = ANY($4 :: text[])
+        WHEN cardinality($8 :: text[]) > 0 THEN edr.instance_name = ANY($8 :: text[])
         ELSE true
     END
     AND CASE
-        WHEN cardinality($5 :: text[]) > 0 THEN edr.encounter_name = ANY($5 :: text[])
+        WHEN cardinality($9 :: text[]) > 0 THEN edr.encounter_name = ANY($9 :: text[])
         ELSE true
     END
     AND CASE
-        WHEN cardinality($6 :: text[]) > 0 THEN edr.realm_name = ANY($6 :: text[])
+        WHEN cardinality($10 :: text[]) > 0 THEN edr.realm_name = ANY($10 :: text[])
         ELSE true
     END
     AND CASE
-        WHEN $7 :: text != '' THEN edr.player_class = $7
+        WHEN $4 :: text != '' THEN edr.player_class = $4
         ELSE true
     END
     AND CASE
-        WHEN $8 :: text != '' THEN edr.player_spec = $8
+        WHEN $5 :: text != '' THEN edr.player_spec = $5
         ELSE true
     END
     AND CASE
-        WHEN $9 :: text != '' THEN edr.player_role = $9
+        WHEN $6 :: text != '' THEN edr.player_sub_spec = $6
         ELSE true
     END
     AND CASE
-        WHEN $10 :: bigint > 0 THEN edr.killed_at >= now() - make_interval(days => $10::int)
+        WHEN $7 :: text != '' THEN edr.player_role = $7
         ELSE true
     END
     AND CASE
-        WHEN $11 :: bool THEN edr.player_class != 'Unknown' AND edr.player_spec != 'Unknown'
+        WHEN $11 :: bigint > 0 THEN edr.killed_at >= now() - make_interval(days => $11::int)
         ELSE true
     END
     AND CASE
-        WHEN cardinality($12 :: text[]) > 0 THEN edr.difficulty_name = ANY($12 :: text[])
+        WHEN $12 :: bool THEN edr.player_class != 'Unknown' AND edr.player_spec != 'Unknown'
         ELSE true
     END
     AND CASE
-        WHEN $13 :: smallint > 0 THEN edr.max_players = $13
+        WHEN cardinality($13 :: text[]) > 0 THEN edr.difficulty_name = ANY($13 :: text[])
+        ELSE true
+    END
+    AND CASE
+        WHEN $14 :: smallint > 0 THEN edr.max_players = $14
         ELSE true
     END
     AND (CASE WHEN $1 :: text = 'hps' THEN edr.hps ELSE edr.dps END) > 0
@@ -8994,6 +12332,7 @@ per_run AS (
         ((array_agg(d.player_name ORDER BY d.damage_done DESC))[1])::text AS player_name,
         ((array_agg(d.player_class ORDER BY d.damage_done DESC))[1])::text AS player_class,
         (string_agg(DISTINCT d.player_spec, '/' ORDER BY d.player_spec))::text AS player_spec,
+        (string_agg(DISTINCT d.player_sub_spec, '/' ORDER BY d.player_sub_spec))::text AS player_sub_spec,
         ((array_agg(d.player_role ORDER BY d.damage_done DESC))[1])::text AS player_role,
         MAX(d.player_level)::smallint AS player_level,
         ((array_agg(d.instance_name ORDER BY d.damage_done DESC))[1])::text AS instance_name,
@@ -9026,6 +12365,7 @@ aggregated AS (
         pr.player_name,
         pr.player_class,
         pr.player_spec,
+        pr.player_sub_spec,
         pr.player_role,
         pr.player_level,
         pr.instance_name,
@@ -9050,7 +12390,7 @@ aggregated AS (
     ORDER BY pr.player_guid, (CASE WHEN $1 :: text = 'hps' THEN pr.hps ELSE pr.dps END) DESC
 )
 SELECT
-    a.player_guid, a.player_name, a.player_class, a.player_spec, a.player_role, a.player_level, a.instance_name, a.encounter_name, a.difficulty_name, a.max_players, a.realm_id, a.realm_name, a.guild_name, a.damage_done, a.healing_done, a.absorbed_done, a.duration_secs, a.dps, a.hps, a.avg_ilvl, a.log_hashed_slug, a.killed_at, a.talent_sub_spec, a.talent_layout,
+    a.player_guid, a.player_name, a.player_class, a.player_spec, a.player_sub_spec, a.player_role, a.player_level, a.instance_name, a.encounter_name, a.difficulty_name, a.max_players, a.realm_id, a.realm_name, a.guild_name, a.damage_done, a.healing_done, a.absorbed_done, a.duration_secs, a.dps, a.hps, a.avg_ilvl, a.log_hashed_slug, a.killed_at, a.talent_sub_spec, a.talent_layout,
     COUNT(*) OVER() AS total_count
 FROM aggregated a
 WHERE (CASE WHEN $1 :: text = 'hps' THEN a.hps ELSE a.dps END) > 0
@@ -9063,12 +12403,13 @@ type RankingsLeaderboardParams struct {
 	Metric           string   `db:"metric" json:"metric"`
 	QueryOffset      int64    `db:"query_offset" json:"query_offset"`
 	QueryLimit       int64    `db:"query_limit" json:"query_limit"`
+	Class            string   `db:"class" json:"class"`
+	Spec             string   `db:"spec" json:"spec"`
+	SubSpec          string   `db:"sub_spec" json:"sub_spec"`
+	Role             string   `db:"role" json:"role"`
 	InstanceNames    []string `db:"instance_names" json:"instance_names"`
 	EncounterNames   []string `db:"encounter_names" json:"encounter_names"`
 	RealmNames       []string `db:"realm_names" json:"realm_names"`
-	Class            string   `db:"class" json:"class"`
-	Spec             string   `db:"spec" json:"spec"`
-	Role             string   `db:"role" json:"role"`
 	SinceDays        int64    `db:"since_days" json:"since_days"`
 	HideUnknowns     bool     `db:"hide_unknowns" json:"hide_unknowns"`
 	DifficultyNames  []string `db:"difficulty_names" json:"difficulty_names"`
@@ -9080,6 +12421,7 @@ type RankingsLeaderboardRow struct {
 	PlayerName     string             `db:"player_name" json:"player_name"`
 	PlayerClass    string             `db:"player_class" json:"player_class"`
 	PlayerSpec     string             `db:"player_spec" json:"player_spec"`
+	PlayerSubSpec  string             `db:"player_sub_spec" json:"player_sub_spec"`
 	PlayerRole     string             `db:"player_role" json:"player_role"`
 	PlayerLevel    int16              `db:"player_level" json:"player_level"`
 	InstanceName   string             `db:"instance_name" json:"instance_name"`
@@ -9118,12 +12460,13 @@ func (q *sqlQuerier) RankingsLeaderboard(ctx context.Context, arg RankingsLeader
 		arg.Metric,
 		arg.QueryOffset,
 		arg.QueryLimit,
+		arg.Class,
+		arg.Spec,
+		arg.SubSpec,
+		arg.Role,
 		arg.InstanceNames,
 		arg.EncounterNames,
 		arg.RealmNames,
-		arg.Class,
-		arg.Spec,
-		arg.Role,
 		arg.SinceDays,
 		arg.HideUnknowns,
 		arg.DifficultyNames,
@@ -9141,6 +12484,7 @@ func (q *sqlQuerier) RankingsLeaderboard(ctx context.Context, arg RankingsLeader
 			&i.PlayerName,
 			&i.PlayerClass,
 			&i.PlayerSpec,
+			&i.PlayerSubSpec,
 			&i.PlayerRole,
 			&i.PlayerLevel,
 			&i.InstanceName,
@@ -9337,13 +12681,53 @@ func (q *sqlQuerier) RankingsSummaryMaxUpdatedAt(ctx context.Context, tenantID u
 	return max_updated_at, err
 }
 
+const rankingsSummaryStatus = `-- name: RankingsSummaryStatus :one
+SELECT
+    COUNT(*)::bigint AS summary_count,
+    COALESCE(MIN(last_row_count), 0)::bigint AS min_last_row_count,
+    COALESCE(MAX(last_row_count), 0)::bigint AS max_last_row_count,
+    COALESCE(MIN(query_version), 0)::smallint AS query_version,
+    MAX(updated_at)::timestamptz AS last_rebuilt_at
+FROM rankings_instance_summaries
+WHERE tenant_id = $1
+`
+
+type RankingsSummaryStatusRow struct {
+	SummaryCount    int64              `db:"summary_count" json:"summary_count"`
+	MinLastRowCount int64              `db:"min_last_row_count" json:"min_last_row_count"`
+	MaxLastRowCount int64              `db:"max_last_row_count" json:"max_last_row_count"`
+	QueryVersion    int16              `db:"query_version" json:"query_version"`
+	LastRebuiltAt   pgtype.Timestamptz `db:"last_rebuilt_at" json:"last_rebuilt_at"`
+}
+
+// Returns aggregate refresh metadata for one tenant's precomputed summaries.
+func (q *sqlQuerier) RankingsSummaryStatus(ctx context.Context, tenantID uuid.UUID) (RankingsSummaryStatusRow, error) {
+	row := q.db.QueryRow(ctx, rankingsSummaryStatus, tenantID)
+	var i RankingsSummaryStatusRow
+	err := row.Scan(
+		&i.SummaryCount,
+		&i.MinLastRowCount,
+		&i.MaxLastRowCount,
+		&i.QueryVersion,
+		&i.LastRebuiltAt,
+	)
+	return i, err
+}
+
 const upsertRankingsInstanceSummary = `-- name: UpsertRankingsInstanceSummary :exec
 WITH representative_instances AS (
     SELECT DISTINCT ON (COALESCE(li.duplicate_group_id, li.id))
         li.id,
         COALESCE(li.duplicate_group_id, li.id) AS run_id
     FROM log_instances li
+    JOIN wow_server_realms tenant_realm ON tenant_realm.id = li.realm_id
     ORDER BY COALESCE(li.duplicate_group_id, li.id),
+        -- Prefer the upload with the broadest boss-ranking coverage. The group
+        -- anchor is the first upload, but it may be truncated before the final boss.
+        (SELECT COUNT(DISTINCT coverage.encounter_name)
+         FROM encounter_dps_rankings coverage
+         WHERE coverage.instance_id = li.id
+           AND coverage.encounter_id IS NOT NULL) DESC,
         (li.id = li.duplicate_group_id) DESC NULLS LAST,
         li.start_time ASC,
         li.id ASC
@@ -9452,32 +12836,39 @@ func (q *sqlQuerier) UpsertRankingsInstanceSummary(ctx context.Context, arg Upse
 
 const upsertTalentBuild = `-- name: UpsertTalentBuild :one
 WITH ins AS (
-    INSERT INTO talent_builds (player_class, talent_summary, talent_layout, spec)
-    VALUES ($1, $2, $3, $4)
-    ON CONFLICT (player_class, talent_layout) DO NOTHING
+    INSERT INTO talent_builds (dataset_id, player_class, talent_summary, talent_layout, spec, sub_spec)
+    VALUES ($1, $2, $3, $4, $5, $6)
+    ON CONFLICT (dataset_id, player_class, talent_layout) DO UPDATE SET
+        spec = EXCLUDED.spec,
+        sub_spec = EXCLUDED.sub_spec
     RETURNING id
 )
 SELECT id FROM ins
 UNION ALL
-SELECT id FROM talent_builds WHERE player_class = $1 AND talent_layout = $3
+SELECT id FROM talent_builds
+WHERE dataset_id = $1 AND player_class = $2 AND talent_layout = $4
 LIMIT 1
 `
 
 type UpsertTalentBuildParams struct {
-	PlayerClass   string  `db:"player_class" json:"player_class"`
-	TalentSummary []int16 `db:"talent_summary" json:"talent_summary"`
-	TalentLayout  string  `db:"talent_layout" json:"talent_layout"`
-	Spec          string  `db:"spec" json:"spec"`
+	DatasetID     uuid.UUID   `db:"dataset_id" json:"dataset_id"`
+	PlayerClass   string      `db:"player_class" json:"player_class"`
+	TalentSummary []int16     `db:"talent_summary" json:"talent_summary"`
+	TalentLayout  string      `db:"talent_layout" json:"talent_layout"`
+	Spec          string      `db:"spec" json:"spec"`
+	SubSpec       pgtype.Text `db:"sub_spec" json:"sub_spec"`
 }
 
 // Insert a unique talent build, returning its ID. If the build already exists,
 // return the existing row's ID.
 func (q *sqlQuerier) UpsertTalentBuild(ctx context.Context, arg UpsertTalentBuildParams) (uuid.UUID, error) {
 	row := q.db.QueryRow(ctx, upsertTalentBuild,
+		arg.DatasetID,
 		arg.PlayerClass,
 		arg.TalentSummary,
 		arg.TalentLayout,
 		arg.Spec,
+		arg.SubSpec,
 	)
 	var id uuid.UUID
 	err := row.Scan(&id)
@@ -9844,6 +13235,74 @@ type UpdateRegressionFixtureNoteParams struct {
 func (q *sqlQuerier) UpdateRegressionFixtureNote(ctx context.Context, arg UpdateRegressionFixtureNoteParams) error {
 	_, err := q.db.Exec(ctx, updateRegressionFixtureNote, arg.Note, arg.ID)
 	return err
+}
+
+const resyncCandidateLogGroups = `-- name: ResyncCandidateLogGroups :many
+SELECT DISTINCT
+  wlg.id,
+  wlg.owner,
+  wlg.log_type,
+  wlg.format,
+  wlg.flavor,
+  wlg.created_at,
+  li.parser_version,
+  li.name AS instance_name,
+  li.realm_id
+FROM wow_log_groups wlg
+JOIN parsed_log_group plg ON plg.id = wlg.id
+JOIN log_instances li ON li.log_group_id = wlg.id
+WHERE EXISTS(
+    SELECT 1 FROM log_file lf
+    WHERE lf.wow_log_id = wlg.id
+    AND lf.storage_deleted_at IS NULL
+  )
+ORDER BY wlg.created_at ASC
+`
+
+type ResyncCandidateLogGroupsRow struct {
+	ID            uuid.UUID          `db:"id" json:"id"`
+	Owner         uuid.UUID          `db:"owner" json:"owner"`
+	LogType       LogType            `db:"log_type" json:"log_type"`
+	Format        NullLogFormat      `db:"format" json:"format"`
+	Flavor        []string           `db:"flavor" json:"flavor"`
+	CreatedAt     pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	ParserVersion string             `db:"parser_version" json:"parser_version"`
+	InstanceName  string             `db:"instance_name" json:"instance_name"`
+	RealmID       uuid.UUID          `db:"realm_id" json:"realm_id"`
+}
+
+// Returns log groups that have been parsed and still have raw files on storage.
+// Filtering by parser version is done in Go using semverenc for full
+// major.minor.patch comparison. The caller deduplicates rows by log group and
+// applies its own distinct log-group limit.
+func (q *sqlQuerier) ResyncCandidateLogGroups(ctx context.Context) ([]ResyncCandidateLogGroupsRow, error) {
+	rows, err := q.db.Query(ctx, resyncCandidateLogGroups)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ResyncCandidateLogGroupsRow
+	for rows.Next() {
+		var i ResyncCandidateLogGroupsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Owner,
+			&i.LogType,
+			&i.Format,
+			&i.Flavor,
+			&i.CreatedAt,
+			&i.ParserVersion,
+			&i.InstanceName,
+			&i.RealmID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const deleteLogInstancesByIDs = `-- name: DeleteLogInstancesByIDs :execrows
@@ -11000,27 +14459,33 @@ func (q *sqlQuerier) GetInstanceEncounterKillTimes(ctx context.Context, instance
 }
 
 const getInstanceSpeedrun = `-- name: GetInstanceSpeedrun :one
-SELECT sr.instance_id, sr.instance_name, sr.realm_id, sr.guild_id, sr.qualified, sr.start_time, sr.completion_time, sr.duration_ms, sr.proof, sr.created_at, sr.addon_version, sr.parser_version_num, sr.addon_version_num, li.capabilities
+SELECT sr.instance_id, sr.instance_name, sr.realm_id, sr.guild_id, sr.qualified, sr.start_time, sr.completion_time, sr.duration_ms, sr.proof, sr.created_at, sr.addon_version, sr.parser_version_num, sr.addon_version_num, sr.ranked_start_time, sr.ranked_completion_time, sr.ranked_duration_ms, sr.boss_to_boss_start_time, sr.boss_to_boss_completion_time, sr.boss_to_boss_duration_ms, li.capabilities
 FROM instance_speedruns sr
 JOIN log_instances li ON li.id = sr.instance_id
 WHERE sr.instance_id = $1
 `
 
 type GetInstanceSpeedrunRow struct {
-	InstanceID       uuid.UUID          `db:"instance_id" json:"instance_id"`
-	InstanceName     string             `db:"instance_name" json:"instance_name"`
-	RealmID          uuid.UUID          `db:"realm_id" json:"realm_id"`
-	GuildID          uuid.NullUUID      `db:"guild_id" json:"guild_id"`
-	Qualified        bool               `db:"qualified" json:"qualified"`
-	StartTime        pgtype.Timestamptz `db:"start_time" json:"start_time"`
-	CompletionTime   pgtype.Timestamptz `db:"completion_time" json:"completion_time"`
-	DurationMs       int64              `db:"duration_ms" json:"duration_ms"`
-	Proof            []byte             `db:"proof" json:"proof"`
-	CreatedAt        pgtype.Timestamptz `db:"created_at" json:"created_at"`
-	AddonVersion     string             `db:"addon_version" json:"addon_version"`
-	ParserVersionNum int64              `db:"parser_version_num" json:"parser_version_num"`
-	AddonVersionNum  int64              `db:"addon_version_num" json:"addon_version_num"`
-	Capabilities     []string           `db:"capabilities" json:"capabilities"`
+	InstanceID               uuid.UUID          `db:"instance_id" json:"instance_id"`
+	InstanceName             string             `db:"instance_name" json:"instance_name"`
+	RealmID                  uuid.UUID          `db:"realm_id" json:"realm_id"`
+	GuildID                  uuid.NullUUID      `db:"guild_id" json:"guild_id"`
+	Qualified                bool               `db:"qualified" json:"qualified"`
+	StartTime                pgtype.Timestamptz `db:"start_time" json:"start_time"`
+	CompletionTime           pgtype.Timestamptz `db:"completion_time" json:"completion_time"`
+	DurationMs               int64              `db:"duration_ms" json:"duration_ms"`
+	Proof                    []byte             `db:"proof" json:"proof"`
+	CreatedAt                pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	AddonVersion             string             `db:"addon_version" json:"addon_version"`
+	ParserVersionNum         int64              `db:"parser_version_num" json:"parser_version_num"`
+	AddonVersionNum          int64              `db:"addon_version_num" json:"addon_version_num"`
+	RankedStartTime          pgtype.Timestamptz `db:"ranked_start_time" json:"ranked_start_time"`
+	RankedCompletionTime     pgtype.Timestamptz `db:"ranked_completion_time" json:"ranked_completion_time"`
+	RankedDurationMs         pgtype.Int8        `db:"ranked_duration_ms" json:"ranked_duration_ms"`
+	BossToBossStartTime      pgtype.Timestamptz `db:"boss_to_boss_start_time" json:"boss_to_boss_start_time"`
+	BossToBossCompletionTime pgtype.Timestamptz `db:"boss_to_boss_completion_time" json:"boss_to_boss_completion_time"`
+	BossToBossDurationMs     pgtype.Int8        `db:"boss_to_boss_duration_ms" json:"boss_to_boss_duration_ms"`
+	Capabilities             []string           `db:"capabilities" json:"capabilities"`
 }
 
 func (q *sqlQuerier) GetInstanceSpeedrun(ctx context.Context, instanceID uuid.UUID) (GetInstanceSpeedrunRow, error) {
@@ -11040,6 +14505,12 @@ func (q *sqlQuerier) GetInstanceSpeedrun(ctx context.Context, instanceID uuid.UU
 		&i.AddonVersion,
 		&i.ParserVersionNum,
 		&i.AddonVersionNum,
+		&i.RankedStartTime,
+		&i.RankedCompletionTime,
+		&i.RankedDurationMs,
+		&i.BossToBossStartTime,
+		&i.BossToBossCompletionTime,
+		&i.BossToBossDurationMs,
 		&i.Capabilities,
 	)
 	return i, err
@@ -11049,18 +14520,18 @@ const guildRaidClears = `-- name: GuildRaidClears :many
 WITH deduped AS (
     SELECT DISTINCT ON (COALESCE(li.duplicate_group_id, li.id))
         sr.instance_name,
-        sr.duration_ms,
-        sr.completion_time
+        sr.ranked_duration_ms::bigint AS duration_ms,
+        sr.ranked_completion_time::timestamptz AS completion_time
     FROM instance_speedruns sr
     JOIN log_instances li ON li.id = sr.instance_id
     JOIN wow_server_realms wsr ON wsr.id = sr.realm_id
     WHERE sr.guild_id = $1 :: uuid
-      AND sr.duration_ms > 0
+      AND sr.ranked_duration_ms > 0
       AND CASE
-          WHEN $2 :: bigint > 0 THEN sr.completion_time >= now() - make_interval(days => $2::int)
+          WHEN $2 :: bigint > 0 THEN sr.ranked_completion_time >= now() - make_interval(days => $2::int)
           ELSE true
       END
-    ORDER BY COALESCE(li.duplicate_group_id, li.id), sr.duration_ms ASC
+    ORDER BY COALESCE(li.duplicate_group_id, li.id), sr.ranked_duration_ms ASC
 )
 SELECT
     instance_name,
@@ -11123,24 +14594,38 @@ func (q *sqlQuerier) GuildRaidClears(ctx context.Context, arg GuildRaidClearsPar
 const insertInstanceSpeedrun = `-- name: InsertInstanceSpeedrun :exec
 INSERT INTO instance_speedruns (
     instance_id, instance_name, realm_id, guild_id,
-    qualified, start_time, completion_time, duration_ms, proof,
-    addon_version, parser_version_num, addon_version_num
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+    qualified, start_time, completion_time, duration_ms,
+    ranked_start_time, ranked_completion_time, ranked_duration_ms,
+    boss_to_boss_start_time, boss_to_boss_completion_time, boss_to_boss_duration_ms,
+    proof, addon_version, parser_version_num, addon_version_num
+) VALUES (
+    $1, $2, $3, $4,
+    $5, $6, $7, $8,
+    $9, $10, $11,
+    $12, $13, $14,
+    $15, $16, $17, $18
+)
 `
 
 type InsertInstanceSpeedrunParams struct {
-	InstanceID       uuid.UUID          `db:"instance_id" json:"instance_id"`
-	InstanceName     string             `db:"instance_name" json:"instance_name"`
-	RealmID          uuid.UUID          `db:"realm_id" json:"realm_id"`
-	GuildID          uuid.NullUUID      `db:"guild_id" json:"guild_id"`
-	Qualified        bool               `db:"qualified" json:"qualified"`
-	StartTime        pgtype.Timestamptz `db:"start_time" json:"start_time"`
-	CompletionTime   pgtype.Timestamptz `db:"completion_time" json:"completion_time"`
-	DurationMs       int64              `db:"duration_ms" json:"duration_ms"`
-	Proof            []byte             `db:"proof" json:"proof"`
-	AddonVersion     string             `db:"addon_version" json:"addon_version"`
-	ParserVersionNum int64              `db:"parser_version_num" json:"parser_version_num"`
-	AddonVersionNum  int64              `db:"addon_version_num" json:"addon_version_num"`
+	InstanceID               uuid.UUID          `db:"instance_id" json:"instance_id"`
+	InstanceName             string             `db:"instance_name" json:"instance_name"`
+	RealmID                  uuid.UUID          `db:"realm_id" json:"realm_id"`
+	GuildID                  uuid.NullUUID      `db:"guild_id" json:"guild_id"`
+	Qualified                bool               `db:"qualified" json:"qualified"`
+	StartTime                pgtype.Timestamptz `db:"start_time" json:"start_time"`
+	CompletionTime           pgtype.Timestamptz `db:"completion_time" json:"completion_time"`
+	DurationMs               int64              `db:"duration_ms" json:"duration_ms"`
+	RankedStartTime          pgtype.Timestamptz `db:"ranked_start_time" json:"ranked_start_time"`
+	RankedCompletionTime     pgtype.Timestamptz `db:"ranked_completion_time" json:"ranked_completion_time"`
+	RankedDurationMs         pgtype.Int8        `db:"ranked_duration_ms" json:"ranked_duration_ms"`
+	BossToBossStartTime      pgtype.Timestamptz `db:"boss_to_boss_start_time" json:"boss_to_boss_start_time"`
+	BossToBossCompletionTime pgtype.Timestamptz `db:"boss_to_boss_completion_time" json:"boss_to_boss_completion_time"`
+	BossToBossDurationMs     pgtype.Int8        `db:"boss_to_boss_duration_ms" json:"boss_to_boss_duration_ms"`
+	Proof                    []byte             `db:"proof" json:"proof"`
+	AddonVersion             string             `db:"addon_version" json:"addon_version"`
+	ParserVersionNum         int64              `db:"parser_version_num" json:"parser_version_num"`
+	AddonVersionNum          int64              `db:"addon_version_num" json:"addon_version_num"`
 }
 
 func (q *sqlQuerier) InsertInstanceSpeedrun(ctx context.Context, arg InsertInstanceSpeedrunParams) error {
@@ -11153,6 +14638,12 @@ func (q *sqlQuerier) InsertInstanceSpeedrun(ctx context.Context, arg InsertInsta
 		arg.StartTime,
 		arg.CompletionTime,
 		arg.DurationMs,
+		arg.RankedStartTime,
+		arg.RankedCompletionTime,
+		arg.RankedDurationMs,
+		arg.BossToBossStartTime,
+		arg.BossToBossCompletionTime,
+		arg.BossToBossDurationMs,
 		arg.Proof,
 		arg.AddonVersion,
 		arg.ParserVersionNum,
@@ -11182,7 +14673,7 @@ deduped AS (
         li.hashed_slug,
         sr.start_time,
         sr.completion_time,
-        sr.duration_ms,
+        sr.ranked_duration_ms AS duration_ms,
         sr.qualified,
         sr.proof,
         sr.guild_id,
@@ -11229,8 +14720,8 @@ deduped AS (
     ORDER BY
         COALESCE(li.duplicate_group_id, li.id),
         sr.qualified DESC,
-        (sr.duration_ms > 0) DESC,
-        sr.duration_ms ASC,
+        (sr.ranked_duration_ms > 0) DESC,
+        sr.ranked_duration_ms ASC,
         sr.start_time DESC
 )
 SELECT instance_id, hashed_slug, start_time, completion_time, duration_ms, qualified, proof, guild_id, guild_name, requirements_complete, player_deaths, wipe_count, top_incoming_damage_abilities, encounter_span_duration_ms, total_combat_duration_ms, total_boss_duration_ms, metrics_version, encounter_kill_times_json
@@ -11250,7 +14741,7 @@ type InstanceSpeedrunCohortRow struct {
 	HashedSlug                 pgtype.Text        `db:"hashed_slug" json:"hashed_slug"`
 	StartTime                  pgtype.Timestamptz `db:"start_time" json:"start_time"`
 	CompletionTime             pgtype.Timestamptz `db:"completion_time" json:"completion_time"`
-	DurationMs                 int64              `db:"duration_ms" json:"duration_ms"`
+	DurationMs                 pgtype.Int8        `db:"duration_ms" json:"duration_ms"`
 	Qualified                  bool               `db:"qualified" json:"qualified"`
 	Proof                      []byte             `db:"proof" json:"proof"`
 	GuildID                    uuid.NullUUID      `db:"guild_id" json:"guild_id"`
@@ -11321,6 +14812,7 @@ JOIN log_instances li ON li.id = sr.instance_id
 JOIN wow_server_realms wsr ON wsr.id = sr.realm_id
 WHERE sr.instance_name = $1
   AND sr.qualified = true
+  AND sr.boss_to_boss_duration_ms IS NOT NULL
 ORDER BY li.difficulty_name
 `
 
@@ -11424,6 +14916,7 @@ FROM instance_speedruns sr
 JOIN log_instances li ON li.id = sr.instance_id
 JOIN wow_server_realms wsr ON wsr.id = sr.realm_id
 WHERE sr.qualified = true
+  AND sr.boss_to_boss_duration_ms IS NOT NULL
 ORDER BY sr.instance_name, li.difficulty_name
 `
 
@@ -11462,9 +14955,18 @@ WITH deduped AS (
         sr.instance_name,
         li.difficulty_name,
         sr.guild_id,
-        sr.duration_ms,
-        sr.start_time,
-        sr.completion_time,
+        CASE WHEN $5::boolean
+            THEN sr.boss_to_boss_duration_ms
+            ELSE COALESCE(sr.ranked_duration_ms, sr.duration_ms)
+        END::bigint AS duration_ms,
+        CASE WHEN $5::boolean
+            THEN sr.boss_to_boss_start_time
+            ELSE COALESCE(sr.ranked_start_time, sr.start_time)
+        END::timestamptz AS start_time,
+        CASE WHEN $5::boolean
+            THEN sr.boss_to_boss_completion_time
+            ELSE COALESCE(sr.ranked_completion_time, sr.completion_time)
+        END::timestamptz AS completion_time,
         sr.qualified,
         sr.addon_version,
         li.hashed_slug,
@@ -11473,56 +14975,77 @@ WITH deduped AS (
         g.name AS guild_name,
         COALESCE(wsr.name, '') AS realm_name,
         (SELECT COUNT(*) FROM log_instance_players lip WHERE lip.instance_id = sr.instance_id) AS player_count,
-        COALESCE(gp.theme->>'logo_url', '')::text AS guild_logo_url
+        COALESCE(gp.theme->>'logo_url', '')::text AS guild_logo_url,
+        (youtube.video_url IS NOT NULL)::boolean AS has_youtube_video,
+        COALESCE(youtube.video_url, '')::text AS youtube_url
     FROM instance_speedruns sr
     JOIN log_instances li ON li.id = sr.instance_id
     JOIN guilds g ON sr.guild_id = g.id
     LEFT JOIN guild_pages gp ON gp.guild_id = sr.guild_id
     JOIN wow_server_realms wsr ON sr.realm_id = wsr.id
+    LEFT JOIN LATERAL (
+        SELECT yt.video_url
+        FROM log_instance_youtube_timestamped yt
+        WHERE yt.log_instance_id = li.id OR yt.instance_slug = li.hashed_slug
+        LIMIT 1
+    ) youtube ON true
     LEFT JOIN leaderboard_version_requirements lvr ON lvr.instance_name = sr.instance_name
-    WHERE sr.instance_name = $3
+    WHERE sr.instance_name = $6
       AND sr.qualified = true
+      AND (NOT $5::boolean OR sr.boss_to_boss_duration_ms IS NOT NULL)
       AND sr.guild_id IS NOT NULL
       AND sr.parser_version_num >= COALESCE(lvr.min_parser_version_num, 0)
       AND sr.addon_version_num >= COALESCE(lvr.min_addon_version_num, 0)
       AND CASE
-          WHEN cardinality($4 :: text[]) > 0 THEN
-              COALESCE(wsr.name, '') = ANY($4 :: text[])
+          WHEN cardinality($7 :: text[]) > 0 THEN
+              COALESCE(wsr.name, '') = ANY($7 :: text[])
           ELSE true
       END
       AND CASE
-          WHEN $5 :: text != '' THEN sr.guild_id = $5 :: uuid
+          WHEN $8 :: text != '' THEN sr.guild_id = $8 :: uuid
           ELSE true
       END
       AND CASE
-          WHEN $6 :: bigint > 0 THEN sr.completion_time >= now() - make_interval(days => $6::int)
+          WHEN $9 :: bigint > 0 THEN
+              CASE WHEN $5::boolean
+                  THEN sr.boss_to_boss_completion_time
+                  ELSE COALESCE(sr.ranked_completion_time, sr.completion_time)
+              END >= now() - make_interval(days => $9::int)
           ELSE true
       END
       AND CASE
-          WHEN $7 :: boolean THEN li.difficulty_name = $8 :: text
+          WHEN $10 :: boolean THEN li.difficulty_name = $11 :: text
           ELSE true
       END
-    ORDER BY COALESCE(li.duplicate_group_id, li.id), sr.duration_ms ASC
+    ORDER BY COALESCE(li.duplicate_group_id, li.id),
+        CASE WHEN $5::boolean
+            THEN sr.boss_to_boss_duration_ms
+            ELSE COALESCE(sr.ranked_duration_ms, sr.duration_ms)
+        END ASC
 ),
 best AS (
     SELECT DISTINCT ON (
-        CASE WHEN $5 :: text = '' THEN guild_id END
-    ) instance_id, instance_name, difficulty_name, guild_id, duration_ms, start_time, completion_time, qualified, addon_version, hashed_slug, duplicate_group_id, parser_version, guild_name, realm_name, player_count, guild_logo_url
+        CASE WHEN $8 :: text = '' THEN guild_id END
+    ) instance_id, instance_name, difficulty_name, guild_id, duration_ms, start_time, completion_time, qualified, addon_version, hashed_slug, duplicate_group_id, parser_version, guild_name, realm_name, player_count, guild_logo_url, has_youtube_video, youtube_url
     FROM deduped
     ORDER BY
-        CASE WHEN $5 :: text = '' THEN guild_id END,
+        CASE WHEN $8 :: text = '' THEN guild_id END,
         duration_ms ASC
 )
-SELECT instance_id, instance_name, difficulty_name, guild_id, duration_ms, start_time, completion_time, qualified, addon_version, hashed_slug, duplicate_group_id, parser_version, guild_name, realm_name, player_count, guild_logo_url FROM best
+SELECT instance_id, instance_name, difficulty_name, guild_id, duration_ms, start_time, completion_time, qualified, addon_version, hashed_slug, duplicate_group_id, parser_version, guild_name, realm_name, player_count, guild_logo_url, has_youtube_video, youtube_url FROM best
 WHERE (CASE WHEN $1::bigint > 0 THEN player_count >= $1 ELSE true END)
   AND (CASE WHEN $2::bigint > 0 THEN player_count <= $2 ELSE true END)
 ORDER BY duration_ms ASC
-LIMIT 50
+LIMIT CASE WHEN $4::bigint > 0 THEN $4::bigint ELSE 50 END
+OFFSET $3::bigint
 `
 
 type SpeedrunLeaderboardParams struct {
 	MinPlayers       int64    `db:"min_players" json:"min_players"`
 	MaxPlayers       int64    `db:"max_players" json:"max_players"`
+	ResultOffset     int64    `db:"result_offset" json:"result_offset"`
+	ResultLimit      int64    `db:"result_limit" json:"result_limit"`
+	UseRankedTiming  bool     `db:"use_ranked_timing" json:"use_ranked_timing"`
 	InstanceName     string   `db:"instance_name" json:"instance_name"`
 	RealmNames       []string `db:"realm_names" json:"realm_names"`
 	GuildID          string   `db:"guild_id" json:"guild_id"`
@@ -11548,6 +15071,8 @@ type SpeedrunLeaderboardRow struct {
 	RealmName        string             `db:"realm_name" json:"realm_name"`
 	PlayerCount      int64              `db:"player_count" json:"player_count"`
 	GuildLogoUrl     string             `db:"guild_logo_url" json:"guild_logo_url"`
+	HasYoutubeVideo  bool               `db:"has_youtube_video" json:"has_youtube_video"`
+	YoutubeUrl       string             `db:"youtube_url" json:"youtube_url"`
 }
 
 // Returns the leaderboard for a given instance name.
@@ -11555,12 +15080,17 @@ type SpeedrunLeaderboardRow struct {
 // Excludes runs without a guild. Optional filters: realm, player count, guild.
 // Each difficulty has its own board: set filter_difficulty to select the board
 // matching difficulty_name (empty string matches runs with no recorded difficulty).
+// use_ranked_timing selects boss-to-boss timing; false selects ranked clear timing,
+// falling back to raw timing for qualified legacy rows that predate ranked timing storage.
 // When no guild filter: keep only the best run per guild.
 // When guild filter is set: keep all runs for that guild.
 func (q *sqlQuerier) SpeedrunLeaderboard(ctx context.Context, arg SpeedrunLeaderboardParams) ([]SpeedrunLeaderboardRow, error) {
 	rows, err := q.db.Query(ctx, speedrunLeaderboard,
 		arg.MinPlayers,
 		arg.MaxPlayers,
+		arg.ResultOffset,
+		arg.ResultLimit,
+		arg.UseRankedTiming,
 		arg.InstanceName,
 		arg.RealmNames,
 		arg.GuildID,
@@ -11592,6 +15122,8 @@ func (q *sqlQuerier) SpeedrunLeaderboard(ctx context.Context, arg SpeedrunLeader
 			&i.RealmName,
 			&i.PlayerCount,
 			&i.GuildLogoUrl,
+			&i.HasYoutubeVideo,
+			&i.YoutubeUrl,
 		); err != nil {
 			return nil, err
 		}
@@ -11608,6 +15140,7 @@ SELECT DISTINCT COALESCE(wsr.name, '') AS realm_name
 FROM instance_speedruns sr
 JOIN wow_server_realms wsr ON sr.realm_id = wsr.id
 WHERE sr.qualified = true
+  AND sr.boss_to_boss_duration_ms IS NOT NULL
 ORDER BY realm_name
 `
 
@@ -12061,6 +15594,12 @@ representative_instances AS (
         COALESCE(li.duplicate_group_id, li.id) AS run_id
     FROM log_instances li
     ORDER BY COALESCE(li.duplicate_group_id, li.id),
+        -- Prefer the upload with the broadest boss-ranking coverage. The group
+        -- anchor is the first upload, but it may be truncated before the final boss.
+        (SELECT COUNT(DISTINCT coverage.encounter_name)
+         FROM encounter_dps_rankings coverage
+         WHERE coverage.instance_id = li.id
+           AND coverage.encounter_id IS NOT NULL) DESC,
         (li.id = li.duplicate_group_id) DESC NULLS LAST,
         li.start_time ASC,
         li.id ASC
@@ -12124,6 +15663,12 @@ representative_instances AS (
         COALESCE(li.duplicate_group_id, li.id) AS run_id
     FROM log_instances li
     ORDER BY COALESCE(li.duplicate_group_id, li.id),
+        -- Prefer the upload with the broadest boss-ranking coverage. The group
+        -- anchor is the first upload, but it may be truncated before the final boss.
+        (SELECT COUNT(DISTINCT coverage.encounter_name)
+         FROM encounter_dps_rankings coverage
+         WHERE coverage.instance_id = li.id
+           AND coverage.encounter_id IS NOT NULL) DESC,
         (li.id = li.duplicate_group_id) DESC NULLS LAST,
         li.start_time ASC,
         li.id ASC
@@ -12135,17 +15680,17 @@ eligible AS (
         sr.instance_name,
         li.difficulty_name,
         li.max_players,
-        sr.duration_ms,
-        sr.start_time
+        sr.ranked_duration_ms::bigint AS duration_ms,
+        sr.ranked_start_time::timestamptz AS start_time
     FROM instance_speedruns sr
     JOIN representative_instances ri ON ri.id = sr.instance_id
     JOIN log_instances li ON li.id = sr.instance_id
     CROSS JOIN snapshot s
     WHERE sr.qualified = true
-      AND sr.duration_ms > 0
+      AND sr.ranked_duration_ms > 0
       AND sr.start_time < s.cutoff
       AND (s.window_start IS NULL OR sr.start_time >= s.window_start)
-    ORDER BY ri.run_id, sr.duration_ms ASC, sr.start_time ASC, sr.instance_id ASC
+    ORDER BY ri.run_id, sr.ranked_duration_ms ASC, sr.start_time ASC, sr.instance_id ASC
 )
 INSERT INTO time_parse_clear_time_members (
     snapshot_id, instance_id, run_id,
@@ -12522,7 +16067,7 @@ WITH clear_stats AS (
             sr.instance_id::text || '|' ||
             COALESCE(li.duplicate_group_id, li.id)::text || '|' ||
             sr.qualified::text || '|' ||
-            sr.duration_ms::text || '|' ||
+            sr.ranked_duration_ms::text || '|' ||
             sr.instance_name || '|' ||
             li.difficulty_name || '|' ||
             li.max_players::text || '|' ||
@@ -12532,7 +16077,7 @@ WITH clear_stats AS (
     FROM instance_speedruns sr
     JOIN log_instances li ON li.id = sr.instance_id
     WHERE sr.qualified = true
-      AND sr.duration_ms > 0
+      AND sr.ranked_duration_ms > 0
       AND sr.start_time < $1
       AND ($2::timestamptz IS NULL OR sr.start_time >= $2)
 ),
@@ -14244,34 +17789,48 @@ func (q *sqlQuerier) InsertUserAuthSession(ctx context.Context, arg InsertUserAu
 
 const listAllUsers = `-- name: ListAllUsers :many
 SELECT
-  id, username, email, created_at, updated_at, default_desktop_layout_id, default_mobile_layout_id, raw_log_retention_hours, max_storage_bytes, data_limit_updated_at, consumed_storage_bytes
+  chronicle_users.id, chronicle_users.username, chronicle_users.email, chronicle_users.created_at, chronicle_users.updated_at, chronicle_users.default_desktop_layout_id, chronicle_users.default_mobile_layout_id, chronicle_users.raw_log_retention_hours, chronicle_users.max_storage_bytes, chronicle_users.data_limit_updated_at, chronicle_users.consumed_storage_bytes,
+  COALESCE(discord_auth.linked_id, '')::text AS discord_id
 FROM
   chronicle_users
+LEFT JOIN LATERAL (
+  SELECT linked_id
+  FROM user_auth_links
+  WHERE user_id = chronicle_users.id
+    AND provider = 'discord'
+  LIMIT 1
+) AS discord_auth ON true
 ORDER BY
   created_at DESC
 `
 
-func (q *sqlQuerier) ListAllUsers(ctx context.Context) ([]ChronicleUser, error) {
+type ListAllUsersRow struct {
+	ChronicleUser ChronicleUser `db:"chronicle_user" json:"chronicle_user"`
+	DiscordID     string        `db:"discord_id" json:"discord_id"`
+}
+
+func (q *sqlQuerier) ListAllUsers(ctx context.Context) ([]ListAllUsersRow, error) {
 	rows, err := q.db.Query(ctx, listAllUsers)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []ChronicleUser
+	var items []ListAllUsersRow
 	for rows.Next() {
-		var i ChronicleUser
+		var i ListAllUsersRow
 		if err := rows.Scan(
-			&i.ID,
-			&i.Username,
-			&i.Email,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-			&i.DefaultDesktopLayoutID,
-			&i.DefaultMobileLayoutID,
-			&i.RawLogRetentionHours,
-			&i.MaxStorageBytes,
-			&i.DataLimitUpdatedAt,
-			&i.ConsumedStorageBytes,
+			&i.ChronicleUser.ID,
+			&i.ChronicleUser.Username,
+			&i.ChronicleUser.Email,
+			&i.ChronicleUser.CreatedAt,
+			&i.ChronicleUser.UpdatedAt,
+			&i.ChronicleUser.DefaultDesktopLayoutID,
+			&i.ChronicleUser.DefaultMobileLayoutID,
+			&i.ChronicleUser.RawLogRetentionHours,
+			&i.ChronicleUser.MaxStorageBytes,
+			&i.ChronicleUser.DataLimitUpdatedAt,
+			&i.ChronicleUser.ConsumedStorageBytes,
+			&i.DiscordID,
 		); err != nil {
 			return nil, err
 		}
@@ -14628,6 +18187,58 @@ func (q *sqlQuerier) InsertStampedYoutubeVideo(ctx context.Context, arg InsertSt
 	return err
 }
 
+const listVulnerabilitySpellsByDataset = `-- name: ListVulnerabilitySpellsByDataset :many
+SELECT
+    spell_id,
+    name,
+    school_bitmask,
+    percent_affect,
+    flat_affect
+FROM dbc_vulnerability_spells
+WHERE dataset_id = $1
+  AND (cardinality($2::int[]) = 0 OR spell_id = ANY($2::int[]))
+ORDER BY name, spell_id
+`
+
+type ListVulnerabilitySpellsByDatasetParams struct {
+	DatasetID uuid.UUID `db:"dataset_id" json:"dataset_id"`
+	SpellIds  []int32   `db:"spell_ids" json:"spell_ids"`
+}
+
+type ListVulnerabilitySpellsByDatasetRow struct {
+	SpellID       int32       `db:"spell_id" json:"spell_id"`
+	Name          string      `db:"name" json:"name"`
+	SchoolBitmask int32       `db:"school_bitmask" json:"school_bitmask"`
+	PercentAffect pgtype.Int4 `db:"percent_affect" json:"percent_affect"`
+	FlatAffect    pgtype.Int4 `db:"flat_affect" json:"flat_affect"`
+}
+
+func (q *sqlQuerier) ListVulnerabilitySpellsByDataset(ctx context.Context, arg ListVulnerabilitySpellsByDatasetParams) ([]ListVulnerabilitySpellsByDatasetRow, error) {
+	rows, err := q.db.Query(ctx, listVulnerabilitySpellsByDataset, arg.DatasetID, arg.SpellIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListVulnerabilitySpellsByDatasetRow
+	for rows.Next() {
+		var i ListVulnerabilitySpellsByDatasetRow
+		if err := rows.Scan(
+			&i.SpellID,
+			&i.Name,
+			&i.SchoolBitmask,
+			&i.PercentAffect,
+			&i.FlatAffect,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getCreatureTemplatesByEntries = `-- name: GetCreatureTemplatesByEntries :many
 SELECT entry, display_id1, display_id2, display_id3, display_id4, mount_display_id, name, subname, level_min, level_max, health_min, health_max, mana_min, mana_max, armor, dmg_min, dmg_max, dmg_school, attack_power, dmg_multiplier, base_attack_time, ranged_attack_time, unit_class, unit_flags, ranged_dmg_min, ranged_dmg_max, holy_res, fire_res, nature_res, frost_res, shadow_res, arcane_res, mechanic_immune_mask, school_immune_mask, immunity_flags, dataset_id FROM world_creature_template WHERE dataset_id = $1 AND entry = ANY($2::int[])
 `
@@ -14751,6 +18362,26 @@ func (q *sqlQuerier) GetDisplayInfoByID(ctx context.Context, arg GetDisplayInfoB
 	var i WorldDisplayInfo
 	err := row.Scan(&i.ID, &i.Icon, &i.DatasetID)
 	return i, err
+}
+
+const getGemItemIDByEnchantID = `-- name: GetGemItemIDByEnchantID :one
+SELECT src_item_id
+FROM dbc_spell_item_enchantment
+WHERE dataset_id = $1
+  AND id = $2
+  AND src_item_id != 0
+`
+
+type GetGemItemIDByEnchantIDParams struct {
+	DatasetID uuid.UUID `db:"dataset_id" json:"dataset_id"`
+	EnchantID int32     `db:"enchant_id" json:"enchant_id"`
+}
+
+func (q *sqlQuerier) GetGemItemIDByEnchantID(ctx context.Context, arg GetGemItemIDByEnchantIDParams) (int32, error) {
+	row := q.db.QueryRow(ctx, getGemItemIDByEnchantID, arg.DatasetID, arg.EnchantID)
+	var src_item_id int32
+	err := row.Scan(&src_item_id)
+	return src_item_id, err
 }
 
 const getItemRandomPropertiesByID = `-- name: GetItemRandomPropertiesByID :one
@@ -15562,6 +19193,14 @@ SELECT
   wit.delay, wit.dmg_min1, wit.dmg_max1,
   wit.container_slots, wit.required_skill, wit.required_skill_rank,
   wit.armor,
+  COALESCE((
+    SELECT enchant.id
+    FROM dbc_spell_item_enchantment enchant
+    WHERE enchant.dataset_id = $1
+      AND enchant.src_item_id = wit.entry
+    ORDER BY enchant.id
+    LIMIT 1
+  ), 0)::int AS gem_enchant_id,
   COALESCE(NULLIF(wdi.icon, ''), dbi.inventory_icon ->> 0, '') :: TEXT as icon
 FROM world_item_template wit
   LEFT JOIN world_display_info wdi ON wdi.dataset_id = $1 AND wdi.id = wit.display_id
@@ -15571,12 +19210,18 @@ WHERE wit.dataset_id = $1
   AND (array_length($3::int[], 1) IS NULL OR wit.quality = ANY($3))
   AND (array_length($4::int[], 1) IS NULL OR wit.inventory_type = ANY($4))
   AND (array_length($5::int[], 1) IS NULL OR wit.class = ANY($5))
+  -- 0 disables the filter. With a cap selected, exclude level-0 items:
+  -- those render as having no level requirement ("-") rather than usable gear.
+  AND (
+    $6::int = 0
+    OR (wit.required_level > 0 AND wit.required_level <= $6)
+  )
 ORDER BY
-  CASE WHEN $6::bool THEN wit.quality END DESC,
-  CASE WHEN $7::bool THEN wit.item_level END DESC,
-  CASE WHEN $8::bool THEN wit.item_level END ASC,
-  CASE WHEN $9::bool THEN wit.required_level END DESC,
-  CASE WHEN $10::bool THEN wit.required_level END ASC,
+  CASE WHEN $7::bool THEN wit.quality END DESC,
+  CASE WHEN $8::bool THEN wit.item_level END DESC,
+  CASE WHEN $9::bool THEN wit.item_level END ASC,
+  CASE WHEN $10::bool THEN wit.required_level END DESC,
+  CASE WHEN $11::bool THEN wit.required_level END ASC,
   wit.name ASC
 LIMIT 25
 `
@@ -15587,6 +19232,7 @@ type SearchItemTemplatesParams struct {
 	Qualities         []int32   `db:"qualities" json:"qualities"`
 	InventoryTypes    []int32   `db:"inventory_types" json:"inventory_types"`
 	ItemClasses       []int32   `db:"item_classes" json:"item_classes"`
+	MaxRequiredLevel  int32     `db:"max_required_level" json:"max_required_level"`
 	QualityDesc       bool      `db:"quality_desc" json:"quality_desc"`
 	ItemLevelDesc     bool      `db:"item_level_desc" json:"item_level_desc"`
 	ItemLevelAsc      bool      `db:"item_level_asc" json:"item_level_asc"`
@@ -15610,6 +19256,7 @@ type SearchItemTemplatesRow struct {
 	RequiredSkill     int32   `db:"required_skill" json:"required_skill"`
 	RequiredSkillRank int32   `db:"required_skill_rank" json:"required_skill_rank"`
 	Armor             int32   `db:"armor" json:"armor"`
+	GemEnchantID      int32   `db:"gem_enchant_id" json:"gem_enchant_id"`
 	Icon              string  `db:"icon" json:"icon"`
 }
 
@@ -15620,6 +19267,7 @@ func (q *sqlQuerier) SearchItemTemplates(ctx context.Context, arg SearchItemTemp
 		arg.Qualities,
 		arg.InventoryTypes,
 		arg.ItemClasses,
+		arg.MaxRequiredLevel,
 		arg.QualityDesc,
 		arg.ItemLevelDesc,
 		arg.ItemLevelAsc,
@@ -15649,8 +19297,112 @@ func (q *sqlQuerier) SearchItemTemplates(ctx context.Context, arg SearchItemTemp
 			&i.RequiredSkill,
 			&i.RequiredSkillRank,
 			&i.Armor,
+			&i.GemEnchantID,
 			&i.Icon,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const searchSlotEnchantments = `-- name: SearchSlotEnchantments :many
+SELECT DISTINCT e.id, e.name_lang
+FROM dbc_spell_item_enchantment e
+JOIN dbc_spells s ON s.dataset_id = e.dataset_id
+    AND ((s.effect_0 = 53 AND s.effect_misc_value_0 = e.id)
+      OR (s.effect_1 = 53 AND s.effect_misc_value_1 = e.id)
+      OR (s.effect_2 = 53 AND s.effect_misc_value_2 = e.id))
+WHERE e.dataset_id = $1
+  AND ($2::text = '' OR e.name_lang ILIKE '%' || $2::text || '%')
+  AND (
+      (s.equipped_item_class = 4 AND (s.equipped_item_inv_types & $3::int) <> 0)
+   OR ($4::int <> 0 AND s.equipped_item_class = 2
+       AND (s.equipped_item_subclass = 0 OR (s.equipped_item_subclass & $4) <> 0)
+       AND (s.equipped_item_inv_types = 0 OR (s.equipped_item_inv_types & $3::int) <> 0))
+  )
+ORDER BY e.name_lang, e.id
+LIMIT 50
+`
+
+type SearchSlotEnchantmentsParams struct {
+	DatasetID          uuid.UUID `db:"dataset_id" json:"dataset_id"`
+	SearchTerm         string    `db:"search_term" json:"search_term"`
+	InvMask            int32     `db:"inv_mask" json:"inv_mask"`
+	WeaponSubclassMask int32     `db:"weapon_subclass_mask" json:"weapon_subclass_mask"`
+}
+
+type SearchSlotEnchantmentsRow struct {
+	ID       int32  `db:"id" json:"id"`
+	NameLang string `db:"name_lang" json:"name_lang"`
+}
+
+// Slot-aware enchant search for the gear builder. Joining through the
+// spells that apply each enchant (effect 53 = enchant item, permanent)
+// keeps only actually-applyable enchants and derives slot validity from
+// the spell's equipped-item restrictions. Armor enchant spells carry an
+// inventory-type mask; weapon enchant spells restrict by weapon subclass
+// instead and usually leave the inventory mask zero.
+func (q *sqlQuerier) SearchSlotEnchantments(ctx context.Context, arg SearchSlotEnchantmentsParams) ([]SearchSlotEnchantmentsRow, error) {
+	rows, err := q.db.Query(ctx, searchSlotEnchantments,
+		arg.DatasetID,
+		arg.SearchTerm,
+		arg.InvMask,
+		arg.WeaponSubclassMask,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SearchSlotEnchantmentsRow
+	for rows.Next() {
+		var i SearchSlotEnchantmentsRow
+		if err := rows.Scan(&i.ID, &i.NameLang); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const searchSpellItemEnchantments = `-- name: SearchSpellItemEnchantments :many
+SELECT id, name_lang
+FROM dbc_spell_item_enchantment
+WHERE dataset_id = $1
+  AND name_lang ILIKE '%' || $2::text || '%'
+ORDER BY name_lang, id
+LIMIT 25
+`
+
+type SearchSpellItemEnchantmentsParams struct {
+	DatasetID  uuid.UUID `db:"dataset_id" json:"dataset_id"`
+	SearchTerm string    `db:"search_term" json:"search_term"`
+}
+
+type SearchSpellItemEnchantmentsRow struct {
+	ID       int32  `db:"id" json:"id"`
+	NameLang string `db:"name_lang" json:"name_lang"`
+}
+
+// Name search for the gear builder's enchant picker. Same names appear at
+// multiple ranks/IDs, so the ID is part of the result identity.
+func (q *sqlQuerier) SearchSpellItemEnchantments(ctx context.Context, arg SearchSpellItemEnchantmentsParams) ([]SearchSpellItemEnchantmentsRow, error) {
+	rows, err := q.db.Query(ctx, searchSpellItemEnchantments, arg.DatasetID, arg.SearchTerm)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SearchSpellItemEnchantmentsRow
+	for rows.Next() {
+		var i SearchSpellItemEnchantmentsRow
+		if err := rows.Scan(&i.ID, &i.NameLang); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -15687,7 +19439,7 @@ func (q *sqlQuerier) DeleteWorld(ctx context.Context, id uuid.UUID) error {
 }
 
 const getServersForWorld = `-- name: GetServersForWorld :many
-SELECT s.id, s.name, s.created_by, s.url, s.description, s.tenant_id, s.default_dataset_id
+SELECT s.id, s.name, s.created_by, s.url, s.description, s.tenant_id, s.default_dataset_id, s.pricing_provider
 FROM wow_servers s
 JOIN world_server ws ON s.id = ws.server_id
 WHERE ws.world_id = $1
@@ -15711,6 +19463,7 @@ func (q *sqlQuerier) GetServersForWorld(ctx context.Context, worldID uuid.UUID) 
 			&i.Description,
 			&i.TenantID,
 			&i.DefaultDatasetID,
+			&i.PricingProvider,
 		); err != nil {
 			return nil, err
 		}

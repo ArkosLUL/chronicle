@@ -35,9 +35,10 @@ func (a *API) WhoAmI(w http.ResponseWriter, r *http.Request) {
 		Roles:                roles,
 		MaxStorageBytes:      user.MaxStorageBytes,
 		ConsumedStorageBytes: user.ConsumedStorageBytes,
-		Preferences: userPreferences(user),
-		Email:        user.Email,
-		AuthProvider: state.Claims.Provider,
+		Preferences:          userPreferences(user),
+		Email:                user.Email,
+		AuthProvider:         state.Claims.Provider,
+		CreatedAt:            user.CreatedAt.Time,
 	}
 
 	// For password-auth users, look up email verification status
@@ -100,10 +101,18 @@ func (a *API) GetMyStorage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	parsed, err := a.Opts.Zed.GetParsedBytesByOwner(ctx, userID)
+	if err != nil {
+		httpapi.InternalServerError(w, err)
+		return
+	}
+
 	httpapi.Write(ctx, w, http.StatusOK, chroniclesdk.UserStorageInfo{
 		MaxStorageBytes:      user.MaxStorageBytes,
 		ConsumedStorageBytes: user.ConsumedStorageBytes,
 		Grants:               db2sdk.DataGrants(grants),
+		ParsedStorageBytes:   parsed.ParsedBytes,
+		ParsedInstanceCount:  parsed.ParsedInstanceCount,
 	})
 }
 

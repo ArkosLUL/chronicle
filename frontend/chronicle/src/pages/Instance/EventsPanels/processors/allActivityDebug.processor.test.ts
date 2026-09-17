@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { HitTypeCrushing, HitTypeFullResist, HitTypeGlancing, HitTypeImmune, HitTypePartialAbsorb, HitTypePartialBlock, HitTypePartialResist } from "@/lib/hittype/hittype";
-import type { ConsumeProcessorEvent, DamageProcessorEvent, ExtraAttackProcessorEvent, ProcessorContext, ResourceChangeProcessorEvent, ResurrectionProcessorEvent, SlainProcessorEvent, SpellStartProcessorEvent, UnitClassificationProcessorEvent } from "../processorTypes";
+import { AuraApplication, AuraState, AuraTransition, type AuraProcessorEvent, type ConsumeProcessorEvent, type RaidGroupProcessorEvent, type DamageProcessorEvent, type ExtraAttackProcessorEvent, type ProcessorContext, type ResourceChangeProcessorEvent, type ResurrectionProcessorEvent, type SlainProcessorEvent, type SpellStartProcessorEvent, type UnitClassificationProcessorEvent } from "../processorTypes";
 import { allActivityProcessor } from "./allActivityDebug.processor";
 
 function createContext(): ProcessorContext {
@@ -45,7 +45,42 @@ function createDamageEvent(): DamageProcessorEvent {
   };
 }
 
+function createRaidGroupEvent(): RaidGroupProcessorEvent {
+  return {
+    type: "raid_group",
+    index: 0,
+    offsetMilli: 0,
+    groupMemberGuids: ["player", "unknown", ...Array<string>(38).fill("")],
+    activity: [],
+    activityCount: 0,
+    isSynthetic: true,
+  };
+}
+
 describe("allActivityProcessor", () => {
+  it("captures fixed raid groups with resolved players and populated count", () => {
+    const state = allActivityProcessor.createState();
+
+    allActivityProcessor.processEvent(
+      state,
+      createRaidGroupEvent(),
+      "encounter",
+      new Date("2026-07-14T17:41:42.709Z"),
+      "raid_group",
+      createContext(),
+    );
+
+    const event = state.rawEventsByStream.raid_group[0];
+    expect(event.amount).toBe(2);
+    expect(event.flags).toEqual(["SYNTHETIC"]);
+    expect(event.raidGroups).toHaveLength(8);
+    expect(event.raidGroups?.[0]).toEqual([
+      { guid: "player", name: "Sathite", className: "SHAMAN" },
+      { guid: "unknown", name: "unknown", className: undefined },
+    ]);
+    expect(event.raidGroups?.[1]).toEqual([]);
+  });
+
   it("preserves damage trailer amounts and readable outcome labels", () => {
     const state = allActivityProcessor.createState();
 
@@ -135,6 +170,47 @@ describe("allActivityProcessor", () => {
       spellId: 25504,
       extra: "extra attacks=2",
     });
+  });
+
+  it("uses an attributed aura caster as the activity source", () => {
+    const state = allActivityProcessor.createState();
+    const event: AuraProcessorEvent = {
+      type: "aura",
+      index: 10,
+      offsetMilli: 0,
+      target: "doan",
+      caster: "player",
+      spellName: "Power Word: Shield",
+      spellId: 17,
+      spellAttackOutcome: null,
+      amount: 1,
+      application: AuraApplication.Gains,
+      state: AuraState.Added,
+      transition: AuraTransition.Applied,
+      isBuff: true,
+      activity: [],
+      activityCount: 0,
+      isSynthetic: true,
+    };
+
+    allActivityProcessor.processEvent(
+      state,
+      event,
+      "encounter",
+      new Date("2026-07-14T17:41:42.709Z"),
+      "aura",
+      createContext(),
+    );
+
+    expect(state.rawEventsByStream.aura[0]).toMatchObject({
+      caster: "player",
+      casterName: "Sathite",
+      target: "doan",
+      sourceName: "Power Word: Shield",
+      extra: "Buff · Added (stacks=1)",
+      flags: ["SYNTHETIC"],
+    });
+    expect(state.counts.get("player")).toBe(1);
   });
 
   it("captures resource type, waste, flag, and spell details", () => {

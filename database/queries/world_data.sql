@@ -12,6 +12,47 @@ SELECT * FROM dbc_item_random_properties WHERE dataset_id = @dataset_id AND id =
 -- name: GetSpellItemEnchantmentByID :one
 SELECT * FROM dbc_spell_item_enchantment WHERE dataset_id = @dataset_id AND id = @id;
 
+-- name: GetGemItemIDByEnchantID :one
+SELECT src_item_id
+FROM dbc_spell_item_enchantment
+WHERE dataset_id = @dataset_id
+  AND id = @enchant_id
+  AND src_item_id != 0;
+
+-- name: SearchSpellItemEnchantments :many
+-- Name search for the gear builder's enchant picker. Same names appear at
+-- multiple ranks/IDs, so the ID is part of the result identity.
+SELECT id, name_lang
+FROM dbc_spell_item_enchantment
+WHERE dataset_id = @dataset_id
+  AND name_lang ILIKE '%' || @search_term::text || '%'
+ORDER BY name_lang, id
+LIMIT 25;
+
+-- name: SearchSlotEnchantments :many
+-- Slot-aware enchant search for the gear builder. Joining through the
+-- spells that apply each enchant (effect 53 = enchant item, permanent)
+-- keeps only actually-applyable enchants and derives slot validity from
+-- the spell's equipped-item restrictions. Armor enchant spells carry an
+-- inventory-type mask; weapon enchant spells restrict by weapon subclass
+-- instead and usually leave the inventory mask zero.
+SELECT DISTINCT e.id, e.name_lang
+FROM dbc_spell_item_enchantment e
+JOIN dbc_spells s ON s.dataset_id = e.dataset_id
+    AND ((s.effect_0 = 53 AND s.effect_misc_value_0 = e.id)
+      OR (s.effect_1 = 53 AND s.effect_misc_value_1 = e.id)
+      OR (s.effect_2 = 53 AND s.effect_misc_value_2 = e.id))
+WHERE e.dataset_id = @dataset_id
+  AND (@search_term::text = '' OR e.name_lang ILIKE '%' || @search_term::text || '%')
+  AND (
+      (s.equipped_item_class = 4 AND (s.equipped_item_inv_types & @inv_mask::int) <> 0)
+   OR (@weapon_subclass_mask::int <> 0 AND s.equipped_item_class = 2
+       AND (s.equipped_item_subclass = 0 OR (s.equipped_item_subclass & @weapon_subclass_mask) <> 0)
+       AND (s.equipped_item_inv_types = 0 OR (s.equipped_item_inv_types & @inv_mask::int) <> 0))
+  )
+ORDER BY e.name_lang, e.id
+LIMIT 50;
+
 -- name: GetItemSetByID :one
 SELECT * FROM dbc_item_set WHERE dataset_id = @dataset_id AND id = @id;
 
@@ -66,6 +107,14 @@ SELECT
   wit.delay, wit.dmg_min1, wit.dmg_max1,
   wit.container_slots, wit.required_skill, wit.required_skill_rank,
   wit.armor,
+  COALESCE((
+    SELECT enchant.id
+    FROM dbc_spell_item_enchantment enchant
+    WHERE enchant.dataset_id = @dataset_id
+      AND enchant.src_item_id = wit.entry
+    ORDER BY enchant.id
+    LIMIT 1
+  ), 0)::int AS gem_enchant_id,
   COALESCE(NULLIF(wdi.icon, ''), dbi.inventory_icon ->> 0, '') :: TEXT as icon
 FROM world_item_template wit
   LEFT JOIN world_display_info wdi ON wdi.dataset_id = @dataset_id AND wdi.id = wit.display_id
@@ -75,6 +124,12 @@ WHERE wit.dataset_id = @dataset_id
   AND (array_length(@qualities::int[], 1) IS NULL OR wit.quality = ANY(@qualities))
   AND (array_length(@inventory_types::int[], 1) IS NULL OR wit.inventory_type = ANY(@inventory_types))
   AND (array_length(@item_classes::int[], 1) IS NULL OR wit.class = ANY(@item_classes))
+  -- 0 disables the filter. With a cap selected, exclude level-0 items:
+  -- those render as having no level requirement ("-") rather than usable gear.
+  AND (
+    @max_required_level::int = 0
+    OR (wit.required_level > 0 AND wit.required_level <= @max_required_level)
+  )
 ORDER BY
   CASE WHEN @quality_desc::bool THEN wit.quality END DESC,
   CASE WHEN @item_level_desc::bool THEN wit.item_level END DESC,

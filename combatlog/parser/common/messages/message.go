@@ -241,8 +241,9 @@ func (*Realm) isMessage()            {}
 
 type Versions struct {
 	MessageBase
-	Player   *guid.GUID
-	Versions map[string]string
+	Player    *guid.GUID
+	Versions  map[string]string
+	SessionID string // companion addon load/reload session; empty for formats without one
 }
 
 func (v Versions) Affects() []guid.GUID { return []guid.GUID{} }
@@ -617,6 +618,7 @@ const (
 	EvidenceKindDamage       EvidenceKind = 6
 	EvidenceKindActiveAtPull EvidenceKind = 7
 	EvidenceKindCooldown     EvidenceKind = 8
+	EvidenceKindPreCombat    EvidenceKind = 9
 )
 
 // EvidenceConfidence describes how certain we are about the evidence.
@@ -648,11 +650,28 @@ type Consume struct {
 	ObservedAtUnixMs int64              // when the observation occurred
 	Amount           *int32             // heal/resource/damage amount
 	ResourceType     *string            // resource type string (matches ResourceChange)
-	IsProjection     bool               // true when projected from prior encounter
+	IsProjection     bool               // true when projected into an encounter
 }
 
 func (c Consume) Affects() []guid.GUID { return []guid.GUID{c.Player} }
 func (*Consume) isMessage()            {}
+
+// EncounterBoundary marks an authoritative encounter window supplied by the
+// combat log. While Active is true, inactivity timeouts must not end the fight.
+type EncounterBoundary struct {
+	MessageBase
+	Active           bool
+	EncounterID      int32
+	Name             string
+	Difficulty       int32
+	GroupSize        int32
+	InstanceID       uint32
+	Success          *bool
+	PreserveActivity bool
+}
+
+func (e EncounterBoundary) Affects() []guid.GUID { return nil }
+func (*EncounterBoundary) isMessage()            {}
 
 type Timeout struct {
 	MessageBase
@@ -666,6 +685,57 @@ func TimedOut(ts time.Time) Message {
 
 func (t Timeout) Affects() []guid.GUID { return []guid.GUID{} }
 func (*Timeout) isMessage()            {}
+
+type VehicleControlAction string
+
+const (
+	VehicleControlAssign  VehicleControlAction = "assign"
+	VehicleControlRelease VehicleControlAction = "release"
+)
+
+// VehicleControl records a timestamped vehicle-to-controller relationship
+// observed by the companion addon. MessageBase.Timestamp is the embedded
+// effective timestamp, not the later combat-log carrier timestamp.
+type VehicleControl struct {
+	MessageBase
+	Action         VehicleControlAction
+	VehicleGUID    guid.GUID
+	ControllerGUID guid.GUID
+	VehicleName    string
+	ControllerName string
+	ObservedAt     time.Time
+	Ordinal        uint64
+}
+
+func (v VehicleControl) Affects() []guid.GUID {
+	return []guid.GUID{v.VehicleGUID, v.ControllerGUID}
+}
+func (*VehicleControl) isMessage() {}
+
+const (
+	RaidGroupCount = 8
+	RaidGroupSize  = 5
+)
+
+// RaidGroup records the companion addon's fixed eight-group raid layout.
+// Zero GUIDs represent empty slots so subgroup boundaries remain intact.
+type RaidGroup struct {
+	MessageBase
+	Groups [RaidGroupCount][RaidGroupSize]guid.GUID
+}
+
+func (r RaidGroup) Affects() []guid.GUID {
+	result := make([]guid.GUID, 0, RaidGroupCount*RaidGroupSize)
+	for _, group := range r.Groups {
+		for _, member := range group {
+			if !member.IsZero() {
+				result = append(result, member)
+			}
+		}
+	}
+	return result
+}
+func (*RaidGroup) isMessage() {}
 
 // NewOwner can be used to change the owner of a given unit.
 // Useful for enslave demon
@@ -774,11 +844,15 @@ type EncounterCredit struct {
 func (e EncounterCredit) Affects() []guid.GUID { return []guid.GUID{e.UnitGUID} }
 func (*EncounterCredit) isMessage()            {}
 
-// EncounterBoundary is an authoritative fight boundary reported by the server
-// itself, rather than one inferred from combat activity. Servers that run the
-// encounter scripts know exactly when a boss engages and disengages, which
+// ChronicleEncounterBoundary is an authoritative fight boundary reported by the
+// server itself, rather than one inferred from combat activity. Servers that run
+// the encounter scripts know exactly when a boss engages and disengages, which
 // combat-activity inference cannot recover once trash overlaps the pull.
-type EncounterBoundary struct {
+//
+// Distinct from EncounterBoundary, which carries the richer ENCOUNTER_START/END
+// payload a Blizzard client logs. The Chronicle server extension reports only an
+// index, and no log ever carries both.
+type ChronicleEncounterBoundary struct {
 	MessageBase
 	// Start distinguishes the opening boundary from the closing one.
 	Start bool
@@ -789,8 +863,8 @@ type EncounterBoundary struct {
 	Success bool
 }
 
-func (EncounterBoundary) Affects() []guid.GUID { return nil }
-func (*EncounterBoundary) isMessage()          {}
+func (ChronicleEncounterBoundary) Affects() []guid.GUID { return nil }
+func (*ChronicleEncounterBoundary) isMessage()          {}
 
 // Absorbed records which absorb aura soaked how much of an
 // incoming damage event. Fires once per absorb aura per hit.

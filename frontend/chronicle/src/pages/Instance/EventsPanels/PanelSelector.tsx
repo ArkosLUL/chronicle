@@ -41,7 +41,7 @@ const PANEL_CATEGORIES: PanelCategory[] = [
   },
   {
     label: "Resources",
-    items: ["extra_attacks", "resource_regen", "consumables", "consumables_total", "consumables_ledger"],
+    items: ["extra_attacks", "resource_regen", "consumables", "consumables_ledger"],
   },
   {
     label: "Deaths",
@@ -49,7 +49,7 @@ const PANEL_CATEGORIES: PanelCategory[] = [
   },
   {
     label: "Buffs",
-    items: ["aura_uptime"],
+    items: ["aura_uptime", "unit_auras"],
   },
   {
     label: "Dispels & Interrupts",
@@ -62,7 +62,7 @@ const PANEL_CATEGORIES: PanelCategory[] = [
     subcategories: [
       {
         label: "Druid",
-        items: ["innervate"],
+        items: ["innervate", "faerie_fire"],
         icon: <Leaf className="h-4 w-4" />,
       },
       {
@@ -83,7 +83,7 @@ const PANEL_CATEGORIES: PanelCategory[] = [
   },
   {
     label: "Utility",
-    items: ["roles", "timeline", "rotations", "comparison", "all_activity", "metrics", "periods", "pulls_and_cleanup", "possession", "unit_lookup", "equipment", "guilds", "loot", "logging_metadata", "companion_stats", "leaderboard", "empty"],
+    items: ["roles", "raid_composition", "timeline", "rotations", "spell_count", "comparison", "all_activity", "metrics", "periods", "pulls_and_cleanup", "possession", "vehicle", "unit_lookup", "equipment", "guilds", "loot", "logging_metadata", "companion_stats", "leaderboard", "ranking_records", "empty"],
     icon: <Toolbox className="h-4 w-4" />,
   },
 ];

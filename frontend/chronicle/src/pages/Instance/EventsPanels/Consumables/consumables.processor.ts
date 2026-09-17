@@ -87,6 +87,7 @@ export const EVIDENCE_KIND_LABELS: Record<number, string> = {
   6: "Damage",
   7: "Active at Pull",
   8: "Cooldown",
+  9: "Pre-Combat",
 };
 
 /** EvidenceConfidence enum value -> display label. */
@@ -97,6 +98,19 @@ export const CONFIDENCE_LABELS: Record<number, string> = {
   3: "Ambiguous",
   4: "Inferred",
 };
+
+export const PRE_COMBAT_DESCRIPTION = "Used outside combat and has no auras or effects that persist into combat.";
+export const PRE_POT_DESCRIPTION = "A consumable effect that persists into combat through an aura already active at pull.";
+
+/** Directly observed outside combat and assigned to the following encounter. */
+export function isPreCombatUse(use: ConsumableUse): boolean {
+  return use.kinds.includes(9);
+}
+
+/** Consumable effect that was already active when the encounter started. */
+export function isPrePotUse(use: ConsumableUse): boolean {
+  return use.activeAtPullOnly;
+}
 
 /** Display name for a use: spell name, else item placeholder. */
 export function consumableDisplayName(use: ConsumableUse): string {
@@ -184,7 +198,7 @@ export const consumablesProcessor: PanelProcessor<ConsumablesResult, ConsumeProc
     if (use.itemId === null && itemId !== null) use.itemId = itemId;
     if (use.candidateItemIds.length === 0 && candidateItemIds.length > 0) {
       use.candidateItemIds = candidateItemIds;
-      use.candidateEffectKind = kind === 3 || kind === 7 ? "buff" : kind === 4 ? "direct" : null;
+      use.candidateEffectKind = kind === 3 || kind === 7 ? "buff" : kind === 2 || kind === 4 ? "direct" : null;
       use.candidateSpellId = spellId;
     }
     if (use.spellId === null && spellId !== null) use.spellId = spellId;

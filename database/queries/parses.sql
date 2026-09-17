@@ -13,9 +13,16 @@ INSERT INTO ranking_snapshots (
 ) RETURNING *;
 
 -- name: PublishRankingSnapshot :one
--- Transition a pending snapshot to published. Idempotent on already-published.
+-- Transition a pending snapshot to published and persist its exact member count.
+-- Idempotent on already-published snapshots.
 UPDATE ranking_snapshots
-SET status = 'published', published_at = now()
+SET status = 'published',
+    published_at = now(),
+    member_count = (
+        SELECT COUNT(*)
+        FROM ranking_snapshot_members
+        WHERE snapshot_id = @id
+    )
 WHERE id = @id AND status IN ('pending', 'published')
 RETURNING *;
 
@@ -24,7 +31,7 @@ RETURNING *;
 INSERT INTO ranking_snapshot_members (
     snapshot_id, ranking_id, instance_id, run_id,
     instance_name, encounter_name,
-    player_guid, player_class, player_spec,
+    player_guid, player_class, player_spec, player_sub_spec,
     difficulty_name, max_players,
     killed_at, created_at_ranking,
     damage_done, healing_done, absorbed_done,
@@ -32,7 +39,7 @@ INSERT INTO ranking_snapshot_members (
 ) VALUES (
     @snapshot_id, @ranking_id, @instance_id, @run_id,
     @instance_name, @encounter_name,
-    @player_guid, @player_class, @player_spec,
+    @player_guid, @player_class, @player_spec, @player_sub_spec,
     @difficulty_name, @max_players,
     @killed_at, @created_at_ranking,
     @damage_done, @healing_done, @absorbed_done,
@@ -52,6 +59,12 @@ WITH representative_instances AS (
         COALESCE(li.duplicate_group_id, li.id) AS run_id
     FROM log_instances li
     ORDER BY COALESCE(li.duplicate_group_id, li.id),
+        -- Prefer the upload with the broadest boss-ranking coverage. The group
+        -- anchor is the first upload, but it may be truncated before the final boss.
+        (SELECT COUNT(DISTINCT coverage.encounter_name)
+         FROM encounter_dps_rankings coverage
+         WHERE coverage.instance_id = li.id
+           AND coverage.encounter_id IS NOT NULL) DESC,
         (li.id = li.duplicate_group_id) DESC NULLS LAST,
         li.start_time ASC,
         li.id ASC
@@ -70,6 +83,7 @@ eligible AS (
         edr.player_guid,
         edr.player_class,
         edr.player_spec,
+        edr.player_sub_spec,
         edr.difficulty_name,
         edr.max_players,
         edr.killed_at,
@@ -98,7 +112,7 @@ eligible AS (
 INSERT INTO ranking_snapshot_members (
     snapshot_id, ranking_id, instance_id, run_id,
     instance_name, encounter_name,
-    player_guid, player_class, player_spec,
+    player_guid, player_class, player_spec, player_sub_spec,
     difficulty_name, max_players,
     killed_at, created_at_ranking,
     damage_done, healing_done, absorbed_done,
@@ -107,7 +121,7 @@ INSERT INTO ranking_snapshot_members (
 SELECT
     @snapshot_id, e.ranking_id, e.instance_id, e.run_id,
     e.instance_name, e.encounter_name,
-    e.player_guid, e.player_class, e.player_spec,
+    e.player_guid, e.player_class, e.player_spec, e.player_sub_spec,
     e.difficulty_name, e.max_players,
     e.killed_at, e.created_at,
     e.damage_done, e.healing_done, e.absorbed_done,
@@ -185,6 +199,7 @@ WHERE rsm.snapshot_id = @snapshot_id
   AND rsm.max_players = @max_players
   AND rsm.player_class = @player_class
   AND (sqlc.narg('player_spec')::text IS NULL OR rsm.player_spec = @player_spec)
+  AND (sqlc.narg('player_sub_spec')::text IS NULL OR rsm.player_sub_spec = @player_sub_spec)
   -- Only include rows with a positive value for the requested metric so
   -- zero-DPS healers don't appear in DPS cohorts and vice versa.
   AND CASE WHEN @metric::text = 'hps' THEN rsm.hps ELSE rsm.dps END > 0;
@@ -236,6 +251,7 @@ SELECT
     edr.player_name,
     edr.player_class,
     edr.player_spec,
+    edr.player_sub_spec,
     edr.player_role,
     edr.difficulty_name,
     edr.max_players,
@@ -270,9 +286,9 @@ WHERE edr.encounter_id IS NOT NULL      -- boss kills only
   AND (@window_start::timestamptz IS NULL OR edr.killed_at >= @window_start);
 
 -- name: ListPublishedSnapshots :many
--- Return published snapshots for a tenant, most recent first.
-SELECT rs.*,
-       (SELECT COUNT(*) FROM ranking_snapshot_members WHERE snapshot_id = rs.id) AS member_count
+-- Return published snapshots for a tenant, most recent first. member_count is
+-- persisted at publication time so this list never scans snapshot members.
+SELECT rs.*
 FROM ranking_snapshots rs
 WHERE rs.tenant_id = @tenant_id
   AND rs.status = 'published'
@@ -289,6 +305,7 @@ SELECT
     edr.player_name,
     rsm.player_class,
     rsm.player_spec,
+    rsm.player_sub_spec,
     rsm.difficulty_name,
     rsm.max_players,
     rsm.killed_at,
@@ -300,6 +317,7 @@ WHERE rsm.snapshot_id = @snapshot_id
   AND rsm.encounter_name = @encounter_name
   AND rsm.player_class = @player_class
   AND (sqlc.narg('player_spec')::text IS NULL OR rsm.player_spec = @player_spec)
+  AND (sqlc.narg('player_sub_spec')::text IS NULL OR rsm.player_sub_spec = @player_sub_spec)
   -- Difficulty and raid size are optional viewer filters: unlike the parses
   -- handler (which always knows the viewed row's exact bucket), the debug
   -- viewer may leave them unselected, meaning "any".
@@ -309,17 +327,18 @@ WHERE rsm.snapshot_id = @snapshot_id
 ORDER BY CASE WHEN @metric::text = 'hps' THEN rsm.hps ELSE rsm.dps END DESC;
 
 -- name: ListDistinctCohortBuckets :many
--- Return distinct (encounter_name, player_class, player_spec, difficulty_name, max_players)
--- combinations available in a snapshot, for driving filter dropdowns.
+-- Return distinct (encounter_name, player_class, player_spec, player_sub_spec,
+-- difficulty_name, max_players) combinations available in a snapshot.
 SELECT DISTINCT
     rsm.encounter_name,
     rsm.player_class,
     rsm.player_spec,
+    rsm.player_sub_spec,
     rsm.difficulty_name,
     rsm.max_players
 FROM ranking_snapshot_members rsm
 WHERE rsm.snapshot_id = @snapshot_id
-ORDER BY rsm.encounter_name, rsm.player_class, rsm.player_spec;
+ORDER BY rsm.encounter_name, rsm.player_class, rsm.player_spec, rsm.player_sub_spec;
 
 -- name: GetLatestPublishedSnapshotForGuard :one
 -- Return the most recently published snapshot matching the full key dimensions
@@ -339,7 +358,6 @@ LIMIT 1;
 -- Admin view: list all snapshots across tenants, most recent first.
 -- LEFT JOINs tenants to surface the tenant name (NULL for root scope).
 SELECT rs.*,
-       (SELECT COUNT(*) FROM ranking_snapshot_members WHERE snapshot_id = rs.id) AS member_count,
        t.name AS tenant_name
 FROM ranking_snapshots rs
 LEFT JOIN tenants t ON t.id = rs.tenant_id

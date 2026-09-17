@@ -30,9 +30,10 @@ function metricLabel(metric: ParseMetric): string {
 }
 
 /** "Fury Warrior" in spec mode, "Warrior" in class mode. */
-function cohortBucketLabel(player: InstanceParsePlayer, cohortMode: string): string {
+export function cohortBucketLabel(player: InstanceParsePlayer, cohortMode: string): string {
   if (cohortMode === "class" || !player.player_spec) return player.player_class;
-  return `${player.player_spec} ${player.player_class}`;
+  const spec = player.player_sub_spec ? `${player.player_spec} (${player.player_sub_spec})` : player.player_spec;
+  return `${spec} ${player.player_class}`;
 }
 
 // eslint-disable-next-line react-refresh/only-export-components -- internal tooltip, not a standalone module component
@@ -138,6 +139,7 @@ function buildParsePill(
     return {
       displayScore: boss.display_score,
       color: parseHexColor(boss.display_score),
+      subSpec: player.player_sub_spec,
       tooltipContent: <ParsePillTooltipSingle boss={boss} player={player} cohortMode={cohortMode} metric={metric} />,
     };
   }
@@ -148,6 +150,7 @@ function buildParsePill(
   return {
     displayScore: avg.display_score,
     color: parseHexColor(avg.display_score),
+    subSpec: player.player_sub_spec,
     tooltipContent: (
       <ParsePillTooltipMulti
         player={player}

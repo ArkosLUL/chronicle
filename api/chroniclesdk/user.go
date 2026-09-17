@@ -25,6 +25,8 @@ type Session struct {
 	EmailVerified bool `json:"email_verified"`
 	// AuthProvider is the provider used for the current session (e.g. "discord", "password").
 	AuthProvider string `json:"auth_provider"`
+	// CreatedAt is when the user's account was created.
+	CreatedAt time.Time `json:"created_at"`
 }
 
 type Preferences struct {
@@ -44,6 +46,7 @@ type User struct {
 	ID                     uuid.UUID `json:"id"`
 	Username               string    `json:"username"`
 	Email                  string    `json:"email"`
+	DiscordID              string    `json:"discord_id,omitempty"`
 	Roles                  []string  `json:"roles"`
 	CreatedAt              time.Time `json:"created_at"`
 	UpdatedAt              time.Time `json:"updated_at"`
@@ -112,6 +115,13 @@ type UserStorageInfo struct {
 	MaxStorageBytes      int64       `json:"max_storage_bytes"`
 	ConsumedStorageBytes int64       `json:"consumed_storage_bytes"`
 	Grants               []DataGrant `json:"grants"`
+	// ParsedStorageBytes is the total size, in bytes, of this user's parsed
+	// combat-log event streams. It does not count against MaxStorageBytes and
+	// is not currently limited.
+	ParsedStorageBytes int64 `json:"parsed_storage_bytes"`
+	// ParsedInstanceCount is the number of parsed instances contributing to
+	// ParsedStorageBytes.
+	ParsedInstanceCount int64 `json:"parsed_instance_count"`
 }
 
 // UpsertDataGrantRequest is used to create or update a storage grant

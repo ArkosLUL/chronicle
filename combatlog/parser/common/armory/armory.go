@@ -143,7 +143,8 @@ func (g *Tracker) Insert(ctx context.Context, udb *unitdb.Units, instanceID uuid
 		for i, item := range player.GearSetups {
 			hasGear = hasGear || item.ItemID != 0
 			dbGear[i] = database.PlayerGear{
-				ItemID: int32(item.ItemID),
+				ItemID:        int32(item.ItemID),
+				GemEnchantIDs: optionalGemEnchantIDs(item.GemEnchantIDs),
 			}
 			if item.EnchantID != nil {
 				dbGear[i].EnchantID = ptr.Ref(int32(*item.EnchantID))
@@ -166,11 +167,7 @@ func (g *Tracker) Insert(ctx context.Context, udb *unitdb.Units, instanceID uuid
 			}
 		}
 
-		var level int16
-		info, ok := udb.Get(player.Guid)
-		if ok {
-			level = int16(info.Level)
-		}
+		level := persistedPlayerLevel(player, udb)
 
 		var dbTalents *database.PlayerTalents
 
@@ -247,6 +244,48 @@ func (g *Tracker) Insert(ctx context.Context, udb *unitdb.Units, instanceID uuid
 	return nil, nil
 }
 
+func persistedPlayerLevel(player combatant.Combatant, udb *unitdb.Units) int16 {
+	if player.Level != nil && *player.Level > 0 {
+		return int16(*player.Level)
+	}
+	if info, ok := udb.Get(player.Guid); ok {
+		return int16(info.Level)
+	}
+	return 0
+}
+
+// RenameGuilds canonicalizes guild names before they are persisted. If multiple
+// parsed names resolve to the same guild, their member sets are merged.
+func (g *Tracker) RenameGuilds(resolve func(string) string) {
+	renamedGuilds := make(map[string]map[guid.GUID]struct{}, len(g.Guilds))
+	for name, members := range g.Guilds {
+		resolvedName := resolve(name)
+		resolvedMembers, ok := renamedGuilds[resolvedName]
+		if !ok {
+			resolvedMembers = make(map[guid.GUID]struct{}, len(members))
+			renamedGuilds[resolvedName] = resolvedMembers
+		}
+		for playerGUID := range members {
+			resolvedMembers[playerGUID] = struct{}{}
+		}
+	}
+	g.Guilds = renamedGuilds
+
+	for playerGUID, player := range g.Players {
+		if player.Guild == nil {
+			continue
+		}
+		resolvedName := resolve(player.Guild.Name)
+		if resolvedName == player.Guild.Name {
+			continue
+		}
+		guild := *player.Guild
+		guild.Name = resolvedName
+		player.Guild = &guild
+		g.Players[playerGUID] = player
+	}
+}
+
 func sortedGuildNames(guilds map[string]map[guid.GUID]struct{}) []string {
 	names := make([]string, 0, len(guilds))
 	for name := range guilds {
@@ -263,6 +302,18 @@ func sortedPlayerGUIDs(players map[guid.GUID]combatant.Combatant) []guid.GUID {
 	}
 	slices.Sort(guids)
 	return guids
+}
+
+func optionalGemEnchantIDs(gems [4]int) []int32 {
+	if gems == [4]int{} {
+		return nil
+	}
+
+	ids := make([]int32, len(gems))
+	for i, gemID := range gems {
+		ids[i] = int32(gemID)
+	}
+	return ids
 }
 
 // Slot indices in a PlayerOutfit that never count toward average item level.

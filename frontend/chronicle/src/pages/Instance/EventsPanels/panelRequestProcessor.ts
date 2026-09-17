@@ -4,7 +4,7 @@
  * cannot be constructed, e.g. the compiled design-system bundle).
  */
 
-import { FastDamageCursor, FastHealCursor, FastResourceChangeCursor, FastExtraAttackCursor, FastSlainCursor, FastResurrectionCursor, FastCastCursor, FastAuraCursor, FastSpellGoCursor, FastAuraCastCursor, FastSpellStartCursor, FastSpellFailCursor, FastUnitClassificationCursor, FastDispelCursor, FastInterruptCursor, FastCombatantInfoCursor, FastAbsorbedCursor, FastConsumeCursor, type ReusableDamage, type ReusableHeal, type ReusableResourceChange, type ReusableExtraAttack, type ReusableSlain, type ReusableResurrection, type ReusableCast, type ReusableAura, type ReusableSpellGo, type ReusableAuraCast, type ReusableSpellStart, type ReusableSpellFail, type ReusableUnitClassification, type ReusableDispel, type ReusableInterrupt, type ReusableCombatantInfo, type ReusableAbsorbed, type ReusableConsume } from "@/api/protodecode/decode";
+import { FastDamageCursor, FastHealCursor, FastResourceChangeCursor, FastExtraAttackCursor, FastSlainCursor, FastResurrectionCursor, FastCastCursor, FastAuraCursor, FastSpellGoCursor, FastAuraCastCursor, FastSpellStartCursor, FastSpellFailCursor, FastUnitClassificationCursor, FastDispelCursor, FastInterruptCursor, FastCombatantInfoCursor, FastAbsorbedCursor, FastConsumeCursor, FastRaidGroupCursor, type ReusableDamage, type ReusableHeal, type ReusableResourceChange, type ReusableExtraAttack, type ReusableSlain, type ReusableResurrection, type ReusableCast, type ReusableAura, type ReusableSpellGo, type ReusableAuraCast, type ReusableSpellStart, type ReusableSpellFail, type ReusableUnitClassification, type ReusableDispel, type ReusableInterrupt, type ReusableCombatantInfo, type ReusableAbsorbed, type ReusableConsume, type ReusableRaidGroup } from "@/api/protodecode/decode";
 import { processorRegistry } from "./processors";
 import type { WorkerRequest, WorkerResponse, PanelProcessor, ProcessorContext, SerializableProcessorContext } from "./processorTypes";
 import { compileFilters } from "./processors/filters";
@@ -19,6 +19,7 @@ function deserializeContext(ctx: SerializableProcessorContext): ProcessorContext
   return {
     players: ctx.players,
     units: ctx.units,
+    vehicleControlIntervals: ctx.vehicleControlIntervals,
     selectedEncounterIds: new Set(ctx.selectedEncounterIds),
     entitySelection: {
       enemyIds: new Set(ctx.entitySelection.enemyIds),
@@ -35,14 +36,14 @@ function deserializeContext(ctx: SerializableProcessorContext): ProcessorContext
 /**
  * Union of all reusable event types
  */
-type AnyReusableEvent = ReusableDamage | ReusableHeal | ReusableResourceChange | ReusableExtraAttack | ReusableSlain | ReusableResurrection | ReusableCast | ReusableAura | ReusableSpellGo | ReusableAuraCast | ReusableSpellStart | ReusableSpellFail | ReusableUnitClassification | ReusableDispel | ReusableInterrupt | ReusableCombatantInfo | ReusableAbsorbed | ReusableConsume;
+type AnyReusableEvent = ReusableDamage | ReusableHeal | ReusableResourceChange | ReusableExtraAttack | ReusableSlain | ReusableResurrection | ReusableCast | ReusableAura | ReusableSpellGo | ReusableAuraCast | ReusableSpellStart | ReusableSpellFail | ReusableUnitClassification | ReusableDispel | ReusableInterrupt | ReusableCombatantInfo | ReusableAbsorbed | ReusableConsume | ReusableRaidGroup;
 
 /**
  * A cursor wrapper that supports peeking at the next event without consuming it.
  */
 interface PeekableCursor {
   streamType: StreamType;
-  cursor: FastDamageCursor | FastHealCursor | FastResourceChangeCursor | FastExtraAttackCursor | FastSlainCursor | FastResurrectionCursor | FastCastCursor | FastAuraCursor | FastSpellGoCursor | FastAuraCastCursor | FastSpellStartCursor | FastSpellFailCursor | FastUnitClassificationCursor | FastDispelCursor | FastInterruptCursor | FastCombatantInfoCursor | FastAbsorbedCursor | FastConsumeCursor;
+  cursor: FastDamageCursor | FastHealCursor | FastResourceChangeCursor | FastExtraAttackCursor | FastSlainCursor | FastResurrectionCursor | FastCastCursor | FastAuraCursor | FastSpellGoCursor | FastAuraCastCursor | FastSpellStartCursor | FastSpellFailCursor | FastUnitClassificationCursor | FastDispelCursor | FastInterruptCursor | FastCombatantInfoCursor | FastAbsorbedCursor | FastConsumeCursor | FastRaidGroupCursor;
   peeked: { event: AnyReusableEvent; encounterID: string; firstTimestamp: Date } | null;
 }
 
@@ -116,6 +117,8 @@ function createCursor(stream: WorkerRequest["streams"][0]): PeekableCursor {
     ? new FastCombatantInfoCursor(stream.data)
     : stream.type === "consume"
     ? new FastConsumeCursor(stream.data)
+    : stream.type === "raid_group"
+    ? new FastRaidGroupCursor(stream.data)
     : new FastDamageCursor(stream.data);
   
   return {
@@ -147,7 +150,10 @@ function processStreams<TResult>(
   // Create UnitState from static unit data and attach to context.
   // It will be fed unit_classification events during the loop so that
   // resolveEntity / filters see temporal ownership at each point in time.
-  const unitState = new UnitState(context.units ?? {});
+  const unitState = new UnitState(
+    context.units ?? {},
+    context.vehicleControlIntervals ?? [],
+  );
   context.unitState = unitState;
 
   // Compile filters once before the event loop (hot-path optimization).
@@ -218,6 +224,10 @@ function processStreams<TResult>(
       // Stamp globalOffsetMilli before filtering so time_range filter works across encounters
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (minPeeked.event as any).globalOffsetMilli = encounterBaseOffset + minPeeked.event.offsetMilli;
+
+      unitState.setCurrentTimestamp(
+        minPeeked.firstTimestamp.getTime() + minPeeked.event.offsetMilli,
+      );
 
       // Feed unit_classification events into UnitState so temporal ownership
       // is up-to-date before any processor or filter sees subsequent events.

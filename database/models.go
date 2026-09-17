@@ -8,6 +8,8 @@ import (
 	"database/sql/driver"
 	"fmt"
 
+	"github.com/Emyrk/chronicle/combatlog/parser/common/raidgroups"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/vehicles"
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -148,6 +150,9 @@ const (
 	LogFormat112aCcAddon       LogFormat = "1.12a-cc-addon"
 	LogFormat335aCcAddon       LogFormat = "3.3.5a-cc-addon"
 	LogFormatAzerothcoreMod    LogFormat = "azerothcore-mod"
+	LogFormat243CcAddon        LogFormat = "2.4.3-cc-addon"
+	LogFormatV9Cleu            LogFormat = "v9-cleu"
+	LogFormatHermesproxy1142Cc LogFormat = "hermesproxy_1_14_2_cc"
 )
 
 func (e *LogFormat) Scan(src interface{}) error {
@@ -190,7 +195,10 @@ func (e LogFormat) Valid() bool {
 	case LogFormat112aSuperwowAddon,
 		LogFormat112aCcAddon,
 		LogFormat335aCcAddon,
-		LogFormatAzerothcoreMod:
+		LogFormatAzerothcoreMod,
+		LogFormat243CcAddon,
+		LogFormatV9Cleu,
+		LogFormatHermesproxy1142Cc:
 		return true
 	}
 	return false
@@ -202,6 +210,9 @@ func AllLogFormatValues() []LogFormat {
 		LogFormat112aCcAddon,
 		LogFormat335aCcAddon,
 		LogFormatAzerothcoreMod,
+		LogFormat243CcAddon,
+		LogFormatV9Cleu,
+		LogFormatHermesproxy1142Cc,
 	}
 }
 
@@ -227,6 +238,7 @@ const (
 	LogInstanceEventTypeCompanionStats     LogInstanceEventType = "companion_stats"
 	LogInstanceEventTypeRessurection       LogInstanceEventType = "ressurection"
 	LogInstanceEventTypeConsume            LogInstanceEventType = "consume"
+	LogInstanceEventTypeRaidGroup          LogInstanceEventType = "raid_group"
 )
 
 func (e *LogInstanceEventType) Scan(src interface{}) error {
@@ -284,7 +296,8 @@ func (e LogInstanceEventType) Valid() bool {
 		LogInstanceEventTypeAbsorbed,
 		LogInstanceEventTypeCompanionStats,
 		LogInstanceEventTypeRessurection,
-		LogInstanceEventTypeConsume:
+		LogInstanceEventTypeConsume,
+		LogInstanceEventTypeRaidGroup:
 		return true
 	}
 	return false
@@ -311,6 +324,7 @@ func AllLogInstanceEventTypeValues() []LogInstanceEventType {
 		LogInstanceEventTypeCompanionStats,
 		LogInstanceEventTypeRessurection,
 		LogInstanceEventTypeConsume,
+		LogInstanceEventTypeRaidGroup,
 	}
 }
 
@@ -384,6 +398,64 @@ func AllLogTypeValues() []LogType {
 		LogTypeKronos,
 		LogTypeAzerothcore,
 		LogTypeAzerothcoreClientside,
+	}
+}
+
+type RaidGroupSnapshotType string
+
+const (
+	RaidGroupSnapshotTypeCleanKill RaidGroupSnapshotType = "clean_kill"
+	RaidGroupSnapshotTypeFinal     RaidGroupSnapshotType = "final"
+)
+
+func (e *RaidGroupSnapshotType) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = RaidGroupSnapshotType(s)
+	case string:
+		*e = RaidGroupSnapshotType(s)
+	default:
+		return fmt.Errorf("unsupported scan type for RaidGroupSnapshotType: %T", src)
+	}
+	return nil
+}
+
+type NullRaidGroupSnapshotType struct {
+	RaidGroupSnapshotType RaidGroupSnapshotType `json:"raid_group_snapshot_type"`
+	Valid                 bool                  `json:"valid"` // Valid is true if RaidGroupSnapshotType is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullRaidGroupSnapshotType) Scan(value interface{}) error {
+	if value == nil {
+		ns.RaidGroupSnapshotType, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.RaidGroupSnapshotType.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullRaidGroupSnapshotType) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.RaidGroupSnapshotType), nil
+}
+
+func (e RaidGroupSnapshotType) Valid() bool {
+	switch e {
+	case RaidGroupSnapshotTypeCleanKill,
+		RaidGroupSnapshotTypeFinal:
+		return true
+	}
+	return false
+}
+
+func AllRaidGroupSnapshotTypeValues() []RaidGroupSnapshotType {
+	return []RaidGroupSnapshotType{
+		RaidGroupSnapshotTypeCleanKill,
+		RaidGroupSnapshotTypeFinal,
 	}
 }
 
@@ -1130,6 +1202,15 @@ type DbcSpellRange struct {
 	Name      string    `db:"name" json:"name"`
 }
 
+type DbcVulnerabilitySpell struct {
+	DatasetID     uuid.UUID   `db:"dataset_id" json:"dataset_id"`
+	SpellID       int32       `db:"spell_id" json:"spell_id"`
+	Name          string      `db:"name" json:"name"`
+	SchoolBitmask int32       `db:"school_bitmask" json:"school_bitmask"`
+	PercentAffect pgtype.Int4 `db:"percent_affect" json:"percent_affect"`
+	FlatAffect    pgtype.Int4 `db:"flat_affect" json:"flat_affect"`
+}
+
 type DeploymentInfo struct {
 	ID                     uuid.UUID          `db:"id" json:"id"`
 	CreatedAt              pgtype.Timestamptz `db:"created_at" json:"created_at"`
@@ -1165,6 +1246,7 @@ type EncounterDpsRanking struct {
 	HealingDone    int64              `db:"healing_done" json:"healing_done"`
 	AbsorbedDone   int64              `db:"absorbed_done" json:"absorbed_done"`
 	Hps            float64            `db:"hps" json:"hps"`
+	PlayerSubSpec  string             `db:"player_sub_spec" json:"player_sub_spec"`
 }
 
 type ExternalCharacterLinkSync struct {
@@ -1201,11 +1283,92 @@ type GamePlayerGearHistory struct {
 	CreatedAt  pgtype.Timestamptz `db:"created_at" json:"created_at"`
 }
 
+type GearList struct {
+	ID               uuid.UUID          `db:"id" json:"id"`
+	UserID           uuid.UUID          `db:"user_id" json:"user_id"`
+	TenantID         uuid.UUID          `db:"tenant_id" json:"tenant_id"`
+	Title            string             `db:"title" json:"title"`
+	Description      string             `db:"description" json:"description"`
+	ClassID          int32              `db:"class_id" json:"class_id"`
+	SpecName         string             `db:"spec_name" json:"spec_name"`
+	Payload          []byte             `db:"payload" json:"payload"`
+	ForkedFromListID uuid.NullUUID      `db:"forked_from_list_id" json:"forked_from_list_id"`
+	CreatedAt        pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt        pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
+type GearProgression struct {
+	ID          uuid.UUID          `db:"id" json:"id"`
+	UserID      uuid.UUID          `db:"user_id" json:"user_id"`
+	TenantID    uuid.UUID          `db:"tenant_id" json:"tenant_id"`
+	Title       string             `db:"title" json:"title"`
+	Description string             `db:"description" json:"description"`
+	ClassID     int32              `db:"class_id" json:"class_id"`
+	SpecName    string             `db:"spec_name" json:"spec_name"`
+	Payload     []byte             `db:"payload" json:"payload"`
+	CreatedAt   pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
+type GearStatWeight struct {
+	ID          uuid.UUID          `db:"id" json:"id"`
+	UserID      uuid.UUID          `db:"user_id" json:"user_id"`
+	TenantID    uuid.UUID          `db:"tenant_id" json:"tenant_id"`
+	Name        string             `db:"name" json:"name"`
+	Description string             `db:"description" json:"description"`
+	ClassID     int32              `db:"class_id" json:"class_id"`
+	SpecName    string             `db:"spec_name" json:"spec_name"`
+	Weights     []byte             `db:"weights" json:"weights"`
+	CreatedAt   pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
 type Guild struct {
 	ID        uuid.UUID          `db:"id" json:"id"`
 	RealmID   uuid.UUID          `db:"realm_id" json:"realm_id"`
 	Name      string             `db:"name" json:"name"`
 	CreatedAt pgtype.Timestamptz `db:"created_at" json:"created_at"`
+}
+
+type GuildDiscordInstallState struct {
+	State     string             `db:"state" json:"state"`
+	GuildID   uuid.UUID          `db:"guild_id" json:"guild_id"`
+	UserID    uuid.UUID          `db:"user_id" json:"user_id"`
+	ExpiresAt pgtype.Timestamptz `db:"expires_at" json:"expires_at"`
+	CreatedAt pgtype.Timestamptz `db:"created_at" json:"created_at"`
+}
+
+type GuildDiscordInstallation struct {
+	GuildID                   uuid.UUID          `db:"guild_id" json:"guild_id"`
+	DiscordGuildID            string             `db:"discord_guild_id" json:"discord_guild_id"`
+	DiscordGuildName          string             `db:"discord_guild_name" json:"discord_guild_name"`
+	InstalledBy               uuid.UUID          `db:"installed_by" json:"installed_by"`
+	InstalledAt               pgtype.Timestamptz `db:"installed_at" json:"installed_at"`
+	UpdatedAt                 pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	AnnounceRaidLogs          bool               `db:"announce_raid_logs" json:"announce_raid_logs"`
+	AnnounceRaidLogsScope     string             `db:"announce_raid_logs_scope" json:"announce_raid_logs_scope"`
+	AnnounceRaidLogsChannelID pgtype.Text        `db:"announce_raid_logs_channel_id" json:"announce_raid_logs_channel_id"`
+}
+
+type GuildDiscordLogAnnouncement struct {
+	ID                  uuid.UUID          `db:"id" json:"id"`
+	GuildID             uuid.UUID          `db:"guild_id" json:"guild_id"`
+	RunID               uuid.UUID          `db:"run_id" json:"run_id"`
+	DiscordChannelID    string             `db:"discord_channel_id" json:"discord_channel_id"`
+	DiscordMessageID    pgtype.Text        `db:"discord_message_id" json:"discord_message_id"`
+	DeliveryAttemptedAt pgtype.Timestamptz `db:"delivery_attempted_at" json:"delivery_attempted_at"`
+	CreatedAt           pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt           pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	DeliveryError       pgtype.Text        `db:"delivery_error" json:"delivery_error"`
+}
+
+type GuildDiscordLogAnnouncementSource struct {
+	AnnouncementID  uuid.UUID          `db:"announcement_id" json:"announcement_id"`
+	LogGroupID      uuid.UUID          `db:"log_group_id" json:"log_group_id"`
+	InstanceOrdinal int32              `db:"instance_ordinal" json:"instance_ordinal"`
+	InstanceSlug    pgtype.Text        `db:"instance_slug" json:"instance_slug"`
+	CreatedAt       pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }
 
 type GuildJoinRequest struct {
@@ -1243,6 +1406,24 @@ type GuildPageTab struct {
 	SortOrder  int32              `db:"sort_order" json:"sort_order"`
 	CreatedAt  pgtype.Timestamptz `db:"created_at" json:"created_at"`
 	Visibility string             `db:"visibility" json:"visibility"`
+}
+
+type GuildResourceDailyStat struct {
+	GuildID        uuid.UUID   `db:"guild_id" json:"guild_id"`
+	ResourceKind   string      `db:"resource_kind" json:"resource_kind"`
+	ResourceKey    string      `db:"resource_key" json:"resource_key"`
+	ViewedOn       pgtype.Date `db:"viewed_on" json:"viewed_on"`
+	Views          int64       `db:"views" json:"views"`
+	UniqueVisitors int64       `db:"unique_visitors" json:"unique_visitors"`
+}
+
+type GuildResourceRecentVisitor struct {
+	GuildID      uuid.UUID          `db:"guild_id" json:"guild_id"`
+	ResourceKind string             `db:"resource_kind" json:"resource_kind"`
+	ResourceKey  string             `db:"resource_key" json:"resource_key"`
+	VisitorID    uuid.UUID          `db:"visitor_id" json:"visitor_id"`
+	ViewedOn     pgtype.Date        `db:"viewed_on" json:"viewed_on"`
+	CreatedAt    pgtype.Timestamptz `db:"created_at" json:"created_at"`
 }
 
 type GuildSetting struct {
@@ -1289,19 +1470,34 @@ type InstanceOverviewMetric struct {
 }
 
 type InstanceSpeedrun struct {
-	InstanceID       uuid.UUID          `db:"instance_id" json:"instance_id"`
-	InstanceName     string             `db:"instance_name" json:"instance_name"`
-	RealmID          uuid.UUID          `db:"realm_id" json:"realm_id"`
-	GuildID          uuid.NullUUID      `db:"guild_id" json:"guild_id"`
-	Qualified        bool               `db:"qualified" json:"qualified"`
-	StartTime        pgtype.Timestamptz `db:"start_time" json:"start_time"`
-	CompletionTime   pgtype.Timestamptz `db:"completion_time" json:"completion_time"`
-	DurationMs       int64              `db:"duration_ms" json:"duration_ms"`
-	Proof            []byte             `db:"proof" json:"proof"`
-	CreatedAt        pgtype.Timestamptz `db:"created_at" json:"created_at"`
-	AddonVersion     string             `db:"addon_version" json:"addon_version"`
-	ParserVersionNum int64              `db:"parser_version_num" json:"parser_version_num"`
-	AddonVersionNum  int64              `db:"addon_version_num" json:"addon_version_num"`
+	InstanceID               uuid.UUID          `db:"instance_id" json:"instance_id"`
+	InstanceName             string             `db:"instance_name" json:"instance_name"`
+	RealmID                  uuid.UUID          `db:"realm_id" json:"realm_id"`
+	GuildID                  uuid.NullUUID      `db:"guild_id" json:"guild_id"`
+	Qualified                bool               `db:"qualified" json:"qualified"`
+	StartTime                pgtype.Timestamptz `db:"start_time" json:"start_time"`
+	CompletionTime           pgtype.Timestamptz `db:"completion_time" json:"completion_time"`
+	DurationMs               int64              `db:"duration_ms" json:"duration_ms"`
+	Proof                    []byte             `db:"proof" json:"proof"`
+	CreatedAt                pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	AddonVersion             string             `db:"addon_version" json:"addon_version"`
+	ParserVersionNum         int64              `db:"parser_version_num" json:"parser_version_num"`
+	AddonVersionNum          int64              `db:"addon_version_num" json:"addon_version_num"`
+	RankedStartTime          pgtype.Timestamptz `db:"ranked_start_time" json:"ranked_start_time"`
+	RankedCompletionTime     pgtype.Timestamptz `db:"ranked_completion_time" json:"ranked_completion_time"`
+	RankedDurationMs         pgtype.Int8        `db:"ranked_duration_ms" json:"ranked_duration_ms"`
+	BossToBossStartTime      pgtype.Timestamptz `db:"boss_to_boss_start_time" json:"boss_to_boss_start_time"`
+	BossToBossCompletionTime pgtype.Timestamptz `db:"boss_to_boss_completion_time" json:"boss_to_boss_completion_time"`
+	BossToBossDurationMs     pgtype.Int8        `db:"boss_to_boss_duration_ms" json:"boss_to_boss_duration_ms"`
+}
+
+type ItemDailyPrice struct {
+	RealmID             uuid.UUID          `db:"realm_id" json:"realm_id"`
+	AuctionHouseFaction string             `db:"auction_house_faction" json:"auction_house_faction"`
+	ItemID              int32              `db:"item_id" json:"item_id"`
+	PriceDate           pgtype.Date        `db:"price_date" json:"price_date"`
+	PriceCopper         pgtype.Int8        `db:"price_copper" json:"price_copper"`
+	FetchedAt           pgtype.Timestamptz `db:"fetched_at" json:"fetched_at"`
 }
 
 type LeaderboardVersionRequirement struct {
@@ -1338,18 +1534,20 @@ type LogInstance struct {
 	Name       string      `db:"name" json:"name"`
 	HashedSlug pgtype.Text `db:"hashed_slug" json:"hashed_slug"`
 	// If set, that means it was a guild run.
-	GuildID           uuid.NullUUID      `db:"guild_id" json:"guild_id"`
-	StartTime         pgtype.Timestamptz `db:"start_time" json:"start_time"`
-	EndTime           pgtype.Timestamptz `db:"end_time" json:"end_time"`
-	Capabilities      []string           `db:"capabilities" json:"capabilities"`
-	Versions          VersionsMap        `db:"versions" json:"versions"`
-	RecorderName      string             `db:"recorder_name" json:"recorder_name"`
-	RecorderGuid      string             `db:"recorder_guid" json:"recorder_guid"`
-	ParserVersion     string             `db:"parser_version" json:"parser_version"`
-	DuplicateGroupID  uuid.NullUUID      `db:"duplicate_group_id" json:"duplicate_group_id"`
-	DifficultyName    string             `db:"difficulty_name" json:"difficulty_name"`
-	MaxPlayers        int32              `db:"max_players" json:"max_players"`
-	DynamicDifficulty int32              `db:"dynamic_difficulty" json:"dynamic_difficulty"`
+	GuildID                 uuid.NullUUID      `db:"guild_id" json:"guild_id"`
+	StartTime               pgtype.Timestamptz `db:"start_time" json:"start_time"`
+	EndTime                 pgtype.Timestamptz `db:"end_time" json:"end_time"`
+	Capabilities            []string           `db:"capabilities" json:"capabilities"`
+	Versions                VersionsMap        `db:"versions" json:"versions"`
+	RecorderName            string             `db:"recorder_name" json:"recorder_name"`
+	RecorderGuid            string             `db:"recorder_guid" json:"recorder_guid"`
+	ParserVersion           string             `db:"parser_version" json:"parser_version"`
+	DuplicateGroupID        uuid.NullUUID      `db:"duplicate_group_id" json:"duplicate_group_id"`
+	DifficultyName          string             `db:"difficulty_name" json:"difficulty_name"`
+	MaxPlayers              int32              `db:"max_players" json:"max_players"`
+	DynamicDifficulty       int32              `db:"dynamic_difficulty" json:"dynamic_difficulty"`
+	VehicleControlIntervals vehicles.Metadata  `db:"vehicle_control_intervals" json:"vehicle_control_intervals"`
+	Category                pgtype.Text        `db:"category" json:"category"`
 }
 
 type LogInstanceEncounter struct {
@@ -1382,6 +1580,17 @@ type LogInstanceEncounterHostile struct {
 	Boss        bool      `db:"boss" json:"boss"`
 }
 
+type LogInstanceEncounterPhase struct {
+	ID            uuid.UUID `db:"id" json:"id"`
+	EncounterID   uuid.UUID `db:"encounter_id" json:"encounter_id"`
+	Key           string    `db:"key" json:"key"`
+	Name          string    `db:"name" json:"name"`
+	PhaseOrder    int32     `db:"phase_order" json:"phase_order"`
+	StartOffsetMs int64     `db:"start_offset_ms" json:"start_offset_ms"`
+	EndOffsetMs   int64     `db:"end_offset_ms" json:"end_offset_ms"`
+	KillType      KillType  `db:"kill_type" json:"kill_type"`
+}
+
 type LogInstanceEvent struct {
 	InstanceID uuid.UUID            `db:"instance_id" json:"instance_id"`
 	Type       LogInstanceEventType `db:"type" json:"type"`
@@ -1397,6 +1606,15 @@ type LogInstancePlayer struct {
 	Class      WowPlayableClass `db:"class" json:"class"`
 	Race       WowPlayableRace  `db:"race" json:"race"`
 	GuildID    uuid.NullUUID    `db:"guild_id" json:"guild_id"`
+}
+
+type LogInstanceRaidGroupSnapshot struct {
+	ID           uuid.UUID              `db:"id" json:"id"`
+	InstanceID   uuid.UUID              `db:"instance_id" json:"instance_id"`
+	EncounterID  uuid.NullUUID          `db:"encounter_id" json:"encounter_id"`
+	SnapshotType RaidGroupSnapshotType  `db:"snapshot_type" json:"snapshot_type"`
+	ObservedAt   pgtype.Timestamptz     `db:"observed_at" json:"observed_at"`
+	Composition  raidgroups.Composition `db:"composition" json:"composition"`
 }
 
 // Stores all units (NPCs, not players) that participated in an instance.
@@ -1419,32 +1637,33 @@ type LogInstanceYoutubeTimestamped struct {
 }
 
 type LogInstancesGuild struct {
-	ID                 uuid.UUID          `db:"id" json:"id"`
-	RealmID            uuid.UUID          `db:"realm_id" json:"realm_id"`
-	LogGroupID         uuid.UUID          `db:"log_group_id" json:"log_group_id"`
-	Name               string             `db:"name" json:"name"`
-	HashedSlug         pgtype.Text        `db:"hashed_slug" json:"hashed_slug"`
-	GuildID            uuid.NullUUID      `db:"guild_id" json:"guild_id"`
-	Capabilities       []string           `db:"capabilities" json:"capabilities"`
-	Versions           VersionsMap        `db:"versions" json:"versions"`
-	RecorderName       string             `db:"recorder_name" json:"recorder_name"`
-	RecorderGuid       string             `db:"recorder_guid" json:"recorder_guid"`
-	DuplicateGroupID   uuid.NullUUID      `db:"duplicate_group_id" json:"duplicate_group_id"`
-	StartTime          pgtype.Timestamptz `db:"start_time" json:"start_time"`
-	EndTime            pgtype.Timestamptz `db:"end_time" json:"end_time"`
-	DifficultyName     string             `db:"difficulty_name" json:"difficulty_name"`
-	MaxPlayers         int32              `db:"max_players" json:"max_players"`
-	DynamicDifficulty  int32              `db:"dynamic_difficulty" json:"dynamic_difficulty"`
-	RealmName          string             `db:"realm_name" json:"realm_name"`
-	GuildName          pgtype.Text        `db:"guild_name" json:"guild_name"`
-	GuildRealmID       uuid.NullUUID      `db:"guild_realm_id" json:"guild_realm_id"`
-	GuildCreatedAt     pgtype.Timestamptz `db:"guild_created_at" json:"guild_created_at"`
-	ServerName         pgtype.Text        `db:"server_name" json:"server_name"`
-	TenantName         pgtype.Text        `db:"tenant_name" json:"tenant_name"`
-	TenantSlug         pgtype.Text        `db:"tenant_slug" json:"tenant_slug"`
-	TenantIncludeInAll bool               `db:"tenant_include_in_all" json:"tenant_include_in_all"`
-	Format             NullLogFormat      `db:"format" json:"format"`
-	Flavor             []string           `db:"flavor" json:"flavor"`
+	ID                      uuid.UUID          `db:"id" json:"id"`
+	RealmID                 uuid.UUID          `db:"realm_id" json:"realm_id"`
+	LogGroupID              uuid.UUID          `db:"log_group_id" json:"log_group_id"`
+	Name                    string             `db:"name" json:"name"`
+	HashedSlug              pgtype.Text        `db:"hashed_slug" json:"hashed_slug"`
+	GuildID                 uuid.NullUUID      `db:"guild_id" json:"guild_id"`
+	Capabilities            []string           `db:"capabilities" json:"capabilities"`
+	Versions                VersionsMap        `db:"versions" json:"versions"`
+	RecorderName            string             `db:"recorder_name" json:"recorder_name"`
+	RecorderGuid            string             `db:"recorder_guid" json:"recorder_guid"`
+	DuplicateGroupID        uuid.NullUUID      `db:"duplicate_group_id" json:"duplicate_group_id"`
+	StartTime               pgtype.Timestamptz `db:"start_time" json:"start_time"`
+	EndTime                 pgtype.Timestamptz `db:"end_time" json:"end_time"`
+	DifficultyName          string             `db:"difficulty_name" json:"difficulty_name"`
+	MaxPlayers              int32              `db:"max_players" json:"max_players"`
+	DynamicDifficulty       int32              `db:"dynamic_difficulty" json:"dynamic_difficulty"`
+	VehicleControlIntervals vehicles.Metadata  `db:"vehicle_control_intervals" json:"vehicle_control_intervals"`
+	RealmName               string             `db:"realm_name" json:"realm_name"`
+	GuildName               pgtype.Text        `db:"guild_name" json:"guild_name"`
+	GuildRealmID            uuid.NullUUID      `db:"guild_realm_id" json:"guild_realm_id"`
+	GuildCreatedAt          pgtype.Timestamptz `db:"guild_created_at" json:"guild_created_at"`
+	ServerName              pgtype.Text        `db:"server_name" json:"server_name"`
+	TenantName              pgtype.Text        `db:"tenant_name" json:"tenant_name"`
+	TenantSlug              pgtype.Text        `db:"tenant_slug" json:"tenant_slug"`
+	TenantIncludeInAll      bool               `db:"tenant_include_in_all" json:"tenant_include_in_all"`
+	Format                  NullLogFormat      `db:"format" json:"format"`
+	Flavor                  []string           `db:"flavor" json:"flavor"`
 }
 
 type ParseScoreReceipt struct {
@@ -1487,11 +1706,24 @@ type ParseScoreResult struct {
 	MaxPlayers     int16              `db:"max_players" json:"max_players"`
 	KilledAt       pgtype.Timestamptz `db:"killed_at" json:"killed_at"`
 	CreatedAt      pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	PlayerSubSpec  string             `db:"player_sub_spec" json:"player_sub_spec"`
 }
 
 // A parsed_log_group is a wow_log_group that has been processed and contains parsed logs. A duplicate allows deleting this one row to clear all parsed logs for a given wow_log_group.
 type ParsedLogGroup struct {
 	ID uuid.UUID `db:"id" json:"id"`
+}
+
+type RaidComposition struct {
+	ID         uuid.UUID          `db:"id" json:"id"`
+	UserID     uuid.UUID          `db:"user_id" json:"user_id"`
+	TenantID   uuid.UUID          `db:"tenant_id" json:"tenant_id"`
+	GuildID    uuid.NullUUID      `db:"guild_id" json:"guild_id"`
+	Name       string             `db:"name" json:"name"`
+	Data       []byte             `db:"data" json:"data"`
+	PublicView bool               `db:"public_view" json:"public_view"`
+	CreatedAt  pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt  pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }
 
 type RankingSnapshot struct {
@@ -1510,6 +1742,8 @@ type RankingSnapshot struct {
 	PublishedAt         pgtype.Timestamptz `db:"published_at" json:"published_at"`
 	SourceRowCount      int64              `db:"source_row_count" json:"source_row_count"`
 	SourceWatermark     pgtype.Timestamptz `db:"source_watermark" json:"source_watermark"`
+	// Exact number of ranking_snapshot_members rows captured when the snapshot is published
+	MemberCount int64 `db:"member_count" json:"member_count"`
 }
 
 type RankingSnapshotMember struct {
@@ -1533,6 +1767,7 @@ type RankingSnapshotMember struct {
 	DurationSecs     float64            `db:"duration_secs" json:"duration_secs"`
 	Dps              float64            `db:"dps" json:"dps"`
 	Hps              float64            `db:"hps" json:"hps"`
+	PlayerSubSpec    string             `db:"player_sub_spec" json:"player_sub_spec"`
 }
 
 type RankingsInstanceSummary struct {
@@ -1587,25 +1822,6 @@ type RetentionRule struct {
 	CreatedAt   pgtype.Timestamptz `db:"created_at" json:"created_at"`
 }
 
-type RiverClient struct {
-	ID        string             `db:"id" json:"id"`
-	CreatedAt pgtype.Timestamptz `db:"created_at" json:"created_at"`
-	Metadata  []byte             `db:"metadata" json:"metadata"`
-	PausedAt  pgtype.Timestamptz `db:"paused_at" json:"paused_at"`
-	UpdatedAt pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
-}
-
-type RiverClientQueue struct {
-	RiverClientID    string             `db:"river_client_id" json:"river_client_id"`
-	Name             string             `db:"name" json:"name"`
-	CreatedAt        pgtype.Timestamptz `db:"created_at" json:"created_at"`
-	MaxWorkers       int64              `db:"max_workers" json:"max_workers"`
-	Metadata         []byte             `db:"metadata" json:"metadata"`
-	NumJobsCompleted int64              `db:"num_jobs_completed" json:"num_jobs_completed"`
-	NumJobsRunning   int64              `db:"num_jobs_running" json:"num_jobs_running"`
-	UpdatedAt        pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
-}
-
 type RiverJob struct {
 	ID           int64              `db:"id" json:"id"`
 	State        RiverJobState      `db:"state" json:"state"`
@@ -1638,6 +1854,13 @@ type RiverMigration struct {
 	Line      string             `db:"line" json:"line"`
 	Version   int64              `db:"version" json:"version"`
 	CreatedAt pgtype.Timestamptz `db:"created_at" json:"created_at"`
+}
+
+type RiverNotification struct {
+	ID        int64              `db:"id" json:"id"`
+	CreatedAt pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	Payload   string             `db:"payload" json:"payload"`
+	Topic     string             `db:"topic" json:"topic"`
 }
 
 type RiverQueue struct {
@@ -1697,6 +1920,7 @@ type TalentBuild struct {
 	Spec          string             `db:"spec" json:"spec"`
 	SubSpec       pgtype.Text        `db:"sub_spec" json:"sub_spec"`
 	CreatedAt     pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	DatasetID     uuid.UUID          `db:"dataset_id" json:"dataset_id"`
 }
 
 type Tenant struct {
@@ -2140,15 +2364,18 @@ type WowServer struct {
 	Description      string        `db:"description" json:"description"`
 	TenantID         uuid.NullUUID `db:"tenant_id" json:"tenant_id"`
 	DefaultDatasetID uuid.NullUUID `db:"default_dataset_id" json:"default_dataset_id"`
+	PricingProvider  pgtype.Text   `db:"pricing_provider" json:"pricing_provider"`
 }
 
 type WowServerRealm struct {
-	ID          uuid.UUID     `db:"id" json:"id"`
-	ServerID    uuid.UUID     `db:"server_id" json:"server_id"`
-	Name        string        `db:"name" json:"name"`
-	CreatedBy   uuid.NullUUID `db:"created_by" json:"created_by"`
-	Url         pgtype.Text   `db:"url" json:"url"`
-	Description string        `db:"description" json:"description"`
+	ID                  uuid.UUID     `db:"id" json:"id"`
+	ServerID            uuid.UUID     `db:"server_id" json:"server_id"`
+	Name                string        `db:"name" json:"name"`
+	CreatedBy           uuid.NullUUID `db:"created_by" json:"created_by"`
+	Url                 pgtype.Text   `db:"url" json:"url"`
+	Description         string        `db:"description" json:"description"`
+	PricingRouteName    pgtype.Text   `db:"pricing_route_name" json:"pricing_route_name"`
+	PricingAuctionHouse pgtype.Text   `db:"pricing_auction_house" json:"pricing_auction_house"`
 }
 
 type WowServerUploadKey struct {

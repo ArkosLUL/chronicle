@@ -6,9 +6,10 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Popover as PopoverPrimitive } from "radix-ui";
-import { ChevronsUpDown, Search } from "lucide-react";
+import { ChevronsUpDown, Search, Users } from "lucide-react";
 import { usePortalContainer } from "@/components/ui/PortalContainerContext";
 import { ScrollArea } from "@/components/ui/ScrollArea/ScrollArea";
+import { HintTooltip, TooltipContent, TooltipTrigger } from "@/components/ui/Tooltip/tooltip";
 import { useCachedValue } from "@/hooks/useCachedValue";
 import { useDatasetId } from "@/hooks/useDatasetId";
 import { useConsumableDisambiguations } from "@/api/queries";
@@ -17,19 +18,28 @@ import { cn } from "@/lib/utils";
 import { buildConsumableDisambiguationMap, resolveConsumableUse } from "./consumableDisambiguation";
 import { GenericPanel } from "../GenericPanel";
 import type { PanelRenderProps } from "../types";
-import type { ConsumablesResult } from "./consumables.processor";
+import { isPreCombatUse, PRE_COMBAT_DESCRIPTION, type ConsumablesResult } from "./consumables.processor";
 import {
+  aggregateConsumableGoldByPlayer,
   aggregateConsumablesLedger,
   aggregatePlayerItemEncounters,
   classColor,
   classRank,
-  formatGold,
   ledgerCoverage,
-  NO_PRICES,
-} from "./consumablesLedger";
+} from "./consumablesLedgerLogic";
+import { CoinAmount } from "./CoinAmount";
+import { useConsumablePrices } from "./useConsumablePrices";
 import { FloatingIncomingEventsBreakout } from "../IncomingEvents/FloatingIncomingEventsBreakout";
 import { PlayerItemBreakout, type PlayerItemBreakoutData } from "./LedgerItemBreakout";
-import { AmbiguousSection, LedgerFilterInput, LedgerRow, useFilteredUses } from "./LedgerShared";
+import {
+  AmbiguousSection,
+  ConsumableTimingFilter,
+  LedgerFilterInput,
+  LedgerRow,
+  TimingColumnHeaders,
+  useFilteredUses,
+  VIEW_ALL_TOKEN,
+} from "./LedgerShared";
 
 const PLAYER_TOKEN = "pl:";
 
@@ -175,7 +185,13 @@ export function ConsumablesPlayerContent(props: ConsumablesPlayerContentProps) {
   // Filtering happens before any aggregation so the roster bars, header
   // totals, and combobox counts all react to the filter, not just the rows.
   const [filter, setFilter] = useState("");
-  const filteredUses = useFilteredUses(resolvedUses, filter);
+  const [showPreCombat, setShowPreCombat] = useState(false);
+  const timingFilteredUses = useMemo(
+    () => showPreCombat ? resolvedUses : resolvedUses.filter((use) => !isPreCombatUse(use)),
+    [resolvedUses, showPreCombat],
+  );
+  const filteredUses = useFilteredUses(timingFilteredUses, filter);
+  const prices = useConsumablePrices(context.instance.id, resolvedUses);
 
   const usesByPlayer = useMemo(() => {
     const counts = new Map<string, number>();
@@ -201,13 +217,7 @@ export function ConsumablesPlayerContent(props: ConsumablesPlayerContentProps) {
   // is missing for more than half of the players that used anything, fall
   // back to use counts so the strip stays comparable.
   const rosterBars = useMemo(() => {
-    const goldByPlayer = new Map<string, number>();
-    for (const use of filteredUses) {
-      if (use.itemId === null) continue;
-      const unitCopper = NO_PRICES.get(use.itemId);
-      if (unitCopper === undefined) continue;
-      goldByPlayer.set(use.player, (goldByPlayer.get(use.player) ?? 0) + unitCopper);
-    }
+    const goldByPlayer = aggregateConsumableGoldByPlayer(filteredUses, prices);
     const activeGuids = [...usesByPlayer.entries()].filter(([, uses]) => uses > 0).map(([guid]) => guid);
     const missingGold = activeGuids.filter((guid) => (goldByPlayer.get(guid) ?? 0) === 0).length;
     const byGold = activeGuids.length > 0 && missingGold * 2 <= activeGuids.length;
@@ -215,7 +225,7 @@ export function ConsumablesPlayerContent(props: ConsumablesPlayerContentProps) {
       byGold ? (goldByPlayer.get(guid) ?? 0) : (usesByPlayer.get(guid) ?? 0);
     const max = Math.max(1, ...roster.map((player) => valueOf(player.guid)));
     return { byGold, goldByPlayer, valueOf, max };
-  }, [filteredUses, usesByPlayer, roster]);
+  }, [filteredUses, usesByPlayer, roster, prices]);
 
   // panelOption is a comma-separated token list shared with the panel-level
   // "Raid Wide" checkbox ("cb"); only the pl: token belongs to this view.
@@ -288,14 +298,31 @@ export function ConsumablesPlayerContent(props: ConsumablesPlayerContentProps) {
     selectPlayer(roster[next].guid);
   };
 
+  // Switch to the all-players view. Folds any pending debounced player
+  // selection into the same panelOption write so neither token is lost.
+  const enterViewAll = () => {
+    if (flushTimerRef.current) clearTimeout(flushTimerRef.current);
+    const pendingGuid = pendingGuidRef.current;
+    pendingGuidRef.current = null;
+    let tokens = optionTokens.filter((token) => token !== VIEW_ALL_TOKEN);
+    if (pendingGuid !== null) {
+      tokens = tokens.filter((token) => !token.startsWith(PLAYER_TOKEN));
+      tokens.push(`${PLAYER_TOKEN}${pendingGuid}`);
+    }
+    tokens.push(VIEW_ALL_TOKEN);
+    setPanelOption?.(tokens.join(","));
+  };
+
   const ledger = useMemo(
     () =>
       aggregateConsumablesLedger(
         filteredUses.filter((use) => use.player === selected?.guid),
-        NO_PRICES,
+        prices,
       ),
-    [filteredUses, selected?.guid],
+    [filteredUses, selected?.guid, prices],
   );
+
+  const showTimingColumns = ledger.rows.some((row) => row.inCombatUses > 0) && ledger.rows.some((row) => row.preCombatUses > 0);
 
   const coverage = ledgerCoverage(ledger);
 
@@ -318,7 +345,7 @@ export function ConsumablesPlayerContent(props: ConsumablesPlayerContentProps) {
     const key = `${selected.guid}:${itemId}`;
     const rect = target.getBoundingClientRect();
     const view = target.ownerDocument.defaultView;
-    const x = Math.max(8, Math.min(rect.right + 8, (view?.innerWidth ?? 640) - 340));
+    const x = Math.max(8, Math.min(rect.right + 8, (view?.innerWidth ?? 640) - 448));
     const y = Math.max(8, Math.min(rect.top, (view?.innerHeight ?? 480) - 200));
     setBreakouts((previous) =>
       previous.some((b) => b.key === key)
@@ -376,11 +403,23 @@ export function ConsumablesPlayerContent(props: ConsumablesPlayerContentProps) {
         </div>
       ) : (
         <div className="flex h-full min-h-0 flex-col">
-          <div className="shrink-0 pb-2">
-            <LedgerFilterInput value={filter} onChange={setFilter} />
+          <div className="flex shrink-0 gap-2 pb-2">
+            <div className="min-w-0 flex-1">
+              <LedgerFilterInput value={filter} onChange={setFilter} />
+            </div>
+            <ConsumableTimingFilter
+              label="Pre-Combat"
+              description={PRE_COMBAT_DESCRIPTION}
+              enabled={showPreCombat}
+              onToggle={() => setShowPreCombat((shown) => !shown)}
+            />
           </div>
-          <div className="flex shrink-0 items-center justify-between gap-2 px-2 pb-2">
-            <div className="flex min-w-0 items-center gap-2">
+          <div
+            className="flex shrink-0 items-center justify-between gap-2 px-2 pb-2"
+            data-lesson-target="read-consumables"
+            data-demo-consumables-player-header
+          >
+            <div className="flex min-w-0 items-center gap-2" data-demo-consumables-player-identity>
               <span
                 className="h-4 w-1 shrink-0 rounded-full"
                 style={{ background: classColor(selected.cls) }}
@@ -412,30 +451,43 @@ export function ConsumablesPlayerContent(props: ConsumablesPlayerContentProps) {
                   ›
                 </button>
               </div>
+              <button
+                type="button"
+                onClick={enterViewAll}
+                title="View all players at once"
+                data-demo-consumables-view-all
+                data-lesson-target="view-all-consumables"
+                className="flex h-5 shrink-0 cursor-pointer items-center gap-1 rounded border border-border/60 px-1.5 text-2xs text-muted-foreground transition-colors hover:border-border hover:text-foreground"
+              >
+                <Users className="h-3 w-3" />
+                View All
+              </button>
             </div>
-            <div className="flex shrink-0 flex-col items-end gap-0.5">
+            <div className="flex shrink-0 flex-col items-end gap-0.5" data-demo-consumables-player-total>
               <span className="font-mono text-sm font-semibold text-foreground">
                 {ledger.totalUses} <span className="text-2xs font-normal text-muted-foreground">uses</span>
               </span>
-              {coverage.showGold && (
-                <span className="font-mono text-xs text-amber-300/90">{formatGold(ledger.totalCopper)}</span>
-              )}
+              {coverage.showGold && <CoinAmount copper={ledger.totalCopper} className="text-xs" />}
             </div>
           </div>
 
-          <div className="flex h-9 shrink-0 items-end gap-1 border-y border-border/60 px-2 pb-1 pt-1.5">
+          <div
+            className="flex h-9 shrink-0 items-end gap-1 border-y border-border/60 px-2 pb-1 pt-1.5"
+            data-lesson-target="read-consumables"
+            data-demo-consumables-roster
+          >
             {roster.map((player, index) => {
               const uses = usesByPlayer.get(player.guid) ?? 0;
               const gold = rosterBars.goldByPlayer.get(player.guid) ?? 0;
               const value = rosterBars.valueOf(player.guid);
               const heightPct = Math.max(16, (value / rosterBars.max) * 100);
               return (
+                // HintTooltip: delayed, hoverable variant — the instant
+                // Tooltip flickers when the content opens under the cursor.
+                <HintTooltip key={player.guid} delayDuration={150}>
+                  <TooltipTrigger asChild>
                 <button
-                  key={player.guid}
                   type="button"
-                  title={`${player.name} · ${player.cls?.toLowerCase() ?? "unknown"}${
-                    uses > 0 ? ` · ${uses} uses` : " · no uses"
-                  }${gold > 0 ? ` · ${formatGold(gold)}` : ""}`}
                   onClick={() => selectPlayer(player.guid)}
                   className={cn(
                     "group/bar flex h-full min-w-0 flex-1 cursor-pointer items-end overflow-hidden rounded-sm bg-background/80",
@@ -462,6 +514,33 @@ export function ConsumablesPlayerContent(props: ConsumablesPlayerContentProps) {
                     />
                   )}
                 </button>
+                  </TooltipTrigger>
+                  <TooltipContent
+                    side="bottom"
+                    sideOffset={6}
+                    hideArrow
+                    className="flex flex-col gap-0.5 border border-border bg-popover text-popover-foreground shadow-md"
+                  >
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-xs font-medium" style={{ color: classColor(player.cls) }}>
+                        {player.name}
+                      </span>
+                      <span className="text-2xs capitalize text-muted-foreground">
+                        {player.cls?.toLowerCase() ?? "unknown"}
+                      </span>
+                    </div>
+                    <div className="font-mono text-2xs text-foreground/80">
+                      {uses} consume{uses === 1 ? "" : "s"} used
+                    </div>
+                    <div className="text-2xs">
+                      {gold > 0 ? (
+                        <CoinAmount copper={gold} />
+                      ) : (
+                        <span className="font-mono text-muted-foreground">no price data</span>
+                      )}
+                    </div>
+                  </TooltipContent>
+                </HintTooltip>
               );
             })}
           </div>
@@ -474,6 +553,8 @@ export function ConsumablesPlayerContent(props: ConsumablesPlayerContentProps) {
               {selectedIndex + 1} / {roster.length}
             </span>
           </div>
+
+          <TimingColumnHeaders show={showTimingColumns} showGold={coverage.showGold} />
 
           {ledger.totalUses === 0 ? (
             <div className="py-4 text-center text-xs text-muted-foreground">
@@ -495,6 +576,7 @@ export function ConsumablesPlayerContent(props: ConsumablesPlayerContentProps) {
                     maxUses={ledger.maxUses}
                     subtitle={`${row.encounters} fight${row.encounters === 1 ? "" : "s"}`}
                     showGold={coverage.showGold}
+                    showTimingColumns={showTimingColumns}
                     onClick={(event) => toggleBreakout(row.itemId, event.currentTarget)}
                     selected={breakouts.some((b) => b.key === `${selected.guid}:${row.itemId}`)}
                   />

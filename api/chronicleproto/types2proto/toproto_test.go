@@ -8,6 +8,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/common/messages"
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
+	"github.com/Emyrk/chronicle/combatlog/parser/types/combatant"
 	"github.com/Emyrk/chronicle/database/gamedb/chrondbc"
 	"github.com/stretchr/testify/require"
 )
@@ -15,6 +16,19 @@ import (
 // arcaneSpell is a minimal DBC spell whose magic school is Arcane.
 func arcaneSpell() *chrondbc.Spell {
 	return &chrondbc.Spell{School: chrondbc.SchoolArcane}
+}
+
+func TestGearSlotPreservesGemPositions(t *testing.T) {
+	t.Parallel()
+
+	got := GearSlot(combatant.GearItem{
+		ItemID:        51396,
+		GemEnchantIDs: [4]int{0, 0, 3637, 0},
+	})
+
+	require.Equal(t, int32(51396), got.ItemId)
+	require.Equal(t, []int32{0, 0, 3637, 0}, got.GemEnchantIds)
+	require.Nil(t, GearSlot(combatant.GearItem{ItemID: 50633}).GemEnchantIds)
 }
 
 func TestResurrection(t *testing.T) {
@@ -153,6 +167,40 @@ func TestAbsorbedSchoolBackfill(t *testing.T) {
 		AbsorbSpell:  arcaneSpell(),
 	})
 	require.Equal(t, chronicleproto.School_Arcane, got.AbsorbSchool)
+}
+
+func TestAuraPreservesCaster(t *testing.T) {
+	t.Parallel()
+
+	ts := time.UnixMilli(5000)
+	caster := guid.GUID(1)
+	got := Aura(ts, 4, &messages.Aura{
+		MessageBase: messages.Base(ts, messages.WithSynthetic()),
+		Source:      &caster,
+		Target:      guid.GUID(2),
+		SpellData:   &chrondbc.Spell{ID: 17},
+		SpellName:   "Power Word: Shield",
+		Amount:      1,
+		Transition:  messages.AuraTransitionRefreshed,
+		State:       types.AuraStateAdded,
+		IsBuff:      true,
+	})
+
+	require.Equal(t, caster.String(), got.GetCaster())
+	require.Equal(t, chronicleproto.AuraTransition_TransitionRefreshed, got.Transition)
+	require.True(t, got.IsBuff)
+	require.True(t, got.Meta.IsSynthetic)
+	require.Equal(t, int32(4), got.Meta.Index)
+}
+
+func TestAuraAllowsUnknownCaster(t *testing.T) {
+	t.Parallel()
+
+	got := Aura(time.UnixMilli(5000), 0, &messages.Aura{
+		Target: guid.GUID(2),
+	})
+
+	require.Nil(t, got.Caster)
 }
 
 func TestEventMetaSyntheticRoundTrip(t *testing.T) {

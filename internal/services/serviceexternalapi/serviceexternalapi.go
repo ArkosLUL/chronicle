@@ -11,6 +11,8 @@ import (
 	"github.com/Emyrk/chronicle/internal/services/servicelogger"
 	"github.com/coder/serpent"
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 var (
@@ -34,13 +36,29 @@ type externalAPIStore interface {
 	ResolveExternalAPIRealm(context.Context, database.ResolveExternalAPIRealmParams) (database.ResolveExternalAPIRealmRow, error)
 	GetExternalAPICharacter(context.Context, database.GetExternalAPICharacterParams) (database.GetExternalAPICharacterRow, error)
 	ListExternalAPICharacterLogs(context.Context, database.ListExternalAPICharacterLogsParams) ([]database.ListExternalAPICharacterLogsRow, error)
+	RankingsLeaderboard(context.Context, database.RankingsLeaderboardParams) ([]database.RankingsLeaderboardRow, error)
+	SpeedrunLeaderboard(context.Context, database.SpeedrunLeaderboardParams) ([]database.SpeedrunLeaderboardRow, error)
+	ListExternalAPILeaderboardDuplicateLogs(context.Context, database.ListExternalAPILeaderboardDuplicateLogsParams) ([]database.ListExternalAPILeaderboardDuplicateLogsRow, error)
+	ListExternalAPIRecentInstances(context.Context, database.ListExternalAPIRecentInstancesParams) ([]database.ListExternalAPIRecentInstancesRow, error)
+	Instance(context.Context, uuid.UUID) (database.LogInstancesGuild, error)
+	InstanceBySlug(context.Context, pgtype.Text) (database.LogInstancesGuild, error)
+	EncountersByInstanceID(context.Context, uuid.UUID) ([]database.LogInstanceEncounter, error)
+	InstanceUnitsByInstanceID(context.Context, uuid.UUID) ([]database.LogInstanceUnit, error)
+	InstancePlayersByInstanceID(context.Context, uuid.UUID) ([]database.LogInstancePlayer, error)
+	GetInstanceEncounterCharacterFights(context.Context, uuid.UUID) ([]database.LogInstanceEncounterHostile, error)
+	GetEncounterPhasesByInstanceID(context.Context, uuid.UUID) ([]database.LogInstanceEncounterPhase, error)
+	ResolveDatasetByRealm(context.Context, uuid.UUID) (database.ResolveDatasetByRealmRow, error)
+	InstanceRankingRecords(context.Context, uuid.UUID) ([]database.EncounterDpsRanking, error)
+	GetParseScoreResultsForInstance(context.Context, uuid.UUID) ([]database.ParseScoreResult, error)
+	InstanceEvent(context.Context, database.InstanceEventParams) (database.LogInstanceEvent, error)
 }
 
 type Service struct {
-	broker  *services.Services
-	db      externalAPIStore
-	router  chi.Router
-	openapi OpenAPIDocument
+	broker      *services.Services
+	db          externalAPIStore
+	router      chi.Router
+	rateLimiter *externalIPLimiter
+	openapi     OpenAPIDocument
 }
 
 func New(broker *services.Services) *Service {
@@ -65,6 +83,7 @@ func (s *Service) Start(_ context.Context) error {
 
 func (s *Service) setupRoutes() {
 	s.router = chi.NewRouter()
+	s.rateLimiter = newExternalIPLimiter()
 	s.openapi = newOpenAPIDocument()
 	s.registerRoutes()
 }

@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/Tooltip/tooltip"
 import type { RankingsBoxPlotStats } from "@/api/typesGenerated"
 import { CLASS_CSS_VAR, CLASS_DISPLAY } from "./classDisplay"
+import { formatBoxPlotTick, getBoxPlotScale } from "./boxPlotScale"
 
 // ── Box Plot Row ──────────────────────────────────────────────────────────
 
@@ -20,35 +21,42 @@ function BoxPlotRow({ stats, scaleMax, onClick }: BoxPlotRowProps) {
   const pct = (v: number) => `${(v / scaleMax) * 100}%`
   const color = CLASS_CSS_VAR[stats.player_class]
   const iqr = stats.q3_dps - stats.q1_dps
-  const label = stats.player_spec
-    ? `${CLASS_DISPLAY[stats.player_class]} - ${stats.player_spec}`
+  const specLabel = stats.player_sub_spec ? `${stats.player_spec} (${stats.player_sub_spec})` : stats.player_spec
+  const label = specLabel
+    ? `${CLASS_DISPLAY[stats.player_class]} - ${specLabel}`
     : CLASS_DISPLAY[stats.player_class]
 
   return (
     <Tooltip>
       <TooltipTrigger asChild>
         <div
-          className={`group flex items-center gap-3 rounded-md px-1 py-1.5 transition-colors hover:bg-muted/20 ${onClick ? "cursor-pointer" : "cursor-default"}`}
+          className={`group relative h-10 rounded-md border-l-2 pl-2 transition-colors hover:bg-muted/20 sm:flex sm:h-auto sm:items-center sm:gap-3 sm:border-l-0 sm:px-1 sm:py-1.5 ${onClick ? "cursor-pointer" : "cursor-default"}`}
+          style={{ borderLeftColor: color }}
           onClick={onClick}
           role={onClick ? "button" : undefined}
           tabIndex={onClick ? 0 : undefined}
           onKeyDown={onClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick() } } : undefined}
         >
-          {/* Class label */}
-          <div className="flex w-32 shrink-0 items-center gap-1.5 text-xs">
-            <img
-              src={`/c/icons/class_${stats.player_class.toLowerCase()}.png`}
-              alt={CLASS_DISPLAY[stats.player_class] ?? stats.player_class}
-              className="h-4 w-4 shrink-0 rounded-sm"
-              onError={(e) => { e.currentTarget.src = "/c/icons/class_unknown.png" }}
-            />
-            <span className="truncate font-medium" style={{ color }}>
-              {stats.player_spec || CLASS_DISPLAY[stats.player_class]}
+          {/* Class label and mobile median overlap the top of the plot. */}
+          <div className="absolute inset-x-2 top-0 z-10 flex items-center text-xs sm:static sm:w-32 sm:shrink-0">
+            <span className="flex min-w-0 items-center gap-1.5 bg-card/90 pr-2 backdrop-blur-[1px] sm:bg-transparent sm:pr-0 sm:backdrop-blur-none">
+              <img
+                src={`/c/icons/class_${stats.player_class.toLowerCase()}.png`}
+                alt={CLASS_DISPLAY[stats.player_class] ?? stats.player_class}
+                className="h-4 w-4 shrink-0 rounded-sm"
+                onError={(e) => { e.currentTarget.src = "/c/icons/class_unknown.png" }}
+              />
+              <span className="truncate font-medium" style={{ color }}>
+                {specLabel || CLASS_DISPLAY[stats.player_class]}
+              </span>
+            </span>
+            <span className="ml-auto shrink-0 bg-card/90 pl-2 font-mono font-semibold tabular-nums text-foreground backdrop-blur-[1px] sm:hidden">
+              {Math.round(stats.median_dps).toLocaleString()}
             </span>
           </div>
 
           {/* Box plot */}
-          <div className="relative flex-1 h-7">
+          <div className="absolute inset-x-2 bottom-0 h-7 sm:relative sm:inset-auto sm:flex-1">
             {/* Whisker line: min → max */}
             <div
               className="absolute top-1/2 h-px -translate-y-1/2"
@@ -90,12 +98,12 @@ function BoxPlotRow({ stats, scaleMax, onClick }: BoxPlotRowProps) {
             />
           </div>
 
-          {/* Count + median value */}
-          <div className="w-24 shrink-0 text-right text-xs text-muted-foreground">
+          {/* Desktop count + median value */}
+          <div className="hidden w-24 shrink-0 text-right text-xs text-muted-foreground sm:block">
             <span className="font-mono font-semibold text-foreground">
               {Math.round(stats.median_dps).toLocaleString()}
             </span>{" "}
-            <span className="hidden sm:inline">({stats.count})</span>
+            <span>({stats.count})</span>
           </div>
         </div>
       </TooltipTrigger>
@@ -150,38 +158,40 @@ function DpsStatLine({ label, desc, value, highlight }: { label: string; desc?: 
 
 interface BoxPlotChartProps {
   stats: RankingsBoxPlotStats[]
+  loading?: boolean
   title?: string
   subtitle?: string
-  onRowClick?: (playerClass: string, playerSpec: string) => void
+  onRowClick?: (playerClass: string, playerSpec: string, playerSubSpec: string) => void
 }
 
-export function BoxPlotChart({ stats, title = "DPS Distribution by Class", subtitle, onRowClick }: BoxPlotChartProps) {
+export function BoxPlotChart({
+  stats,
+  loading = false,
+  title = "DPS Distribution by Class",
+  subtitle,
+  onRowClick,
+}: BoxPlotChartProps) {
   const scaleMax = useMemo(() => {
     if (stats.length === 0) return 1200
     return Math.max(...stats.map((s) => s.max_dps))
   }, [stats])
 
-  const ticks = useMemo(() => {
-    const step = scaleMax <= 600 ? 100 : 200
-    const result: number[] = []
-    for (let v = 0; v <= scaleMax; v += step) result.push(v)
-    if (result[result.length - 1] < scaleMax) {
-      result.push(Math.ceil(scaleMax / step) * step)
-    }
-    const finalMax = result[result.length - 1]
-    return { values: result, max: finalMax }
-  }, [scaleMax])
+  const ticks = useMemo(() => getBoxPlotScale(scaleMax), [scaleMax])
+
+  const mobileTicks = [0, ticks.max / 2, ticks.max]
 
   return (
-    <div className="rounded-xl border bg-card p-5">
-      <div className="mb-5 flex items-baseline justify-between gap-4">
+    <div className="rounded-xl border bg-card p-3 sm:p-5">
+      <div className="mb-3 flex flex-col gap-1 sm:mb-5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
         <h3 className="text-sm font-medium text-muted-foreground">{title}</h3>
         {subtitle && (
           <span className="text-xs text-muted-foreground/70">{subtitle}</span>
         )}
       </div>
 
-      {stats.length === 0 ? (
+      {loading ? (
+        <p className="py-8 text-center text-sm text-muted-foreground">Loading…</p>
+      ) : stats.length === 0 ? (
         <p className="py-8 text-center text-sm text-muted-foreground">
           No data for the selected filters.
         </p>
@@ -190,31 +200,42 @@ export function BoxPlotChart({ stats, title = "DPS Distribution by Class", subti
           <div className="space-y-1">
             {stats.map((s) => (
               <BoxPlotRow
-                key={`${s.player_class}-${s.player_spec ?? ""}`}
+                key={`${s.player_class}-${s.player_spec ?? ""}-${s.player_sub_spec ?? ""}`}
                 stats={s}
                 scaleMax={ticks.max}
-                onClick={onRowClick ? () => onRowClick(s.player_class, s.player_spec) : undefined}
+                onClick={onRowClick ? () => onRowClick(s.player_class, s.player_spec, s.player_sub_spec ?? "") : undefined}
               />
             ))}
 
             {/* X-axis ticks */}
-            <div className="flex items-center gap-3 pt-2">
-              <div className="w-32 shrink-0" />
-              <div className="relative flex-1 h-5">
-                {ticks.values.map((v) => {
-                  const pct = (v / ticks.max) * 100
-                  return (
-                    <span
-                      key={v}
-                      className="absolute -translate-x-1/2 text-[10px] text-muted-foreground/60 font-mono"
-                      style={{ left: `${pct}%` }}
-                    >
-                      {v.toLocaleString()}
-                    </span>
-                  )
-                })}
+            <div className="flex items-center gap-3 pt-2 sm:px-1">
+              <div className="hidden w-32 shrink-0 sm:block" />
+              <div className="relative h-6 flex-1 border-t border-border/60">
+                {mobileTicks.map((v, i) => (
+                  <span
+                    key={`mobile-${v}`}
+                    className={`absolute top-1.5 font-mono text-[10px] tabular-nums text-muted-foreground/70 sm:hidden ${
+                      i === 0 ? "" : i === mobileTicks.length - 1 ? "-translate-x-full" : "-translate-x-1/2"
+                    }`}
+                    style={{ left: `${(v / ticks.max) * 100}%` }}
+                  >
+                    {formatBoxPlotTick(v)}
+                  </span>
+                ))}
+                {ticks.values.map((v, i) => (
+                  <span
+                    key={v}
+                    className={`absolute top-0 hidden flex-col items-center font-mono text-[10px] tabular-nums text-muted-foreground/70 sm:flex ${
+                      i === 0 ? "items-start" : i === ticks.values.length - 1 ? "-translate-x-full items-end" : "-translate-x-1/2"
+                    }`}
+                    style={{ left: `${(v / ticks.max) * 100}%` }}
+                  >
+                    <span className="h-1.5 w-px bg-border" />
+                    <span className="mt-0.5">{formatBoxPlotTick(v)}</span>
+                  </span>
+                ))}
               </div>
-              <div className="w-24 shrink-0" />
+              <div className="hidden w-24 shrink-0 sm:block" />
             </div>
           </div>
         </TooltipProvider>

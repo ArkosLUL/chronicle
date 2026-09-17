@@ -6,14 +6,29 @@ import (
 
 	"github.com/Emyrk/chronicle/combatlog/parser/common/characters"
 
-	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/messages"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/phases"
+	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 )
 
 func NewGluth(id guid.GUID, all *characters.Characters) (characters.Character, bool) {
 	return characters.NewAdsGoWithBoss(
 		15932, // Gluth
 		16360, // Zombie Chow
+	)(id, all)
+}
+
+func NewMaexxna(id guid.GUID, all *characters.Characters) (characters.Character, bool) {
+	return characters.NewAdsGoWithBoss(
+		15952, // Maexxna
+		17055, // Maexxna Spiderling
+	)(id, all)
+}
+
+func NewNothThePlaguebringer(id guid.GUID, all *characters.Characters) (characters.Character, bool) {
+	return characters.NewAdsGoWithBoss(
+		15954, // Noth
+		16984, // Plagued Warrior
 	)(id, all)
 }
 
@@ -39,6 +54,17 @@ func NewHeiganTheUnclean(id guid.GUID, all *characters.Characters) (characters.C
 		16236, // Eye Stalk
 		16056, // Diseased Maggot
 	)(id, all)
+}
+
+func NewPlagueBeast(id guid.GUID, all *characters.Characters) (characters.Character, bool) {
+	if entry, ok := id.GetEntry(); !ok || entry != 16034 {
+		return nil, false
+	}
+
+	c := characters.NewCommonCharacter(id, all)
+	c.WithTimeoutAsDeath()
+	c.WithTimeout(time.Second * 25)
+	return c, true
 }
 
 func NewEyeStalk(id guid.GUID, all *characters.Characters) (characters.Character, bool) {
@@ -219,6 +245,57 @@ func isGothikEntry(entry uint32) bool {
 	}
 }
 
+// Phase key constants for Kel'Thuzad.
+const (
+	KelThuzadPhaseKeyP1 = "kel_thuzad_p1"
+	KelThuzadPhaseKeyP2 = "kel_thuzad_p2"
+)
+
+// KelThuzadPhaseDefinitions contains the encounter phase definitions for Kel'Thuzad.
+var KelThuzadPhaseDefinitions = &phases.EncounterPhases{
+	EncounterName: "Kel'Thuzad",
+	Definitions: []phases.Definition{
+		{Key: KelThuzadPhaseKeyP1, Name: "Adds", Order: 0},
+		{Key: KelThuzadPhaseKeyP2, Name: "Boss", Order: 1},
+	},
+}
+
+type kelThuzad struct {
+	*characters.PermanentDeath
+	room *characters.RoomMechanic
+	all  *characters.Characters
+
+	p2Emitted bool
+}
+
+func (c *kelThuzad) PhaseDefinitions() *phases.EncounterPhases {
+	return KelThuzadPhaseDefinitions
+}
+
+func (c *kelThuzad) Process(m messages.Message) error {
+	wasActive := c.IsActive()
+	if current, ok := c.room.Activity.Current(); ok {
+		current.HandleTimeout(m.Date())
+	}
+	if wasActive && !c.IsActive() {
+		c.p2Emitted = false
+	}
+
+	if damage, ok := m.(*messages.Damage); ok &&
+		damage.Target == c.ID() &&
+		damage.Amount > 0 &&
+		!c.p2Emitted {
+		c.p2Emitted = true
+		c.all.EmitPhaseTransition(phases.Transition{
+			SourceGUID: c.ID(),
+			ToPhaseKey: KelThuzadPhaseKeyP2,
+			Timestamp:  m.Date(),
+		})
+	}
+
+	return c.PermanentDeath.Process(m)
+}
+
 func NewKelThuzadRoom(id guid.GUID, all *characters.Characters) (characters.Character, bool) {
 	entry, ok := id.GetEntry()
 	if !ok {
@@ -235,11 +312,16 @@ func NewKelThuzadRoom(id guid.GUID, all *characters.Characters) (characters.Char
 	}
 
 	if entry == kelThuzadEntry {
+		boss := &kelThuzad{
+			PermanentDeath: characters.NewPermanentDeath(r),
+			room:           r,
+			all:            all,
+		}
 		return characters.NewAdsGoWithBossCustomCharacter(
-			characters.NewPermanentDeath(r),
+			boss,
 			all,
-			15990, // Kel'Thuzad
-			16441, // Guardian of Icecrown
+			kelThuzadEntry,
+			guardianOfIcecrownEntry,
 		), true
 	}
 

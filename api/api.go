@@ -13,8 +13,9 @@ import (
 	"github.com/Emyrk/chronicle/api/chronauth"
 	"github.com/Emyrk/chronicle/api/chroniclesdk"
 	"github.com/Emyrk/chronicle/api/gamedataapi"
+	"github.com/Emyrk/chronicle/api/gearbuilderapi"
+	"github.com/Emyrk/chronicle/api/gearprogressionapi"
 	"github.com/Emyrk/chronicle/api/guildapi"
-	"github.com/Emyrk/chronicle/api/httpapi"
 	"github.com/Emyrk/chronicle/api/httpmw"
 	"github.com/Emyrk/chronicle/api/linkedapi"
 	"github.com/Emyrk/chronicle/api/panellayoutapi"
@@ -30,6 +31,7 @@ import (
 	"github.com/Emyrk/chronicle/database/pubsub"
 	"github.com/Emyrk/chronicle/database/storage"
 	"github.com/Emyrk/chronicle/frontend"
+	"github.com/Emyrk/chronicle/internal/itempricing"
 	"github.com/Emyrk/chronicle/internal/services/serviceapplication"
 	"github.com/Emyrk/chronicle/internal/services/servicecache"
 	"github.com/Emyrk/chronicle/internal/services/servicedataset"
@@ -37,7 +39,6 @@ import (
 	"github.com/authzed/gochugaru/rel"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	context2 "github.com/gorilla/context"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -60,6 +61,7 @@ type Options struct {
 	ExternalAPI      http.Handler
 	Rankings         http.Handler
 	Mailer           *chroniclemail.Mailer
+	ItemPricing      *itempricing.Service
 
 	Registry  *prometheus.Registry
 	AccessURL *url.URL
@@ -155,7 +157,6 @@ func (api *API) Routes() chi.Router {
 	r.Use(
 		httpmw.Recover(api.Opts.Logger),
 		httpmw.Log500(api.Opts.Logger),
-		context2.ClearHandler,
 		RouteCors(api.Opts.Tenant),
 		httpmw.SecurityHeaders(),
 		httpmw.ContentSecurityPolicy(),
@@ -177,6 +178,7 @@ func (api *API) Routes() chi.Router {
 		r.Group(func(r chi.Router) {
 			// Not browser-only
 			r.Get("/discovery", api.Discovery)
+			r.Get("/parser-version", api.ParserVersion)
 		})
 
 		r.Group(func(r chi.Router) {
@@ -192,6 +194,7 @@ func (api *API) Routes() chi.Router {
 				)
 				r.Get("/whoami", api.WhoAmI)
 				r.Get("/whoami/dump", api.DumpToken)
+				r.Get("/discord-integration/callback", api.CompleteGuildDiscordInstall)
 				r.Post("/authcheck", api.checkAuthorization)
 				r.Get("/me/storage", api.GetMyStorage)
 				r.Patch("/me/preferences", api.UpdateMyPreferences)
@@ -200,9 +203,17 @@ func (api *API) Routes() chi.Router {
 				r.Post("/me/talent-builds", api.CreateMyTalentBuild)
 				r.Patch("/me/talent-builds/{buildID}", api.UpdateMyTalentBuild)
 				r.Delete("/me/talent-builds/{buildID}", api.DeleteMyTalentBuild)
+
+				r.Get("/me/raid-comps", api.ListMyRaidCompositions)
+				r.Post("/me/raid-comps", api.CreateMyRaidComposition)
+				r.Patch("/raid-comps/{compID}", api.UpdateRaidComposition)
+				r.Delete("/raid-comps/{compID}", api.DeleteRaidComposition)
+				r.Put("/raid-comps/{compID}/sharing", api.UpdateRaidCompositionSharing)
 				r.Post("/share", api.CreateShare)
 			})
 			r.Mount("/panel-layout", panellayoutapi.New(api.Opts.Zed, api.Auth).Routes())
+			r.Mount("/gear-builder", gearbuilderapi.New(api.Opts.Zed, api.Auth, api.Opts.CacheSvc).Routes())
+			r.Mount("/gear-progressions", gearprogressionapi.New(api.Opts.Zed, api.Auth).Routes())
 			// Account↔character link management.
 			r.Mount("/linked", linkedapi.New(api.Opts.Zed, api.Auth, api.Opts.ExternalVerification).Routes())
 			gameDataHandler := gamedataapi.New(api.Opts.Zed, api.Auth, api.Opts.Pool, api.Opts.GameDB)
@@ -262,6 +273,7 @@ func (api *API) Routes() chi.Router {
 
 				r.Route("/parses", func(r chi.Router) {
 					r.Use(httpmw.Can(api.Zed, policy.New().GlobalChronicle().CanAdmin_users_User))
+					r.Get("/rankings/status", api.AdminRankingsRefreshStatus)
 					r.Post("/rankings/refresh", api.AdminRefreshRankings)
 					r.Post("/snapshot", api.AdminTriggerParseSnapshot)
 					r.Get("/snapshots", api.AdminListSnapshots)
@@ -330,7 +342,7 @@ func (api *API) Routes() chi.Router {
 				r.Post("/requeue-version", api.RegressionRequeueVersion)
 			})
 
-			r.Get("/healthz", func(w http.ResponseWriter, r *http.Request) { httpapi.Write(r.Context(), w, http.StatusOK, "OK") })
+			r.Get("/healthz", healthz)
 			if api.Opts.WoWDB != nil {
 				r.Mount("/wowdb", api.Opts.WoWDB)
 			}
@@ -347,7 +359,7 @@ func (api *API) Routes() chi.Router {
 						api.Auth.Authenticated(true),
 					)
 					r.Get("/", api.GetGuild)
-					r.Get("/page", api.GetGuildPage)
+					r.With(api.trackGuildPageView).Get("/page", api.GetGuildPage)
 					r.Get("/settings", api.GetGuildSettings)
 					r.Get("/speedruns/clears", api.GuildRaidClears)
 					r.Get("/characters", api.GuildCharacterRoster)
@@ -378,11 +390,20 @@ func (api *API) Routes() chi.Router {
 							r.Put("/{userID}/role", api.AdminUpdateGuildMemberRole)
 							r.Delete("/{userID}", api.AdminRemoveGuildMember)
 						})
+						r.Get("/settings/discord-integration/install", api.BeginGuildDiscordInstall)
+						r.Delete("/settings/discord-integration/installation", api.DeleteGuildDiscordInstallation)
+						r.Put("/settings/discord-integration/raid-log-announcements", api.UpdateGuildDiscordRaidLogAnnouncements)
+						r.Get("/settings/discord-integration/announcement-attempts", api.ListGuildDiscordAnnouncementAttempts)
+						r.Get("/settings/discord-integration", api.GetGuildDiscordIntegration)
+						r.With(
+							httpmw.Can(api.Zed, policy.New().GlobalChronicle().CanAdmin_guilds_User),
+						).Put("/settings/discord-integration", api.UpdateGuildDiscordIntegration)
 						r.Put("/settings", api.UpdateGuildSettings)
 						r.Get("/join-requests", api.ListJoinRequests)
 						r.Post("/join-requests/{requestID}/accept", api.AcceptJoinRequest)
 						r.Delete("/join-requests/{requestID}", api.DenyJoinRequest)
 
+						r.Get("/analytics", api.GuildResourceAnalytics)
 						r.Put("/page", api.UpsertGuildPage)
 						r.Post("/page/tabs", api.CreateGuildPageTab)
 						r.Put("/page/tabs/reorder", api.ReorderGuildPageTabs)
@@ -405,11 +426,17 @@ func (api *API) Routes() chi.Router {
 
 			// Public guild page route
 			r.Get("/g/{guildID}", api.GetPublicGuildPage)
+			// Public raid composition route (share links; SpiceDB gates view)
+			r.Get("/raid-comps/{compID}", api.GetRaidComposition)
 			// Public armory routes
 			r.Get("/armory/search", api.SearchArmoryPlayers)
 			r.Get("/armory/{realm}/{player}", api.GetArmoryPlayer)
 			r.Get("/armory/{realm}/{player}/gear-history", api.GetArmoryPlayerGearHistory)
 			r.Get("/armory/{realm}/{player}/loot", api.GetArmoryPlayerLoot)
+
+			// Public item pricing routes
+			r.Get("/item-pricing/realms", api.ItemPricingRealms)
+			r.Post("/item-pricing/prices", api.CurrentItemPrices)
 
 			// Public realm listing
 			r.Get("/realms", api.ListPublicRealms)
@@ -458,11 +485,14 @@ func (api *API) Routes() chi.Router {
 							r.Route("/{instance_id}", func(r chi.Router) {
 								r.Use(httpmw.InstanceIDMiddleware(api.Opts.Zed))
 								r.Get("/events/{type}", api.InstanceEvents)
-								r.Get("/", api.Instance)
+								r.With(api.trackGuildInstanceView).Get("/", api.Instance)
 
 								r.Get("/youtube", api.GetInstanceYoutube)
 								r.Get("/loot", api.GetInstanceLoot)
+								r.Get("/raid-group", api.InstanceRaidGroup)
+								r.Post("/item-prices", api.InstanceItemPrices)
 								r.Get("/overview", api.InstanceOverviewMetrics)
+								r.Get("/ranking-records", api.InstanceRankingRecords)
 								r.Get("/speedrun", api.InstanceSpeedrun)
 								r.Get("/speedrun/cohort", api.InstanceSpeedrunCohort)
 								r.Get("/duplicates", api.ListDuplicateInstances)

@@ -1,6 +1,7 @@
 import { ExternalLink } from "lucide-react"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import type { RankingsEntry } from "@/api/typesGenerated"
+import { RankingsLoadingState } from "./RankingsLoadingState"
 import { CLASS_CSS_VAR, CLASS_DISPLAY } from "./classDisplay"
 
 const MEDAL_ICONS: Record<number, string> = { 1: "🥇", 2: "🥈", 3: "🥉" }
@@ -25,6 +26,7 @@ export interface RankedEntry extends RankingsEntry {
 
 interface RankingsTableProps {
   entries: RankedEntry[]
+  loading?: boolean
   metric?: "dps" | "hps"
 }
 
@@ -38,7 +40,11 @@ function metricTitle(entry: RankedEntry, metric: "dps" | "hps"): string | undefi
   return `Effective healing: ${entry.healing_done.toLocaleString()} · Absorbed: ${entry.absorbed_done.toLocaleString()} · Total: ${total.toLocaleString()}`
 }
 
-export function RankingsTable({ entries, metric = "dps" }: RankingsTableProps) {
+export function RankingsTable({ entries, loading = false, metric = "dps" }: RankingsTableProps) {
+  const navigate = useNavigate()
+
+  if (loading) return <RankingsLoadingState />
+
   if (entries.length === 0) {
     return (
       <div className="rounded-xl border p-8 text-center text-muted-foreground">
@@ -50,38 +56,42 @@ export function RankingsTable({ entries, metric = "dps" }: RankingsTableProps) {
   return (
     <>
       {/* Mobile card rows */}
-      <div className="md:hidden divide-y border-y">
+      <div className="divide-y overflow-hidden rounded-xl border md:hidden">
         {entries.map((entry, i) => (
-          <div
+          <Link
             key={`${entry.player_name}-${entry.killed_at}-${i}`}
-            className={`flex items-center gap-3 px-4 py-3 ${i % 2 === 1 ? "bg-muted/20" : ""}`}
+            to={`/instances/${entry.log_hashed_slug}`}
+            className={`flex items-start gap-2.5 px-3 py-3 transition-colors hover:bg-muted/40 ${i % 2 === 1 ? "bg-muted/20" : ""}`}
           >
-            <div className="w-8 shrink-0 text-center">
+            <div className="w-7 shrink-0 pt-0.5 text-center">
               {MEDAL_ICONS[entry.rank] ?? (
-                <span className="text-sm font-medium text-muted-foreground">{entry.rank}</span>
+                <span className="text-sm font-semibold text-muted-foreground">{entry.rank}</span>
               )}
             </div>
-            <img
-              src={`/c/icons/class_${entry.player_class.toLowerCase()}.png`}
-              alt={CLASS_DISPLAY[entry.player_class] ?? entry.player_class}
-              className="h-5 w-5 shrink-0 rounded-sm"
-              onError={(e) => { e.currentTarget.src = "/c/icons/class_unknown.png" }}
-            />
             <div className="min-w-0 flex-1">
-              <div className="flex items-center justify-between gap-2">
-                <span className="truncate font-medium">{entry.player_name}</span>
-                <span className="shrink-0 font-mono font-semibold" title={metricTitle(entry, metric)}>
+              <div className="flex items-center gap-2">
+                <img
+                  src={`/c/icons/class_${entry.player_class.toLowerCase()}.png`}
+                  alt={CLASS_DISPLAY[entry.player_class] ?? entry.player_class}
+                  className="h-5 w-5 shrink-0 rounded-sm"
+                  onError={(e) => { e.currentTarget.src = "/c/icons/class_unknown.png" }}
+                />
+                <span className="min-w-0 flex-1 truncate font-semibold">{entry.player_name}</span>
+                <span className="shrink-0 font-mono text-sm font-bold tabular-nums" title={metricTitle(entry, metric)}>
                   {Math.round(metricValue(entry, metric)).toLocaleString()}
                 </span>
               </div>
-              <div className="mt-0.5 flex items-center gap-3 text-xs text-muted-foreground">
-                <span style={{ color: CLASS_CSS_VAR[entry.player_class] }}>{entry.player_spec}</span>
-                <span>{entry.realm_name}</span>
-                <span className="font-mono">{formatDuration(entry.duration_secs)}</span>
-                <span className="ml-auto">{formatDate(entry.killed_at)}</span>
+              <div className="mt-1 flex min-w-0 items-center gap-2 text-xs">
+                <span className="shrink-0 font-medium" style={{ color: CLASS_CSS_VAR[entry.player_class] }}>
+                  {entry.sub_spec ? `${entry.player_spec} (${entry.sub_spec})` : entry.player_spec}
+                </span>
+                <span className="truncate text-muted-foreground">{entry.realm_name}</span>
+                <span className="ml-auto shrink-0 text-[11px] text-muted-foreground">
+                  {formatDate(entry.killed_at)}
+                </span>
               </div>
             </div>
-          </div>
+          </Link>
         ))}
       </div>
 
@@ -105,9 +115,18 @@ export function RankingsTable({ entries, metric = "dps" }: RankingsTableProps) {
             {entries.map((entry, i) => (
               <tr
                 key={`${entry.player_name}-${entry.killed_at}-${i}`}
-                className={`border-b last:border-b-0 transition-colors hover:bg-muted/40 ${
+                className={`cursor-pointer border-b last:border-b-0 transition-colors hover:bg-muted/40 ${
                   i % 2 === 1 ? "bg-muted/20" : ""
                 }`}
+                onClick={() => navigate(`/instances/${entry.log_hashed_slug}`)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault()
+                    navigate(`/instances/${entry.log_hashed_slug}`)
+                  }
+                }}
+                role="link"
+                tabIndex={0}
               >
                 <td className="px-4 py-3 text-center font-medium">
                   {MEDAL_ICONS[entry.rank] ?? (
@@ -132,7 +151,7 @@ export function RankingsTable({ entries, metric = "dps" }: RankingsTableProps) {
                       className="h-4 w-4 shrink-0 rounded-sm"
                       onError={(e) => { e.currentTarget.src = "/c/icons/class_unknown.png" }}
                     />
-                    <span style={{ color: CLASS_CSS_VAR[entry.player_class] }}>{entry.player_spec}</span>
+                    <span style={{ color: CLASS_CSS_VAR[entry.player_class] }}>{entry.sub_spec ? `${entry.player_spec} (${entry.sub_spec})` : entry.player_spec}</span>
                   </span>
                 </td>
                 <td className="px-4 py-3 text-right font-mono font-semibold" title={metricTitle(entry, metric)}>
@@ -145,14 +164,8 @@ export function RankingsTable({ entries, metric = "dps" }: RankingsTableProps) {
                 <td className="px-4 py-3 text-right text-muted-foreground">
                   {formatDate(entry.killed_at)}
                 </td>
-                <td className="px-4 py-3 text-center">
-                  <Link
-                    to={`/instances/${entry.log_hashed_slug}`}
-                    className="text-muted-foreground transition-colors hover:text-foreground"
-                    title="View instance"
-                  >
-                    <ExternalLink className="h-3.5 w-3.5" />
-                  </Link>
+                <td className="px-4 py-3 text-center text-muted-foreground">
+                  <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
                 </td>
               </tr>
             ))}

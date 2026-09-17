@@ -3,8 +3,10 @@ package instances
 import (
 	"context"
 
+	"github.com/Emyrk/chronicle/combatlog/parser/common/encounter"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/identifier"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/instances"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/instances/instancehook"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/instances/rankings"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/parsectx"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
@@ -46,6 +48,7 @@ func VoAHostiles() map[uint32]instances.Identity {
 
 var VoAFactory = &instances.CommonFactory{
 	Name:      "Vault of Archavon",
+	Category:  instances.InstanceCategoryRaid,
 	ZoneNames: []string{"vault of archavon"},
 	MapIDs:    []uint32{624},
 	Hostiles:  instances.FromMap(VoAHostiles()),
@@ -77,6 +80,7 @@ func ObsidianSanctumHostiles() map[uint32]instances.Identity {
 
 var ObsidianSanctumFactory = &instances.CommonFactory{
 	Name:      "Obsidian Sanctum",
+	Category:  instances.InstanceCategoryRaid,
 	ZoneNames: []string{"the obsidian sanctum"},
 	MapIDs:    []uint32{615},
 	Hostiles:  instances.FromMap(ObsidianSanctumHostiles()),
@@ -101,6 +105,10 @@ func onyxiaZoneName(ctx context.Context, z zone.Zone, fl database.WoWFlavor) str
 }
 
 func onyxiaRankings(fl database.WoWFlavor, classic bool) *rankings.Rankings {
+	if fl.Has(database.FlavorChromieCraft) {
+		return &rankings.Rankings{}
+	}
+
 	onyxiaEntry := uint32(10184)
 	warderEntry := uint32(12129)
 	if classic {
@@ -141,6 +149,7 @@ func onyxiaDerivedName(fl database.WoWFlavor) *instances.MultiInstanceZone {
 
 var OnyxiaFactory = &instances.CommonFactory{
 	Name:         "Onyxia's Lair",
+	Category:     instances.InstanceCategoryRaid,
 	NameFromZone: onyxiaZoneName,
 	DerivedName:  onyxiaDerivedName,
 	ZoneNames:    []string{"onyxia's lair", "奥妮克希亚的巢穴"},
@@ -175,6 +184,10 @@ func NaxxramasHostiles(fl database.WoWFlavor) *identifier.Identifier {
 	hostile := instances.NaxxramasHostiles(fl)
 	// WotLK replaces Highlord Mograine with Baron Rivendare in the Four Horsemen
 	delete(hostile, 16062)
+	delete(hostile, 15977)
+	instances.LoadAdds(hostile, map[uint32]string{
+		15977: "Poisonous Skitterer",
+	})
 	instances.LoadBosses(hostile, map[uint32]string{
 		30549: "Four Horsemen", // Baron Rivendare
 	})
@@ -193,10 +206,16 @@ func NaxxramasSpeedrunRequirements() []rankings.SpeedrunRequirement {
 }
 
 var NaxxramasFactory = &instances.CommonFactory{
-	Name:      "Naxxramas",
-	ZoneNames: []string{"naxxramas", "the upper necropolis"},
-	MapIDs:    []uint32{533},
-	Hostiles:  NaxxramasHostiles,
+	Name:     "Naxxramas",
+	Category: instances.InstanceCategoryRaid,
+	ZoneNames: []string{
+		"naxxramas",
+		"the upper necropolis",
+		"纳克萨玛斯", // Naxxramas
+		"上层大墓地", // Upper Necropolis
+	},
+	MapIDs:   []uint32{533},
+	Hostiles: NaxxramasHostiles,
 	FlavoredRankings: func(database.WoWFlavor) *rankings.Rankings {
 		return &rankings.Rankings{
 			Speedrun: &rankings.SpeedrunRules{
@@ -224,9 +243,13 @@ func EyeOfEternityHostiles() map[uint32]instances.Identity {
 
 var EyeOfEternityFactory = &instances.CommonFactory{
 	Name:      "Eye of Eternity",
+	Category:  instances.InstanceCategoryRaid,
 	ZoneNames: []string{"the eye of eternity", "eye of eternity"},
 	MapIDs:    []uint32{616},
 	Hostiles:  instances.FromMap(EyeOfEternityHostiles()),
+	Preprocessors: func() []instancehook.Preprocessor {
+		return []instancehook.Preprocessor{&malygosDamageCredit{}}
+	},
 }
 
 // RubySanctumHostiles returns creature entry IDs for The Ruby Sanctum (map 724).
@@ -254,6 +277,7 @@ func RubySanctumHostiles() map[uint32]instances.Identity {
 
 var RubySanctumFactory = &instances.CommonFactory{
 	Name:      "Ruby Sanctum",
+	Category:  instances.InstanceCategoryRaid,
 	ZoneNames: []string{"the ruby sanctum", "ruby sanctum"},
 	MapIDs:    []uint32{724},
 	Hostiles:  instances.FromMap(RubySanctumHostiles()),
@@ -308,6 +332,7 @@ func TrialOfTheCrusaderHostiles() map[uint32]instances.Identity {
 
 var TrialOfTheCrusaderFactory = &instances.CommonFactory{
 	Name:      "Trial of the Crusader",
+	Category:  instances.InstanceCategoryRaid,
 	ZoneNames: []string{"trial of the crusader", "trial of the grand crusader"},
 	MapIDs:    []uint32{649},
 	Hostiles:  instances.FromMap(TrialOfTheCrusaderHostiles()),
@@ -414,6 +439,7 @@ func IcecrownCitadelHostiles() map[uint32]instances.Identity {
 
 var IcecrownCitadelFactory = &instances.CommonFactory{
 	Name:      "Icecrown Citadel",
+	Category:  instances.InstanceCategoryRaid,
 	ZoneNames: []string{"icecrown citadel"},
 	MapIDs:    []uint32{631},
 	Hostiles:  instances.FromMap(IcecrownCitadelHostiles()),
@@ -426,6 +452,20 @@ func UlduarHostiles() map[uint32]instances.Identity {
 		22515: "World Trigger",
 		24921: "Cosmetic Trigger - LAB",
 		32780: "Invisible Stalker (All Phases)",
+		32872: "Runic Colossus",
+		32873: "Ancient Rune Giant",
+		32874: "Iron Ring Guard",
+		32875: "Iron Honor Guard",
+		32876: "Dark Rune Champion",
+		32877: "Dark Rune Warbringer",
+		32878: "Dark Rune Evoker",
+		32882: "Jormungar Behemoth",
+		32883: "Captured Mercenary Soldier",
+		32885: "Captured Mercenary Soldier",
+		32886: "Dark Rune Acolyte",
+		32904: "Dark Rune Commoner",
+		32907: "Captured Mercenary Captain",
+		32908: "Captured Mercenary Captain",
 		32922: "Dark Rune Champion",
 		32923: "Dark Rune Commoner",
 		32924: "Dark Rune Evoker",
@@ -433,18 +473,19 @@ func UlduarHostiles() map[uint32]instances.Identity {
 		33059: "Wrecked Demolisher",
 		33063: "Wrecked Siege Engine",
 		33089: "Dark Matter",
+		33110: "Dark Rune Acolyte",
+		33138: "Lightning Orb",
+		33196: "Sif",
 		33121: "Iron Construct",
 		33191: "Iron Construct",
-		33210: "Expedition Commander",
 		33214: "Mechanolift 304-A",
 		33235: "Brann Bronzebeard",
 		33236: "Steelforged Defender",
 		33237: "Ulduar Colossus",
-		33259: "Expedition Trapper",
-		33282: "Razorscale Harpoon Fire State",
-		33287: "Expedition Engineer",
+		33264: "Ironwork Cannon",
 		33354: "Corrupted Servitor",
 		33355: "Misguided Nymph",
+		33413: "Thorim",
 		33430: "Guardian Lasher",
 		33431: "Forest Swarmer",
 		33525: "Mangrove Ent",
@@ -487,7 +528,6 @@ func UlduarHostiles() map[uint32]instances.Identity {
 		33774: "Slain Iron Vrykul",
 		33775: "Slain Iron Dwarf",
 		33779: "Ulduar Shield Bunny",
-		33816: "Expedition Defender",
 		33818: "Twilight Adherent",
 		33819: "Twilight Frost Mage",
 		33820: "Twilight Pyromancer",
@@ -558,147 +598,276 @@ func UlduarHostiles() map[uint32]instances.Identity {
 		34272: "XD-175 Compactobot",
 		34273: "XB-488 Disposalbot",
 		34274: "XB-488 Disposalbot",
-	})
-	instances.LoadAdds(hostile, map[uint32]string{
-		32892: "Thorim Event Bunny",
-		33054: "Thorim Trap Bunny",
-		33264: "Ironwork Cannon",
-		33378: "Thunder Orb",
-		33725: "Thorim Trap Bunny",
-	})
-	// Summoned by the instance scripts, so they have no creature.sql spawn rows
-	// and hostilegen cannot see them.
-	instances.LoadAdds(hostile, map[uint32]string{
-		// Kologarn. Arms die and respawn during the fight, so they stay adds.
-		32933: "Left Arm",
-		32934: "Right Arm",
-		33910: "Left Arm",
-		33911: "Right Arm",
-
-		// Thorim
-		33196: "Sif",
-		33234: "Sif",
-
-		// Mimiron
-		33836: "Bomb Bot",
-		33855: "Junk Bot",
-		34057: "Assault Bot",
-		34114: "Junk Bot",
-		34115: "Assault Bot",
-		34147: "Emergency Fire Bot",
-		34148: "Emergency Fire Bot",
-		34149: "Frost Bomb",
-		34218: "Bomb Bot",
-		34361: "Frost Bomb",
-
-		// Algalon
-		32953: "Black Hole",
-		32955: "Collapsing Star",
-		33052: "Living Constellation",
-		33116: "Living Constellation",
-		34215: "Collapsing Star",
-		34296: "Black Hole",
-
-		// Yogg-Saron. The brain despawns when Yogg dies instead of dying, so it
-		// can't be a boss unit.
 		33136: "Guardian of Yogg-Saron",
-		33280: "Voice of Yogg-Saron",
-		33292: "Ominous Cloud",
-		33882: "Death Orb",
-		33890: "Brain of Yogg-Saron",
+		33433: "Suit of Armor",
+		33567: "Deathsworn Zealot",
+		33716: "Consort",
+		33717: "Consort",
+		33718: "Consort",
+		33719: "Consort",
+		33720: "Consort",
 		33943: "Influence Tentacle",
-		33954: "Brain of Yogg-Saron",
-		33959: "Influence Tentacle",
-		33966: "Crusher Tentacle",
-		33967: "Crusher Tentacle",
-		33968: "Guardian of Yogg-Saron",
-		33983: "Constrictor Tentacle",
-		33984: "Constrictor Tentacle",
 		33985: "Corruptor Tentacle",
-		33986: "Corruptor Tentacle",
+		33966: "Crusher Tentacle",
+		33983: "Constrictor Tentacle",
 		33988: "Immortal Guardian",
-		33989: "Immortal Guardian",
+		32955: "Collapsing Star",
 	})
 	instances.LoadBosses(hostile, map[uint32]string{
 		32845: "Hodir",
 		32846: "Hodir",
+		32857: "Stormcaller Brundir",
 		32865: "Thorim",
+		32867: "Steelbreaker",
+		32906: "Freya",
+		32913: "Elder Ironbranch",
+		32914: "Elder Stonebark",
+		32915: "Elder Brightleaf",
+		32927: "Runemaster Molgeim",
 		32930: "Kologarn",
 		33113: "Flame Leviathan",
 		33118: "Ignis the Furnace Master",
 		33147: "Thorim",
 		33186: "Razorscale",
 		33190: "Ignis the Furnace Master",
-		33213: "Hodir",
-		33242: "Thorim",
 		33271: "General Vezax",
 		33293: "XT-002 Deconstructor",
+		33350: "Mimiron",
+		33360: "Freya",
+		33391: "Elder Brightleaf",
+		33392: "Elder Ironbranch",
+		33393: "Elder Stonebark",
+		33432: "Leviathan Mk II",
 		33449: "General Vezax",
 		33515: "Auriaya",
+		33692: "Runemaster Molgeim",
+		33693: "Steelbreaker",
+		33694: "Stormcaller Brundir",
 		33724: "Razorscale",
 		33885: "XT-002 Deconstructor",
 		33909: "Kologarn",
 		34003: "Flame Leviathan",
+		34106: "Leviathan Mk II",
 		34175: "Auriaya",
-	})
-	// note: Algalon never dies. AzerothCore zeroes his damage at 2% health, turns
-	// him friendly and despawns him, so a win can't be detected from a death and
-	// still lands as a reset or wipe.
-	instances.LoadBosses(hostile, map[uint32]string{
+		33288: "Yogg-Saron",
 		32871: "Algalon the Observer",
-		33070: "Algalon the Observer",
 	})
-	instances.LoadBossGroup(hostile, "Assembly of Iron", map[uint32]string{
-		32857: "Stormcaller Brundir",
-		33694: "Stormcaller Brundir",
-		32867: "Steelbreaker",
-		33693: "Steelbreaker",
-		32927: "Runemaster Molgeim",
-		33692: "Runemaster Molgeim",
-	})
-	// Elders only spawn as part of the Freya fight (hard mode).
-	instances.LoadBossGroup(hostile, "Freya", map[uint32]string{
-		32906: "Freya",
-		33241: "Freya",
-		33360: "Freya",
-		32913: "Elder Ironbranch",
-		33392: "Elder Ironbranch",
-		32914: "Elder Stonebark",
-		33393: "Elder Stonebark",
-		32915: "Elder Brightleaf",
-		33391: "Elder Brightleaf",
-	})
-	// Mimiron's three machines are phases 1-3 of the same fight, then all three
-	// come back together for phase 4.
-	//
-	// note: none of these units ever die. AzerothCore zeroes their damage at low
-	// health and despawns them, so a Mimiron win can't be detected from a death
-	// and still lands as a reset or wipe.
-	instances.LoadBossGroup(hostile, "Mimiron", map[uint32]string{
-		33244: "Mimiron",
-		33350: "Mimiron",
+
+	// The three council members are one boss encounter regardless of kill order.
+	// Keep alternate registered entries aligned with the canonical encounter name.
+	for _, entry := range []uint32{32857, 32867, 32927, 33692, 33693, 33694} {
+		identity := hostile[entry]
+		identity.EncounterName = "Assembly of Iron"
+		hostile[entry] = identity
+	}
+
+	// Mimiron's three machines form one four-phase encounter. VX-001 and the
+	// Aerial Command Unit are required even when a log ends before they appear.
+	mimironEncounter := func(encounter.Fight) *identifier.EncounterFuncResult {
+		return &identifier.EncounterFuncResult{
+			EncounterName: "Mimiron",
+			Bosses:        []uint32{33651, 33670},
+		}
+	}
+	for entry, name := range map[uint32]string{
 		33432: "Leviathan Mk II",
+		34106: "Leviathan Mk II",
 		33651: "VX-001",
 		33670: "Aerial Command Unit",
-		34106: "Leviathan Mk II",
-		34108: "VX-001",
-		34109: "Aerial Command Unit",
-	})
-	// Sara is Yogg-Saron's phase 1 form. She stays alive and hidden through the
-	// later phases and dies with him, so she belongs in the group rather than
-	// owning her own encounter.
-	instances.LoadBossGroup(hostile, "Yogg-Saron", map[uint32]string{
+	} {
+		hostile[entry] = instances.Identity{
+			Affiliation:     types.AffiliationHostile,
+			Name:            name,
+			EncounterName:   "Mimiron",
+			EncounterNameFn: mimironEncounter,
+			Boss:            true,
+		}
+	}
+	// Mimiron controls the machines but is not an attackable encounter unit.
+	hostile[33350] = instances.Identity{
+		Affiliation: types.AffiliationFriendly,
+		Name:        "Mimiron",
+	}
+
+	// Razorscale's expedition units and harpoon state helpers fight or act during
+	// the encounter, but they are friendly mechanics and must not start, extend,
+	// or make the encounter partial.
+	for entry, name := range map[uint32]string{
+		33210: "Expedition Commander",
+		33259: "Expedition Trapper",
+		33282: "Razorscale Harpoon Fire State",
+		33287: "Expedition Engineer",
+		33816: "Expedition Defender",
+	} {
+		hostile[entry] = instances.Identity{
+			Affiliation: types.AffiliationFriendly,
+			Name:        name,
+		}
+	}
+
+	// Observation Ring keepers are friendly gossip NPCs used during Yogg-Saron,
+	// not alternate versions of their original boss encounters.
+	for entry, name := range map[uint32]string{
+		33241: "Freya",
+		33242: "Thorim",
+		33244: "Mimiron",
+	} {
+		hostile[entry] = instances.Identity{
+			Affiliation: types.AffiliationFriendly,
+			Name:        name,
+		}
+	}
+
+	// Hodir's post-encounter gossip and keeper forms are friendly NPCs, not
+	// separate boss encounters. The frozen helpers also fight alongside players.
+	for entry, name := range map[uint32]string{
+		32893: "Missy Flamecuffs",
+		32897: "Field Medic Penny",
+		32900: "Elementalist Avuun",
+		32901: "Ellie Nightfeather",
+		32941: "Tor Greycloud",
+		32946: "Veesha Blazeweaver",
+		32948: "Battle-Priest Eliza",
+		32950: "Spiritwalker Yona",
+		33213: "Hodir",
+		33325: "Eivi Nightfeather",
+		33326: "Field Medic Jessi",
+		33327: "Sissy Flamecuffs",
+		33328: "Elementalist Mahfuun",
+		33330: "Battle-Priest Gina",
+		33331: "Amira Blazeweaver",
+		33332: "Spiritwalker Tara",
+		33333: "Kar Greycloud",
+		33411: "Hodir",
+	} {
+		hostile[entry] = instances.Identity{
+			Affiliation: types.AffiliationFriendly,
+			Name:        name,
+		}
+	}
+
+	thorimEncounter := func(f encounter.Fight) *identifier.EncounterFuncResult {
+		for _, hostile := range f.Hostiles {
+			entry, ok := hostile.ID.GetEntry()
+			if ok && entry == 32865 {
+				return &identifier.EncounterFuncResult{
+					EncounterName: "Thorim",
+					Bosses:        []uint32{32865},
+				}
+			}
+		}
+		return nil
+	}
+	for entry, name := range map[uint32]string{
+		32872: "Runic Colossus",
+		32873: "Ancient Rune Giant",
+		32874: "Iron Ring Guard",
+		32875: "Iron Honor Guard",
+		32876: "Dark Rune Champion",
+		32877: "Dark Rune Warbringer",
+		32878: "Dark Rune Evoker",
+		32882: "Jormungar Behemoth",
+		32883: "Captured Mercenary Soldier",
+		32885: "Captured Mercenary Soldier",
+		32886: "Dark Rune Acolyte",
+		32892: "Thorim Event Bunny",
+		32904: "Dark Rune Commoner",
+		32907: "Captured Mercenary Captain",
+		32908: "Captured Mercenary Captain",
+		33054: "Thorim Trap Bunny",
+		33110: "Dark Rune Acolyte",
+		33138: "Lightning Orb",
+		33378: "Thunder Orb",
+		33725: "Thorim Trap Bunny",
+	} {
+		hostile[entry] = instances.Identity{
+			Affiliation:     types.AffiliationHostile,
+			Name:            name,
+			EncounterNameFn: thorimEncounter,
+		}
+	}
+	// Sif attacks from outside the arena and never participates as an active
+	// encounter unit. Keep her identified without letting her extend the fight.
+	hostile[33196] = instances.Identity{
+		Affiliation: types.AffiliationFriendly,
+		Name:        "Sif",
+	}
+	hostile[32865] = instances.Identity{
+		Affiliation:   types.AffiliationHostile,
+		Name:          "Thorim",
+		EncounterName: "Thorim",
+		Boss:          true,
+	}
+
+	yoggSaronEncounter := func(encounter.Fight) *identifier.EncounterFuncResult {
+		return &identifier.EncounterFuncResult{
+			EncounterName: "Yogg-Saron",
+			Bosses:        []uint32{33288},
+		}
+	}
+	for entry, name := range map[uint32]string{
 		33134: "Sara",
-		33288: "Yogg-Saron",
-		33955: "Yogg-Saron",
 		34332: "Sara",
-	})
+		33890: "Brain of Yogg-Saron",
+		33136: "Guardian of Yogg-Saron",
+		33433: "Suit of Armor",
+		33567: "Deathsworn Zealot",
+		33716: "Consort",
+		33717: "Consort",
+		33718: "Consort",
+		33719: "Consort",
+		33720: "Consort",
+		33943: "Influence Tentacle",
+		33966: "Crusher Tentacle",
+		33983: "Constrictor Tentacle",
+		33985: "Corruptor Tentacle",
+		33988: "Immortal Guardian",
+	} {
+		hostile[entry] = instances.Identity{
+			Affiliation:     types.AffiliationHostile,
+			Name:            name,
+			EncounterNameFn: yoggSaronEncounter,
+		}
+	}
+	for _, entry := range []uint32{33134, 34332, 33890} {
+		identity := hostile[entry]
+		identity.Boss = true
+		identity.EncounterName = "Yogg-Saron"
+		hostile[entry] = identity
+	}
 	return hostile
 }
 
+func UlduarProgressionBosses(database.WoWFlavor) []string {
+	return []string{
+		"Flame Leviathan",
+		"Ignis the Furnace Master",
+		"Razorscale",
+		"XT-002 Deconstructor",
+		"Assembly of Iron",
+		"Kologarn",
+		"Auriaya",
+		"Hodir",
+		"Thorim",
+		"Freya",
+		"Mimiron",
+		"General Vezax",
+		"Yogg-Saron",
+		"Algalon the Observer",
+	}
+}
+
 var UlduarFactory = &instances.CommonFactory{
-	Name:      "Ulduar",
-	ZoneNames: []string{"ulduar"},
-	MapIDs:    []uint32{603},
-	Hostiles:  instances.FromMap(UlduarHostiles()),
+	Name:              "Ulduar",
+	Category:          instances.InstanceCategoryRaid,
+	ZoneNames:         []string{"ulduar"},
+	MapIDs:            []uint32{603},
+	Hostiles:          instances.FromMap(UlduarHostiles()),
+	ProgressionBosses: UlduarProgressionBosses,
+	FlavoredRankings: func(database.WoWFlavor) *rankings.Rankings {
+		return UlduarSpeedrunRequirements()
+	},
+	Preprocessors: func() []instancehook.Preprocessor {
+		return []instancehook.Preprocessor{&thorimArenaStarterCombat{}}
+	},
 }

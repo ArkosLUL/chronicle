@@ -206,12 +206,26 @@ export const AuraState = {
 export type AuraState = (typeof AuraState)[keyof typeof AuraState];
 
 /**
+ * Aura transition constants matching AuraTransition proto.
+ */
+export const AuraTransition = {
+  Unknown: 0,
+  Applied: 1,
+  Refreshed: 2,
+  StackChanged: 3,
+  Removed: 4,
+} as const;
+
+export type AuraTransition = (typeof AuraTransition)[keyof typeof AuraTransition];
+
+/**
  * Aura event from the "aura" stream.
  * Tracks buff/debuff gains, fades, and removals.
  */
 export interface AuraProcessorEvent extends EventMeta {
   type: "aura";
   target: string;  // The unit affected by the aura
+  caster: string | null;  // The known caster, or null when the log format cannot attribute it
   spellName: string;  // Name of the aura/buff/debuff
   spellId: number | null;  // Spell ID from SpellData (if available)
   /** AttackOutcome bitmask of possible hit table results (from SpellData) */
@@ -219,6 +233,8 @@ export interface AuraProcessorEvent extends EventMeta {
   amount: number;  // Stack count (for Modified events, 0 means ended)
   application: AuraApplication;  // Deprecated: use state instead
   state: AuraState;  // Added, Removed, or Modified
+  transition: AuraTransition;  // Applied, refreshed, stack changed, or removed
+  isBuff: boolean;  // True for buffs, false for debuffs
 }
 
 /**
@@ -310,7 +326,7 @@ export interface CombatantInfoProcessorEvent extends EventMeta {
   race: string;              // e.g. "Human", "Orc"
   gender: number;
   guildName: string | null;
-  gear: { itemId: number; enchantId: number | null; temporaryEnchantId: number | null }[];
+  gear: { itemId: number; enchantId: number | null; temporaryEnchantId: number | null; gemEnchantIds: number[] }[];
   gearCount: number;
   talents: { summary: number[]; trees: string[] } | null;
 }
@@ -364,7 +380,8 @@ export type EvidenceKind =
   | 5  // Resource
   | 6  // Damage
   | 7  // ActiveAtPull (pre-pull aura projected into encounter)
-  | 8; // Cooldown
+  | 8  // Cooldown
+  | 9; // PreCombat (observed outside combat, assigned to next encounter)
 
 /**
  * Evidence confidence level.
@@ -395,7 +412,13 @@ export interface ConsumeProcessorEvent extends EventMeta {
   isProjection: boolean;
 }
 
-export type ProcessorEvent = DamageProcessorEvent | HealProcessorEvent | ResourceChangeProcessorEvent | ExtraAttackProcessorEvent | SlainProcessorEvent | ResurrectionProcessorEvent | CastProcessorEvent | AuraProcessorEvent | SpellGoProcessorEvent | AuraCastProcessorEvent | SpellStartProcessorEvent | SpellFailProcessorEvent | UnitClassificationProcessorEvent | CombatantInfoProcessorEvent | DispelProcessorEvent | InterruptProcessorEvent | AbsorbedProcessorEvent | CompanionStatsProcessorEvent | ConsumeProcessorEvent;
+export interface RaidGroupProcessorEvent extends EventMeta {
+  type: "raid_group";
+  /** Fixed 8 x 5 layout flattened in group-major order; empty strings preserve slots. */
+  groupMemberGuids: string[];
+}
+
+export type ProcessorEvent = DamageProcessorEvent | HealProcessorEvent | ResourceChangeProcessorEvent | ExtraAttackProcessorEvent | SlainProcessorEvent | ResurrectionProcessorEvent | CastProcessorEvent | AuraProcessorEvent | SpellGoProcessorEvent | AuraCastProcessorEvent | SpellStartProcessorEvent | SpellFailProcessorEvent | UnitClassificationProcessorEvent | CombatantInfoProcessorEvent | DispelProcessorEvent | InterruptProcessorEvent | AbsorbedProcessorEvent | CompanionStatsProcessorEvent | ConsumeProcessorEvent | RaidGroupProcessorEvent;
 
 /**
  * Selection state for filtering entities (serializable for worker transport).
@@ -432,6 +455,14 @@ export interface ProcessorUnit {
   entry: number;
 }
 
+/** Timestamped vehicle controller interval from instance metadata. */
+export interface ProcessorVehicleControlInterval {
+  vehicleGuid: string;
+  controllerGuid: string;
+  assignedAtMs: number;
+  releasedAtMs: number | null;
+}
+
 /**
  * Pagination options for processors that support paging through events.
  */
@@ -460,6 +491,9 @@ export interface SerializableProcessorContext {
   /** Units map: guid -> unit info */
   units?: Record<string, ProcessorUnit>;
   
+  /** Timestamped vehicle controller intervals from instance metadata. */
+  vehicleControlIntervals?: ProcessorVehicleControlInterval[];
+
   /** Currently selected encounter IDs */
   selectedEncounterIds: string[];
   
@@ -492,6 +526,9 @@ export interface ProcessorContext {
   /** Units map: guid -> unit info */
   units?: Record<string, ProcessorUnit>;
   
+  /** Timestamped vehicle controller intervals from instance metadata. */
+  vehicleControlIntervals?: ProcessorVehicleControlInterval[];
+
   /** Currently selected encounter IDs */
   selectedEncounterIds: Set<string>;
   

@@ -21,7 +21,10 @@ CREATE TYPE log_format AS ENUM (
     '1.12a-superwow-addon',
     '1.12a-cc-addon',
     '3.3.5a-cc-addon',
-    'azerothcore-mod'
+    'azerothcore-mod',
+    '2.4.3-cc-addon',
+    'v9-cleu',
+    'hermesproxy_1_14_2_cc'
 );
 
 CREATE TYPE log_instance_event_type AS ENUM (
@@ -43,7 +46,8 @@ CREATE TYPE log_instance_event_type AS ENUM (
     'absorbed',
     'companion_stats',
     'ressurection',
-    'consume'
+    'consume',
+    'raid_group'
 );
 
 CREATE TYPE log_type AS ENUM (
@@ -54,6 +58,11 @@ CREATE TYPE log_type AS ENUM (
     'kronos',
     'azerothcore',
     'azerothcore-clientside'
+);
+
+CREATE TYPE raid_group_snapshot_type AS ENUM (
+    'clean_kill',
+    'final'
 );
 
 CREATE TYPE river_job_state AS ENUM (
@@ -652,6 +661,15 @@ CREATE TABLE dbc_spells (
     mana_per_second_per_level integer DEFAULT 0 NOT NULL
 );
 
+CREATE TABLE dbc_vulnerability_spells (
+    dataset_id uuid NOT NULL,
+    spell_id integer NOT NULL,
+    name text NOT NULL,
+    school_bitmask integer NOT NULL,
+    percent_affect integer,
+    flat_affect integer
+);
+
 CREATE TABLE deployment_info (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
@@ -686,7 +704,8 @@ CREATE TABLE encounter_dps_rankings (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     healing_done bigint DEFAULT 0 NOT NULL,
     absorbed_done bigint DEFAULT 0 NOT NULL,
-    hps double precision DEFAULT 0 NOT NULL
+    hps double precision DEFAULT 0 NOT NULL,
+    player_sub_spec text DEFAULT ''::text NOT NULL
 );
 
 ALTER TABLE ONLY encounter_dps_rankings FORCE ROW LEVEL SECURITY;
@@ -726,6 +745,98 @@ CREATE TABLE game_players (
     talents jsonb DEFAULT 'null'::jsonb NOT NULL
 );
 
+CREATE TABLE gear_lists (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid NOT NULL,
+    tenant_id uuid DEFAULT '00000000-0000-0000-0000-000000000000'::uuid NOT NULL,
+    title text NOT NULL,
+    description text DEFAULT ''::text NOT NULL,
+    class_id integer NOT NULL,
+    spec_name text DEFAULT ''::text NOT NULL,
+    payload jsonb DEFAULT '{"stages": [], "version": 2}'::jsonb NOT NULL,
+    forked_from_list_id uuid,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT gear_lists_description_length_chk CHECK ((char_length(description) <= 2000)),
+    CONSTRAINT gear_lists_payload_size_chk CHECK ((octet_length((payload)::text) <= 262144)),
+    CONSTRAINT gear_lists_title_length_chk CHECK (((char_length(title) >= 1) AND (char_length(title) <= 128)))
+);
+
+CREATE TABLE gear_progressions (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid NOT NULL,
+    tenant_id uuid DEFAULT '00000000-0000-0000-0000-000000000000'::uuid NOT NULL,
+    title text NOT NULL,
+    description text DEFAULT ''::text NOT NULL,
+    class_id integer NOT NULL,
+    spec_name text DEFAULT ''::text NOT NULL,
+    payload jsonb DEFAULT '{"pool": [], "stages": [], "version": 1}'::jsonb NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT gear_progressions_description_length_chk CHECK ((char_length(description) <= 2000)),
+    CONSTRAINT gear_progressions_payload_size_chk CHECK ((octet_length((payload)::text) <= 262144)),
+    CONSTRAINT gear_progressions_title_length_chk CHECK (((char_length(title) >= 1) AND (char_length(title) <= 128)))
+);
+
+CREATE TABLE gear_stat_weights (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid NOT NULL,
+    tenant_id uuid DEFAULT '00000000-0000-0000-0000-000000000000'::uuid NOT NULL,
+    name text NOT NULL,
+    description text DEFAULT ''::text NOT NULL,
+    class_id integer DEFAULT 0 NOT NULL,
+    spec_name text DEFAULT ''::text NOT NULL,
+    weights jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT gear_stat_weights_description_length_chk CHECK ((char_length(description) <= 2000)),
+    CONSTRAINT gear_stat_weights_name_length_chk CHECK (((char_length(name) >= 1) AND (char_length(name) <= 128))),
+    CONSTRAINT gear_stat_weights_weights_size_chk CHECK ((octet_length((weights)::text) <= 8192))
+);
+
+CREATE TABLE guild_discord_install_states (
+    state text NOT NULL,
+    guild_id uuid NOT NULL,
+    user_id uuid NOT NULL,
+    expires_at timestamp with time zone NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+CREATE TABLE guild_discord_installations (
+    guild_id uuid NOT NULL,
+    discord_guild_id text NOT NULL,
+    discord_guild_name text NOT NULL,
+    installed_by uuid NOT NULL,
+    installed_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    announce_raid_logs boolean DEFAULT false NOT NULL,
+    announce_raid_logs_scope text DEFAULT 'raids_only'::text NOT NULL,
+    announce_raid_logs_channel_id text,
+    CONSTRAINT guild_discord_installations_announce_raid_logs_scope_check CHECK ((announce_raid_logs_scope = ANY (ARRAY['raids_only'::text, 'dungeons_only'::text, 'all'::text])))
+);
+
+CREATE TABLE guild_discord_log_announcement_sources (
+    announcement_id uuid NOT NULL,
+    log_group_id uuid NOT NULL,
+    instance_ordinal integer NOT NULL,
+    instance_slug text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT guild_discord_log_announcement_sources_instance_ordinal_check CHECK ((instance_ordinal >= 0))
+);
+
+CREATE TABLE guild_discord_log_announcements (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    guild_id uuid NOT NULL,
+    run_id uuid NOT NULL,
+    discord_channel_id text NOT NULL,
+    discord_message_id text,
+    delivery_attempted_at timestamp with time zone,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    delivery_error text
+);
+
 CREATE TABLE guild_join_requests (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     guild_id uuid NOT NULL,
@@ -763,6 +874,26 @@ CREATE TABLE guild_pages (
     updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
+CREATE TABLE guild_resource_daily_stats (
+    guild_id uuid NOT NULL,
+    resource_kind text NOT NULL,
+    resource_key text NOT NULL,
+    viewed_on date NOT NULL,
+    views bigint DEFAULT 0 NOT NULL,
+    unique_visitors bigint DEFAULT 0 NOT NULL,
+    CONSTRAINT guild_resource_daily_stats_unique_visitors_check CHECK ((unique_visitors >= 0)),
+    CONSTRAINT guild_resource_daily_stats_views_check CHECK ((views >= 0))
+);
+
+CREATE TABLE guild_resource_recent_visitors (
+    guild_id uuid NOT NULL,
+    resource_kind text NOT NULL,
+    resource_key text NOT NULL,
+    visitor_id uuid NOT NULL,
+    viewed_on date NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
 CREATE TABLE guild_settings (
     guild_id uuid NOT NULL,
     allow_join_requests_until timestamp with time zone,
@@ -782,7 +913,17 @@ CREATE TABLE instance_speedruns (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     addon_version text DEFAULT ''::text NOT NULL,
     parser_version_num bigint DEFAULT 0 NOT NULL,
-    addon_version_num bigint DEFAULT 0 NOT NULL
+    addon_version_num bigint DEFAULT 0 NOT NULL,
+    ranked_start_time timestamp with time zone,
+    ranked_completion_time timestamp with time zone,
+    ranked_duration_ms bigint,
+    boss_to_boss_start_time timestamp with time zone,
+    boss_to_boss_completion_time timestamp with time zone,
+    boss_to_boss_duration_ms bigint,
+    CONSTRAINT instance_speedruns_boss_to_boss_duration_nonnegative CHECK (((boss_to_boss_duration_ms IS NULL) OR (boss_to_boss_duration_ms >= 0))),
+    CONSTRAINT instance_speedruns_boss_to_boss_timing_complete CHECK ((((boss_to_boss_start_time IS NULL) AND (boss_to_boss_completion_time IS NULL) AND (boss_to_boss_duration_ms IS NULL)) OR ((boss_to_boss_start_time IS NOT NULL) AND (boss_to_boss_completion_time IS NOT NULL) AND (boss_to_boss_duration_ms IS NOT NULL)))),
+    CONSTRAINT instance_speedruns_ranked_duration_nonnegative CHECK (((ranked_duration_ms IS NULL) OR (ranked_duration_ms >= 0))),
+    CONSTRAINT instance_speedruns_ranked_timing_complete CHECK ((((ranked_start_time IS NULL) AND (ranked_completion_time IS NULL) AND (ranked_duration_ms IS NULL)) OR ((ranked_start_time IS NOT NULL) AND (ranked_completion_time IS NOT NULL) AND (ranked_duration_ms IS NOT NULL))))
 );
 
 CREATE VIEW guild_speedrun_ranks AS
@@ -837,6 +978,20 @@ CREATE TABLE instance_overview_metrics (
     CONSTRAINT instance_overview_metrics_wipe_count_nonnegative CHECK ((wipe_count >= 0))
 );
 
+CREATE TABLE item_daily_prices (
+    realm_id uuid NOT NULL,
+    auction_house_faction text NOT NULL,
+    item_id integer NOT NULL,
+    price_date date NOT NULL,
+    price_copper bigint,
+    fetched_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT item_daily_prices_auction_house_faction_check CHECK ((auction_house_faction = ANY (ARRAY['merged'::text, 'alliance'::text, 'horde'::text]))),
+    CONSTRAINT item_daily_prices_item_id_check CHECK ((item_id > 0)),
+    CONSTRAINT item_daily_prices_price_copper_check CHECK (((price_copper IS NULL) OR (price_copper >= 0)))
+);
+
+ALTER TABLE ONLY item_daily_prices FORCE ROW LEVEL SECURITY;
+
 CREATE TABLE leaderboard_version_requirements (
     instance_name text NOT NULL,
     min_parser_version text DEFAULT ''::text NOT NULL,
@@ -863,6 +1018,20 @@ CREATE TABLE log_instance_encounter_hostiles (
     id wow_guid NOT NULL,
     periods activity_periods NOT NULL,
     boss boolean DEFAULT false NOT NULL
+);
+
+CREATE TABLE log_instance_encounter_phases (
+    id uuid NOT NULL,
+    encounter_id uuid NOT NULL,
+    key text NOT NULL,
+    name text NOT NULL,
+    phase_order integer NOT NULL,
+    start_offset_ms bigint NOT NULL,
+    end_offset_ms bigint NOT NULL,
+    kill_type kill_type NOT NULL,
+    CONSTRAINT log_instance_encounter_phases_check CHECK ((end_offset_ms > start_offset_ms)),
+    CONSTRAINT log_instance_encounter_phases_phase_order_check CHECK ((phase_order >= 0)),
+    CONSTRAINT log_instance_encounter_phases_start_offset_ms_check CHECK ((start_offset_ms >= 0))
 );
 
 CREATE TABLE log_instance_encounters (
@@ -892,6 +1061,16 @@ CREATE TABLE log_instance_players (
     class wow_playable_class NOT NULL,
     race wow_playable_race NOT NULL,
     guild_id uuid
+);
+
+CREATE TABLE log_instance_raid_group_snapshots (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    instance_id uuid NOT NULL,
+    encounter_id uuid,
+    snapshot_type raid_group_snapshot_type NOT NULL,
+    observed_at timestamp with time zone NOT NULL,
+    composition jsonb NOT NULL,
+    CONSTRAINT raid_group_snapshot_encounter_chk CHECK ((((snapshot_type = 'clean_kill'::raid_group_snapshot_type) AND (encounter_id IS NOT NULL)) OR ((snapshot_type = 'final'::raid_group_snapshot_type) AND (encounter_id IS NULL))))
 );
 
 CREATE TABLE log_instance_units (
@@ -931,7 +1110,10 @@ CREATE TABLE log_instances (
     duplicate_group_id uuid,
     difficulty_name text DEFAULT ''::text NOT NULL,
     max_players integer DEFAULT 0 NOT NULL,
-    dynamic_difficulty integer DEFAULT 0 NOT NULL
+    dynamic_difficulty integer DEFAULT 0 NOT NULL,
+    vehicle_control_intervals jsonb DEFAULT '{}'::jsonb NOT NULL,
+    category text,
+    CONSTRAINT log_instances_category_check CHECK ((category = ANY (ARRAY['raid'::text, 'dungeon'::text])))
 );
 
 COMMENT ON COLUMN log_instances.guild_id IS 'If set, that means it was a guild run.';
@@ -972,7 +1154,11 @@ CREATE TABLE wow_server_realms (
     name text NOT NULL,
     created_by uuid,
     url text,
-    description text DEFAULT ''::text NOT NULL
+    description text DEFAULT ''::text NOT NULL,
+    pricing_route_name text,
+    pricing_auction_house text,
+    CONSTRAINT wow_server_realms_pricing_auction_house_check CHECK (((pricing_auction_house IS NULL) OR (pricing_auction_house = ANY (ARRAY['merged'::text, 'split'::text])))),
+    CONSTRAINT wow_server_realms_pricing_config_complete CHECK ((((pricing_route_name IS NULL) AND (pricing_auction_house IS NULL)) OR ((pricing_route_name <> ''::text) AND (pricing_auction_house IS NOT NULL))))
 );
 
 ALTER TABLE ONLY wow_server_realms FORCE ROW LEVEL SECURITY;
@@ -984,7 +1170,9 @@ CREATE TABLE wow_servers (
     url text,
     description text DEFAULT ''::text NOT NULL,
     tenant_id uuid,
-    default_dataset_id uuid
+    default_dataset_id uuid,
+    pricing_provider text,
+    CONSTRAINT wow_servers_pricing_provider_check CHECK (((pricing_provider IS NULL) OR (pricing_provider = 'wowauctions'::text)))
 );
 
 ALTER TABLE ONLY wow_servers FORCE ROW LEVEL SECURITY;
@@ -1006,6 +1194,7 @@ CREATE VIEW log_instances_guild AS
     li.difficulty_name,
     li.max_players,
     li.dynamic_difficulty,
+    li.vehicle_control_intervals,
     COALESCE(wsr.name, 'Unknown'::text) AS realm_name,
     g.name AS guild_name,
     g.realm_id AS guild_realm_id,
@@ -1063,6 +1252,7 @@ CREATE TABLE parse_score_results (
     max_players smallint DEFAULT 0 NOT NULL,
     killed_at timestamp with time zone,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
+    player_sub_spec text DEFAULT ''::text NOT NULL,
     CONSTRAINT parse_score_results_metric_check CHECK ((metric = ANY (ARRAY['dps'::text, 'hps'::text])))
 );
 
@@ -1071,6 +1261,20 @@ CREATE TABLE parsed_log_group (
 );
 
 COMMENT ON TABLE parsed_log_group IS 'A parsed_log_group is a wow_log_group that has been processed and contains parsed logs. A duplicate allows deleting this one row to clear all parsed logs for a given wow_log_group.';
+
+CREATE TABLE raid_compositions (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid NOT NULL,
+    tenant_id uuid DEFAULT '00000000-0000-0000-0000-000000000000'::uuid NOT NULL,
+    guild_id uuid,
+    name text NOT NULL,
+    data jsonb NOT NULL,
+    public_view boolean DEFAULT true NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT raid_compositions_data_size_chk CHECK ((pg_column_size(data) <= 131072)),
+    CONSTRAINT raid_compositions_name_length_chk CHECK (((char_length(name) >= 1) AND (char_length(name) <= 100)))
+);
 
 CREATE TABLE ranking_snapshot_members (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
@@ -1092,7 +1296,8 @@ CREATE TABLE ranking_snapshot_members (
     absorbed_done bigint DEFAULT 0 NOT NULL,
     duration_secs double precision NOT NULL,
     dps double precision NOT NULL,
-    hps double precision DEFAULT 0 NOT NULL
+    hps double precision DEFAULT 0 NOT NULL,
+    player_sub_spec text DEFAULT ''::text NOT NULL
 );
 
 CREATE TABLE ranking_snapshots (
@@ -1110,8 +1315,11 @@ CREATE TABLE ranking_snapshots (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     published_at timestamp with time zone,
     source_row_count bigint DEFAULT 0 NOT NULL,
-    source_watermark timestamp with time zone
+    source_watermark timestamp with time zone,
+    member_count bigint DEFAULT 0 NOT NULL
 );
+
+COMMENT ON COLUMN ranking_snapshots.member_count IS 'Exact number of ranking_snapshot_members rows captured when the snapshot is published';
 
 CREATE TABLE rankings_instance_summaries (
     instance_name text NOT NULL,
@@ -1167,34 +1375,11 @@ CREATE TABLE retention_rules (
     CONSTRAINT retention_rules_action_check CHECK ((action = ANY (ARRAY['keep'::text, 'delete'::text])))
 );
 
-CREATE UNLOGGED TABLE river_client (
-    id text NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
-    paused_at timestamp with time zone,
-    updated_at timestamp with time zone NOT NULL,
-    CONSTRAINT name_length CHECK (((char_length(id) > 0) AND (char_length(id) < 128)))
-);
-
-CREATE UNLOGGED TABLE river_client_queue (
-    river_client_id text NOT NULL,
-    name text NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    max_workers bigint DEFAULT 0 NOT NULL,
-    metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
-    num_jobs_completed bigint DEFAULT 0 NOT NULL,
-    num_jobs_running bigint DEFAULT 0 NOT NULL,
-    updated_at timestamp with time zone NOT NULL,
-    CONSTRAINT name_length CHECK (((char_length(name) > 0) AND (char_length(name) < 128))),
-    CONSTRAINT num_jobs_completed_zero_or_positive CHECK ((num_jobs_completed >= 0)),
-    CONSTRAINT num_jobs_running_zero_or_positive CHECK ((num_jobs_running >= 0))
-);
-
 CREATE TABLE river_job (
     id bigint NOT NULL,
     state river_job_state DEFAULT 'available'::river_job_state NOT NULL,
     attempt smallint DEFAULT 0 NOT NULL,
-    max_attempts smallint NOT NULL,
+    max_attempts smallint DEFAULT 25 NOT NULL,
     attempted_at timestamp with time zone,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     finalized_at timestamp with time zone,
@@ -1242,12 +1427,29 @@ CREATE TABLE river_migration (
     CONSTRAINT version_gte_1 CHECK ((version >= 1))
 );
 
+CREATE TABLE river_notification (
+    id bigint NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    payload text NOT NULL,
+    topic text NOT NULL,
+    CONSTRAINT topic_length CHECK (((length(topic) > 0) AND (length(topic) < 128)))
+);
+
+CREATE SEQUENCE river_notification_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE river_notification_id_seq OWNED BY river_notification.id;
+
 CREATE TABLE river_queue (
     name text NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
     paused_at timestamp with time zone,
-    updated_at timestamp with time zone NOT NULL
+    updated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
 CREATE TABLE server_applications (
@@ -1300,7 +1502,8 @@ CREATE TABLE talent_builds (
     talent_layout text NOT NULL,
     spec text DEFAULT 'Unknown'::text NOT NULL,
     sub_spec text,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    dataset_id uuid NOT NULL
 );
 
 CREATE TABLE time_parse_boss_kill_members (
@@ -1709,6 +1912,8 @@ CREATE TABLE wow_server_upload_keys (
 
 ALTER TABLE ONLY river_job ALTER COLUMN id SET DEFAULT nextval('river_job_id_seq'::regclass);
 
+ALTER TABLE ONLY river_notification ALTER COLUMN id SET DEFAULT nextval('river_notification_id_seq'::regclass);
+
 ALTER TABLE ONLY application_modification_requests
     ADD CONSTRAINT application_modification_requests_pkey PRIMARY KEY (id);
 
@@ -1802,6 +2007,9 @@ ALTER TABLE ONLY dbc_spell_ranges
 ALTER TABLE ONLY dbc_spells
     ADD CONSTRAINT dbc_spells_pkey PRIMARY KEY (dataset_id, spell_id);
 
+ALTER TABLE ONLY dbc_vulnerability_spells
+    ADD CONSTRAINT dbc_vulnerability_spells_pkey PRIMARY KEY (dataset_id, spell_id);
+
 ALTER TABLE ONLY deployment_info
     ADD CONSTRAINT deployment_info_pkey PRIMARY KEY (id);
 
@@ -1819,6 +2027,30 @@ ALTER TABLE ONLY game_player_gear_history
 
 ALTER TABLE ONLY game_players
     ADD CONSTRAINT game_players_pkey PRIMARY KEY (id, realm_id);
+
+ALTER TABLE ONLY gear_lists
+    ADD CONSTRAINT gear_lists_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY gear_progressions
+    ADD CONSTRAINT gear_progressions_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY gear_stat_weights
+    ADD CONSTRAINT gear_stat_weights_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY guild_discord_install_states
+    ADD CONSTRAINT guild_discord_install_states_pkey PRIMARY KEY (state);
+
+ALTER TABLE ONLY guild_discord_installations
+    ADD CONSTRAINT guild_discord_installations_pkey PRIMARY KEY (guild_id);
+
+ALTER TABLE ONLY guild_discord_log_announcement_sources
+    ADD CONSTRAINT guild_discord_log_announcement_sources_pkey PRIMARY KEY (log_group_id, instance_ordinal);
+
+ALTER TABLE ONLY guild_discord_log_announcements
+    ADD CONSTRAINT guild_discord_log_announcements_guild_id_run_id_key UNIQUE (guild_id, run_id);
+
+ALTER TABLE ONLY guild_discord_log_announcements
+    ADD CONSTRAINT guild_discord_log_announcements_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY guild_join_requests
     ADD CONSTRAINT guild_join_requests_guild_id_user_id_key UNIQUE (guild_id, user_id);
@@ -1841,6 +2073,12 @@ ALTER TABLE ONLY guild_pages
 ALTER TABLE ONLY guild_pages
     ADD CONSTRAINT guild_pages_pkey PRIMARY KEY (id);
 
+ALTER TABLE ONLY guild_resource_daily_stats
+    ADD CONSTRAINT guild_resource_daily_stats_pkey PRIMARY KEY (guild_id, resource_kind, resource_key, viewed_on);
+
+ALTER TABLE ONLY guild_resource_recent_visitors
+    ADD CONSTRAINT guild_resource_recent_visitors_pkey PRIMARY KEY (guild_id, resource_kind, resource_key, visitor_id, viewed_on);
+
 ALTER TABLE ONLY guild_settings
     ADD CONSTRAINT guild_settings_pkey PRIMARY KEY (guild_id);
 
@@ -1859,6 +2097,9 @@ ALTER TABLE ONLY instance_overview_metrics
 ALTER TABLE ONLY instance_speedruns
     ADD CONSTRAINT instance_speedruns_pkey PRIMARY KEY (instance_id);
 
+ALTER TABLE ONLY item_daily_prices
+    ADD CONSTRAINT item_daily_prices_pkey PRIMARY KEY (realm_id, auction_house_faction, item_id, price_date);
+
 ALTER TABLE ONLY leaderboard_version_requirements
     ADD CONSTRAINT leaderboard_version_requirements_pkey PRIMARY KEY (instance_name);
 
@@ -1871,8 +2112,20 @@ ALTER TABLE ONLY log_instance_encounter_damage_unit_summary
 ALTER TABLE ONLY log_instance_encounter_hostiles
     ADD CONSTRAINT log_instance_encounter_hostiles_pkey PRIMARY KEY (encounter_id, id);
 
+ALTER TABLE ONLY log_instance_encounter_phases
+    ADD CONSTRAINT log_instance_encounter_phases_encounter_id_key_key UNIQUE (encounter_id, key);
+
+ALTER TABLE ONLY log_instance_encounter_phases
+    ADD CONSTRAINT log_instance_encounter_phases_encounter_id_phase_order_key UNIQUE (encounter_id, phase_order);
+
+ALTER TABLE ONLY log_instance_encounter_phases
+    ADD CONSTRAINT log_instance_encounter_phases_pkey PRIMARY KEY (id);
+
 ALTER TABLE ONLY log_instance_encounters
     ADD CONSTRAINT log_instance_encounters_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY log_instance_raid_group_snapshots
+    ADD CONSTRAINT log_instance_raid_group_snapshots_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY log_instance_units
     ADD CONSTRAINT log_instance_units_pkey PRIMARY KEY (instance_id, unit_guid);
@@ -1894,6 +2147,9 @@ ALTER TABLE ONLY parse_score_results
 
 ALTER TABLE ONLY parsed_log_group
     ADD CONSTRAINT parsed_log_group_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY raid_compositions
+    ADD CONSTRAINT raid_compositions_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY ranking_snapshot_members
     ADD CONSTRAINT ranking_snapshot_members_pkey PRIMARY KEY (id);
@@ -1931,12 +2187,6 @@ ALTER TABLE ONLY retention_rules
 ALTER TABLE ONLY retention_rules
     ADD CONSTRAINT retention_rules_unique_priority UNIQUE (policy_id, priority);
 
-ALTER TABLE ONLY river_client
-    ADD CONSTRAINT river_client_pkey PRIMARY KEY (id);
-
-ALTER TABLE ONLY river_client_queue
-    ADD CONSTRAINT river_client_queue_pkey PRIMARY KEY (river_client_id, name);
-
 ALTER TABLE ONLY river_job
     ADD CONSTRAINT river_job_pkey PRIMARY KEY (id);
 
@@ -1945,6 +2195,9 @@ ALTER TABLE ONLY river_leader
 
 ALTER TABLE ONLY river_migration
     ADD CONSTRAINT river_migration_pkey1 PRIMARY KEY (line, version);
+
+ALTER TABLE ONLY river_notification
+    ADD CONSTRAINT river_notification_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY river_queue
     ADD CONSTRAINT river_queue_pkey PRIMARY KEY (name);
@@ -1968,10 +2221,10 @@ ALTER TABLE ONLY site_config
     ADD CONSTRAINT site_config_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY talent_builds
-    ADD CONSTRAINT talent_builds_pkey PRIMARY KEY (id);
+    ADD CONSTRAINT talent_builds_dataset_class_layout_key UNIQUE (dataset_id, player_class, talent_layout);
 
 ALTER TABLE ONLY talent_builds
-    ADD CONSTRAINT talent_builds_player_class_talent_layout_key UNIQUE (player_class, talent_layout);
+    ADD CONSTRAINT talent_builds_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY tenants
     ADD CONSTRAINT tenants_pkey PRIMARY KEY (id);
@@ -2085,11 +2338,31 @@ CREATE INDEX game_player_gear_history_player_time ON game_player_gear_history US
 
 CREATE INDEX game_players_player_and_realm ON game_players USING btree (name, realm_id);
 
+CREATE INDEX gear_lists_user_tenant_idx ON gear_lists USING btree (user_id, tenant_id);
+
+CREATE INDEX gear_progressions_user_tenant_idx ON gear_progressions USING btree (user_id, tenant_id);
+
+CREATE INDEX gear_stat_weights_user_tenant_idx ON gear_stat_weights USING btree (user_id, tenant_id);
+
+CREATE INDEX guild_discord_install_states_expires_at_idx ON guild_discord_install_states USING btree (expires_at);
+
+CREATE INDEX guild_discord_installations_discord_guild_id_idx ON guild_discord_installations USING btree (discord_guild_id);
+
+CREATE INDEX guild_discord_log_announcement_sources_announcement_id_idx ON guild_discord_log_announcement_sources USING btree (announcement_id);
+
+CREATE UNIQUE INDEX guild_discord_log_announcement_sources_slug_idx ON guild_discord_log_announcement_sources USING btree (instance_slug) WHERE (instance_slug IS NOT NULL);
+
+CREATE INDEX guild_resource_daily_stats_guild_date_idx ON guild_resource_daily_stats USING btree (guild_id, viewed_on DESC);
+
+CREATE INDEX guild_resource_recent_visitors_date_idx ON guild_resource_recent_visitors USING btree (viewed_on);
+
 CREATE INDEX idx_data_grants_user_id ON data_grants USING btree (user_id);
 
 CREATE INDEX idx_dbc_cooldown_spells_class ON dbc_cooldown_spells USING btree (dataset_id, spell_class_set);
 
 CREATE INDEX idx_dbc_spells_name ON dbc_spells USING btree (dataset_id, name);
+
+CREATE INDEX idx_edr_boss_coverage_by_instance ON encounter_dps_rankings USING btree (instance_id, encounter_name) WHERE (encounter_id IS NOT NULL);
 
 CREATE INDEX idx_edr_class_spec ON encounter_dps_rankings USING btree (player_class, player_spec);
 
@@ -2129,11 +2402,17 @@ CREATE INDEX idx_instance_loot_item ON instance_loot USING btree (item_id);
 
 CREATE INDEX idx_instance_loot_received ON instance_loot USING btree (received_guid);
 
+CREATE INDEX idx_instance_speedruns_boss_to_boss_leaderboard ON instance_speedruns USING btree (instance_name, boss_to_boss_duration_ms) WHERE ((qualified = true) AND (boss_to_boss_duration_ms IS NOT NULL));
+
 CREATE INDEX idx_instance_speedruns_leaderboard ON instance_speedruns USING btree (instance_name, duration_ms) WHERE (qualified = true);
+
+CREATE INDEX idx_instance_speedruns_ranked_leaderboard ON instance_speedruns USING btree (instance_name, ranked_duration_ms) WHERE ((qualified = true) AND (ranked_duration_ms IS NOT NULL));
 
 CREATE INDEX idx_instance_speedruns_realm ON instance_speedruns USING btree (realm_id, instance_name);
 
 CREATE INDEX idx_log_file_wow_log_id ON log_file USING btree (wow_log_id);
+
+CREATE INDEX idx_log_instance_encounter_phases_encounter_id ON log_instance_encounter_phases USING btree (encounter_id);
 
 CREATE INDEX idx_log_instance_encounters_instance_id ON log_instance_encounters USING btree (instance_id);
 
@@ -2183,7 +2462,7 @@ CREATE INDEX idx_rs_tenant_status ON ranking_snapshots USING btree (tenant_id, s
 
 CREATE INDEX idx_rsm_cohort_class ON ranking_snapshot_members USING btree (snapshot_id, encounter_name, difficulty_name, max_players, player_class);
 
-CREATE INDEX idx_rsm_cohort_spec ON ranking_snapshot_members USING btree (snapshot_id, encounter_name, difficulty_name, max_players, player_class, player_spec);
+CREATE INDEX idx_rsm_cohort_spec ON ranking_snapshot_members USING btree (snapshot_id, encounter_name, difficulty_name, max_players, player_class, player_spec, player_sub_spec);
 
 CREATE INDEX idx_rsm_instance ON ranking_snapshot_members USING btree (snapshot_id, instance_id);
 
@@ -2229,11 +2508,19 @@ CREATE INDEX instance_loot_received ON instance_loot USING btree (realm_id, rece
 
 CREATE INDEX instance_speedruns_cohort_lookup_idx ON instance_speedruns USING btree (instance_name, start_time);
 
+CREATE INDEX item_daily_prices_future_lookup_idx ON item_daily_prices USING btree (realm_id, auction_house_faction, item_id, price_date) WHERE (price_copper IS NOT NULL);
+
+CREATE UNIQUE INDEX log_instance_raid_group_clean_kill_idx ON log_instance_raid_group_snapshots USING btree (encounter_id) WHERE (snapshot_type = 'clean_kill'::raid_group_snapshot_type);
+
+CREATE UNIQUE INDEX log_instance_raid_group_final_idx ON log_instance_raid_group_snapshots USING btree (instance_id) WHERE (snapshot_type = 'final'::raid_group_snapshot_type);
+
 CREATE UNIQUE INDEX log_instance_youtube_timestamped_instance_id_idx ON log_instance_youtube_timestamped USING btree (log_instance_id) WHERE (log_instance_id IS NOT NULL);
 
 CREATE UNIQUE INDEX log_instance_youtube_timestamped_slug_idx ON log_instance_youtube_timestamped USING btree (instance_slug) WHERE (instance_slug IS NOT NULL);
 
 CREATE UNIQUE INDEX log_instances_hashed_slug_idx ON log_instances USING btree (hashed_slug) WHERE (hashed_slug IS NOT NULL);
+
+CREATE INDEX raid_compositions_user_tenant_idx ON raid_compositions USING btree (user_id, tenant_id);
 
 CREATE UNIQUE INDEX ranking_snapshots_published_key_idx ON ranking_snapshots USING btree (tenant_id, cutoff, lookback_days, cohort_mode, policy_version, query_version) WHERE (status = 'published'::text);
 
@@ -2248,6 +2535,10 @@ CREATE INDEX river_job_prioritized_fetching_index ON river_job USING btree (stat
 CREATE INDEX river_job_state_and_finalized_at_index ON river_job USING btree (state, finalized_at) WHERE (finalized_at IS NOT NULL);
 
 CREATE UNIQUE INDEX river_job_unique_idx ON river_job USING btree (unique_key) WHERE ((unique_key IS NOT NULL) AND (unique_states IS NOT NULL) AND river_job_state_in_bitmask(unique_states, state));
+
+CREATE INDEX river_notification_created_at_idx ON river_notification USING btree (created_at);
+
+CREATE INDEX river_notification_topic_id_idx ON river_notification USING btree (topic, id);
 
 CREATE UNIQUE INDEX time_parse_snapshots_published_key_idx ON time_parse_snapshots USING btree (tenant_id, cutoff, lookback_days, policy_version, query_version) WHERE (status = 'published'::text);
 
@@ -2361,6 +2652,9 @@ ALTER TABLE ONLY dbc_spell_ranges
 ALTER TABLE ONLY dbc_spells
     ADD CONSTRAINT dbc_spells_dataset_id_fkey FOREIGN KEY (dataset_id) REFERENCES datasets(id) ON DELETE CASCADE;
 
+ALTER TABLE ONLY dbc_vulnerability_spells
+    ADD CONSTRAINT dbc_vulnerability_spells_dataset_id_fkey FOREIGN KEY (dataset_id) REFERENCES datasets(id) ON DELETE CASCADE;
+
 ALTER TABLE ONLY encounter_dps_rankings
     ADD CONSTRAINT encounter_dps_rankings_encounter_id_fkey FOREIGN KEY (encounter_id) REFERENCES log_instance_encounters(id) ON DELETE CASCADE;
 
@@ -2394,6 +2688,39 @@ ALTER TABLE ONLY game_players
 ALTER TABLE ONLY game_players
     ADD CONSTRAINT game_players_updated_from_instance_fkey FOREIGN KEY (updated_from_instance) REFERENCES log_instances(id) ON DELETE SET NULL DEFERRABLE INITIALLY DEFERRED;
 
+ALTER TABLE ONLY gear_lists
+    ADD CONSTRAINT gear_lists_forked_from_list_id_fkey FOREIGN KEY (forked_from_list_id) REFERENCES gear_lists(id) ON DELETE SET NULL;
+
+ALTER TABLE ONLY gear_lists
+    ADD CONSTRAINT gear_lists_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY gear_progressions
+    ADD CONSTRAINT gear_progressions_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY gear_stat_weights
+    ADD CONSTRAINT gear_stat_weights_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY guild_discord_install_states
+    ADD CONSTRAINT guild_discord_install_states_guild_id_fkey FOREIGN KEY (guild_id) REFERENCES guilds(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY guild_discord_install_states
+    ADD CONSTRAINT guild_discord_install_states_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY guild_discord_installations
+    ADD CONSTRAINT guild_discord_installations_guild_id_fkey FOREIGN KEY (guild_id) REFERENCES guilds(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY guild_discord_installations
+    ADD CONSTRAINT guild_discord_installations_installed_by_fkey FOREIGN KEY (installed_by) REFERENCES users(id);
+
+ALTER TABLE ONLY guild_discord_log_announcement_sources
+    ADD CONSTRAINT guild_discord_log_announcement_sources_announcement_id_fkey FOREIGN KEY (announcement_id) REFERENCES guild_discord_log_announcements(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY guild_discord_log_announcement_sources
+    ADD CONSTRAINT guild_discord_log_announcement_sources_log_group_id_fkey FOREIGN KEY (log_group_id) REFERENCES wow_log_groups(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY guild_discord_log_announcements
+    ADD CONSTRAINT guild_discord_log_announcements_guild_id_fkey FOREIGN KEY (guild_id) REFERENCES guilds(id) ON DELETE CASCADE;
+
 ALTER TABLE ONLY guild_join_requests
     ADD CONSTRAINT guild_join_requests_guild_id_fkey FOREIGN KEY (guild_id) REFERENCES guilds(id) ON DELETE CASCADE;
 
@@ -2408,6 +2735,12 @@ ALTER TABLE ONLY guild_page_tabs
 
 ALTER TABLE ONLY guild_pages
     ADD CONSTRAINT guild_pages_guild_id_fkey FOREIGN KEY (guild_id) REFERENCES guilds(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY guild_resource_daily_stats
+    ADD CONSTRAINT guild_resource_daily_stats_guild_id_fkey FOREIGN KEY (guild_id) REFERENCES guilds(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY guild_resource_recent_visitors
+    ADD CONSTRAINT guild_resource_recent_visitors_guild_id_fkey FOREIGN KEY (guild_id) REFERENCES guilds(id) ON DELETE CASCADE;
 
 ALTER TABLE ONLY guild_settings
     ADD CONSTRAINT guild_settings_guild_id_fkey FOREIGN KEY (guild_id) REFERENCES guilds(id) ON DELETE CASCADE;
@@ -2430,6 +2763,9 @@ ALTER TABLE ONLY instance_speedruns
 ALTER TABLE ONLY instance_speedruns
     ADD CONSTRAINT instance_speedruns_realm_id_fkey FOREIGN KEY (realm_id) REFERENCES wow_server_realms(id);
 
+ALTER TABLE ONLY item_daily_prices
+    ADD CONSTRAINT item_daily_prices_realm_id_fkey FOREIGN KEY (realm_id) REFERENCES wow_server_realms(id) ON DELETE CASCADE;
+
 ALTER TABLE ONLY log_file
     ADD CONSTRAINT log_file_owner_fkey FOREIGN KEY (owner) REFERENCES users(id);
 
@@ -2442,6 +2778,9 @@ ALTER TABLE ONLY log_instance_encounter_damage_unit_summary
 ALTER TABLE ONLY log_instance_encounter_hostiles
     ADD CONSTRAINT log_instance_encounter_hostiles_encounter_id_fkey FOREIGN KEY (encounter_id) REFERENCES log_instance_encounters(id) ON DELETE CASCADE;
 
+ALTER TABLE ONLY log_instance_encounter_phases
+    ADD CONSTRAINT log_instance_encounter_phases_encounter_id_fkey FOREIGN KEY (encounter_id) REFERENCES log_instance_encounters(id) ON DELETE CASCADE;
+
 ALTER TABLE ONLY log_instance_encounters
     ADD CONSTRAINT log_instance_encounters_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES log_instances(id) ON DELETE CASCADE;
 
@@ -2453,6 +2792,12 @@ ALTER TABLE ONLY log_instance_players
 
 ALTER TABLE ONLY log_instance_players
     ADD CONSTRAINT log_instance_players_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES log_instances(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY log_instance_raid_group_snapshots
+    ADD CONSTRAINT log_instance_raid_group_snapshots_encounter_id_fkey FOREIGN KEY (encounter_id) REFERENCES log_instance_encounters(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY log_instance_raid_group_snapshots
+    ADD CONSTRAINT log_instance_raid_group_snapshots_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES log_instances(id) ON DELETE CASCADE;
 
 ALTER TABLE ONLY log_instance_units
     ADD CONSTRAINT log_instance_units_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES log_instances(id) ON DELETE CASCADE;
@@ -2490,6 +2835,12 @@ ALTER TABLE ONLY parse_score_results
 ALTER TABLE ONLY parsed_log_group
     ADD CONSTRAINT parsed_log_group_id_fkey FOREIGN KEY (id) REFERENCES wow_log_groups(id) ON DELETE CASCADE;
 
+ALTER TABLE ONLY raid_compositions
+    ADD CONSTRAINT raid_compositions_guild_id_fkey FOREIGN KEY (guild_id) REFERENCES guilds(id) ON DELETE SET NULL;
+
+ALTER TABLE ONLY raid_compositions
+    ADD CONSTRAINT raid_compositions_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+
 ALTER TABLE ONLY ranking_snapshot_members
     ADD CONSTRAINT ranking_snapshot_members_ranking_id_fkey FOREIGN KEY (ranking_id) REFERENCES encounter_dps_rankings(id) ON DELETE CASCADE;
 
@@ -2514,9 +2865,6 @@ ALTER TABLE ONLY retention_policies
 ALTER TABLE ONLY retention_rules
     ADD CONSTRAINT retention_rules_policy_id_fkey FOREIGN KEY (policy_id) REFERENCES retention_policies(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY river_client_queue
-    ADD CONSTRAINT river_client_queue_river_client_id_fkey FOREIGN KEY (river_client_id) REFERENCES river_client(id) ON DELETE CASCADE;
-
 ALTER TABLE ONLY server_applications
     ADD CONSTRAINT server_applications_initiated_by_fkey FOREIGN KEY (initiated_by) REFERENCES users(id);
 
@@ -2534,6 +2882,9 @@ ALTER TABLE ONLY shared_views
 
 ALTER TABLE ONLY shared_views
     ADD CONSTRAINT shared_views_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES log_instances(id) ON DELETE SET NULL;
+
+ALTER TABLE ONLY talent_builds
+    ADD CONSTRAINT talent_builds_dataset_id_fkey FOREIGN KEY (dataset_id) REFERENCES datasets(id);
 
 ALTER TABLE ONLY tenants
     ADD CONSTRAINT tenants_default_dataset_id_fkey FOREIGN KEY (default_dataset_id) REFERENCES datasets(id);
@@ -2648,7 +2999,11 @@ ALTER TABLE ONLY wow_servers
 
 ALTER TABLE encounter_dps_rankings ENABLE ROW LEVEL SECURITY;
 
+ALTER TABLE item_daily_prices ENABLE ROW LEVEL SECURITY;
+
 CREATE POLICY tenant_admin_bypass ON encounter_dps_rankings USING ((current_setting('app.tenant_bypass'::text, true) = 'true'::text));
+
+CREATE POLICY tenant_admin_bypass ON item_daily_prices USING ((current_setting('app.tenant_bypass'::text, true) = 'true'::text));
 
 CREATE POLICY tenant_admin_bypass ON wow_server_realms USING ((current_setting('app.tenant_bypass'::text, true) = 'true'::text));
 
@@ -2664,6 +3019,9 @@ CASE
       WHERE (tenants.include_in_all = true))))
     ELSE (tenant_id = (current_setting('app.tenant_id'::text, true))::uuid)
 END);
+
+CREATE POLICY tenant_item_price_isolation ON item_daily_prices USING ((realm_id IN ( SELECT wow_server_realms.id
+   FROM wow_server_realms)));
 
 CREATE POLICY tenant_realm_isolation ON wow_server_realms USING ((server_id IN ( SELECT wow_servers.id
    FROM wow_servers)));

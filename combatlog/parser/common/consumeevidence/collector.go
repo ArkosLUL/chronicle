@@ -4,8 +4,11 @@
 //
 // Covered evidence kinds:
 //   - Direct item-backed SpellGo (A1: EvidenceKindDirectItem, ConfidenceDirect)
+//   - Cast-only SpellGo matching a known consumable use spell (EvidenceKindCast)
 //   - Aura-gain matching a known consumable buff (A2: EvidenceKindAura, ConfidenceEffectDerived)
+//   - Self-heal matching a known consumable use spell (EvidenceKindHeal)
 //   - Active-at-pull projection of consumable auras (EvidenceKindActiveAtPull)
+//   - Out-of-combat instant consumes assigned to the next encounter (EvidenceKindPreCombat)
 //
 // Design principles:
 //   - ConsumeID and EvidenceID are parse-wide stable and deterministic, including
@@ -72,6 +75,16 @@ type auraEpisode struct {
 	itemIDs   []int32 // candidate items (from catalog or direct episode)
 }
 
+// castEpisode records a cast-only consumable use within the active encounter so
+// later heal or aura evidence can be merged into the same physical use.
+type castEpisode struct {
+	consumeID      string
+	player         guid.GUID
+	spellData      *chrondbc.Spell
+	candidateItems []int32
+	ts             time.Time
+}
+
 // Collector is a per-instance hook that reads from a shared parse-wide Tracker
 // and emits Consume messages into the active fight's event stream. It holds
 // only per-encounter state (snapshot, dedup set).
@@ -88,6 +101,7 @@ type Collector struct {
 	// emittedEvidenceIDs tracks evidence IDs emitted in the current encounter
 	// to prevent duplicating a raw event and its projection on the pull-start.
 	emittedEvidenceIDs map[string]struct{}
+	castEpisodes       []castEpisode
 }
 
 // NewCollector creates a Collector referencing the shared parse-wide Tracker
@@ -127,11 +141,17 @@ func (c *Collector) ProcessMessage(active bool, _ uuid.UUID, m messages.Message)
 		c.pendingProjection = false
 	}
 
-	// Emit direct item evidence for active encounters.
-	if sg, ok := m.(*messages.SpellGo); ok && sg.ItemID != nil {
-		catalog := c.shared.Catalog()
-		if catalog == nil || catalog.IsConsumableItem(*sg.ItemID) {
-			c.emitDirectEvidence(sg)
+	// Emit direct item evidence when the log identifies the item. Native logs
+	// often expose only the consumable's use spell, so use the catalog to emit
+	// cast evidence when ItemID is absent.
+	if sg, ok := m.(*messages.SpellGo); ok {
+		if sg.ItemID != nil {
+			catalog := c.shared.Catalog()
+			if catalog == nil || catalog.IsConsumableItem(*sg.ItemID) {
+				c.emitDirectEvidence(sg)
+			}
+		} else {
+			c.emitCastEvidence(sg)
 		}
 	}
 
@@ -147,6 +167,54 @@ func (c *Collector) ProcessMessage(active bool, _ uuid.UUID, m messages.Message)
 	}
 
 	return nil
+}
+
+// emitCastEvidence emits evidence for native-log casts that identify the
+// consumable use spell but omit the originating item ID.
+func (c *Collector) emitCastEvidence(sg *messages.SpellGo) {
+	if sg.SpellData == nil {
+		return
+	}
+	catalog := c.shared.Catalog()
+	if catalog == nil {
+		return
+	}
+	candidateItems, ok := catalog.IsConsumableDirectSpell(chrondbc.SpellID(sg.SpellData.ID))
+	if !ok {
+		return
+	}
+
+	ts := sg.Date()
+	tsMilli := ts.UnixMilli()
+	consumeID := StableConsumeID("cast", sg.Caster, sg.SpellData, nil, ts)
+	evidenceID := StableEvidenceID(consumeID, "cast")
+	if c.isDuplicateEvidence(evidenceID) {
+		return
+	}
+
+	confidence := messages.ConfidenceEffectDerived
+	if len(candidateItems) > 1 {
+		confidence = messages.ConfidenceAmbiguous
+	}
+	c.castEpisodes = append(c.castEpisodes, castEpisode{
+		consumeID:      consumeID,
+		player:         sg.Caster,
+		spellData:      sg.SpellData,
+		candidateItems: append([]int32(nil), candidateItems...),
+		ts:             ts,
+	})
+	c.emitConsume(&messages.Consume{
+		MessageBase:      messages.Base(ts),
+		ConsumeID:        consumeID,
+		EvidenceID:       evidenceID,
+		Player:           sg.Caster,
+		CandidateItemIDs: candidateItems,
+		SpellData:        sg.SpellData,
+		Kind:             messages.EvidenceKindCast,
+		Confidence:       confidence,
+		ConsumedAtUnixMs: &tsMilli,
+		ObservedAtUnixMs: tsMilli,
+	})
 }
 
 // emitHealEvidence emits a heal-derived Consume event when a self-heal's spell
@@ -181,6 +249,8 @@ func (c *Collector) emitHealEvidence(healMsg *messages.Heal) {
 		confidence = messages.ConfidenceDirect
 		itemID = &ep.itemID
 		candidateItems = nil
+	} else if ep := c.findCastEpisode(healMsg.Caster, spellID, candidateItems, ts); ep != nil {
+		consumeID = ep.consumeID
 	} else {
 		consumeID = StableConsumeID("heal", healMsg.Caster, healMsg.SpellData, nil, ts)
 	}
@@ -208,6 +278,30 @@ func (c *Collector) emitHealEvidence(healMsg *messages.Heal) {
 		Amount:           &amount,
 		ResourceType:     &resourceType,
 	})
+}
+
+func (c *Collector) findCastEpisode(player guid.GUID, spellID chrondbc.SpellID, candidateItems []int32, observedAt time.Time) *castEpisode {
+	const correlationWindow = 2 * time.Second
+	for i := len(c.castEpisodes) - 1; i >= 0; i-- {
+		ep := &c.castEpisodes[i]
+		if observedAt.Sub(ep.ts) > correlationWindow {
+			break
+		}
+		if ep.player != player {
+			continue
+		}
+		if ep.spellData != nil && ep.spellData.ID == spellID {
+			return ep
+		}
+		for _, observedItem := range candidateItems {
+			for _, castItem := range ep.candidateItems {
+				if observedItem == castItem {
+					return ep
+				}
+			}
+		}
+	}
+	return nil
 }
 
 // emitDirectEvidence emits a direct item Consume event.
@@ -269,6 +363,8 @@ func (c *Collector) emitAuraEvidence(auraMsg *messages.Aura) {
 		confidence = messages.ConfidenceDirect
 		itemID = &ep.itemID
 		candidateItems = nil // known item, no ambiguity
+	} else if ep := c.findCastEpisode(auraMsg.Target, spellID, candidateItems, ts); ep != nil {
+		consumeID = ep.consumeID
 	} else {
 		consumeID = StableAuraConsumeID(auraMsg.Target, chrondbc.SpellID(spellID), ts)
 	}
@@ -301,6 +397,7 @@ func (c *Collector) FightStarted(_ uuid.UUID, _ messages.Message) {
 	}
 	c.pendingProjection = true
 	c.emittedEvidenceIDs = make(map[string]struct{})
+	c.castEpisodes = nil
 }
 
 // FightEnded clears per-encounter state.
@@ -318,8 +415,26 @@ func (c *Collector) Finalize(_ context.Context) error {
 // in the snapshot. Uses deterministic IDs derived from the original aura
 // episode so projected copies can be deduplicated.
 func (c *Collector) emitProjection(ts time.Time) {
-	if c.emit == nil || c.snapshot == nil {
+	if c.emit == nil {
 		c.snapshot = nil
+		return
+	}
+
+	// Assign every recognized out-of-combat instant consume to this encounter.
+	// Preserve source evidence IDs so a correlated active-aura projection can
+	// detect the same physical observation and avoid emitting it twice.
+	for _, source := range c.shared.DrainPreCombatEvidence() {
+		if c.isDuplicateEvidence(source.EvidenceID) {
+			continue
+		}
+		projected := *source
+		projected.MessageBase = messages.Base(ts, messages.WithSynthetic())
+		projected.Kind = messages.EvidenceKindPreCombat
+		projected.IsProjection = true
+		c.emitConsume(&projected)
+	}
+
+	if c.snapshot == nil {
 		return
 	}
 	catalog := c.shared.Catalog()
@@ -453,4 +568,5 @@ func (c *Collector) clearEncounterState() {
 	c.pendingProjection = false
 	c.snapshot = nil
 	c.emittedEvidenceIDs = nil
+	c.castEpisodes = nil
 }

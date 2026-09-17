@@ -7,31 +7,31 @@ import (
 )
 
 type GuildInfo struct {
-	ID          uuid.UUID `json:"id"`
-	Name        string    `json:"name"`
-	RealmID     uuid.UUID `json:"realm_id"`
-	RealmName   string    `json:"realm_name"`
-	HasPage     bool      `json:"has_page"`
-	PlayerCount int64     `json:"player_count"`
-	LogoURL     string    `json:"logo_url"`
-	CanEdit       bool `json:"can_edit"`
-	CanViewRoster bool `json:"can_view_roster"`
+	ID            uuid.UUID `json:"id"`
+	Name          string    `json:"name"`
+	RealmID       uuid.UUID `json:"realm_id"`
+	RealmName     string    `json:"realm_name"`
+	HasPage       bool      `json:"has_page"`
+	PlayerCount   int64     `json:"player_count"`
+	LogoURL       string    `json:"logo_url"`
+	CanEdit       bool      `json:"can_edit"`
+	CanViewRoster bool      `json:"can_view_roster"`
 }
 
 type GuildPageConfig struct {
-	ID      uuid.UUID       `json:"id"`
-	GuildID uuid.UUID       `json:"guild_id"`
-	Guild   GuildInfo       `json:"guild"`
-	Theme   GuildPageTheme  `json:"theme"`
-	Tabs    []GuildPageTab  `json:"tabs"`
+	ID      uuid.UUID      `json:"id"`
+	GuildID uuid.UUID      `json:"guild_id"`
+	Guild   GuildInfo      `json:"guild"`
+	Theme   GuildPageTheme `json:"theme"`
+	Tabs    []GuildPageTab `json:"tabs"`
 }
 
 type GuildPageTheme struct {
-	PrimaryColor  string            `json:"primary_color,omitempty"`
-	BannerURL     string            `json:"banner_url,omitempty"`
-	BackgroundURL string            `json:"background_url,omitempty"`
-	LogoURL       string            `json:"logo_url,omitempty"`
-	Description   string            `json:"description,omitempty"`
+	PrimaryColor  string `json:"primary_color,omitempty"`
+	BannerURL     string `json:"banner_url,omitempty"`
+	BackgroundURL string `json:"background_url,omitempty"`
+	LogoURL       string `json:"logo_url,omitempty"`
+	Description   string `json:"description,omitempty"`
 	// HeaderLayout selects the header arrangement: "" or "centered" for the
 	// classic centered header; "left" for the armory-style identity with the
 	// description beside it, centered as a pair; "left_joined" for the
@@ -128,7 +128,6 @@ type GuildRosterMember struct {
 	Roles    []string  `json:"roles"` // "member", "leader", etc.
 }
 
-
 type GuildPageOptionsResponse struct {
 	AllowedTags     []GuildTag       `json:"allowed_tags"`
 	SocialPlatforms []SocialPlatform `json:"social_platforms"`
@@ -142,8 +141,59 @@ type GuildSettings struct {
 	IsMember               bool       `json:"is_member"`
 }
 
+type GuildDiscordIntegrationSettings struct {
+	Enabled              bool                             `json:"enabled"`
+	Available            bool                             `json:"available"`
+	CanEnable            bool                             `json:"can_enable"`
+	Installed            bool                             `json:"installed"`
+	DiscordGuildID       string                           `json:"discord_guild_id,omitempty"`
+	DiscordGuildName     string                           `json:"discord_guild_name,omitempty"`
+	InstallURL           string                           `json:"install_url,omitempty"`
+	Channels             []DiscordChannel                 `json:"channels,omitempty"`
+	RaidLogAnnouncements GuildDiscordRaidLogAnnouncements `json:"raid_log_announcements"`
+}
+
+type DiscordChannel struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
+type GuildDiscordRaidLogAnnouncements struct {
+	Enabled   bool   `json:"enabled"`
+	Scope     string `json:"scope"`
+	ChannelID string `json:"channel_id,omitempty"`
+}
+
+type GuildDiscordAnnouncementAttempt struct {
+	ID                  uuid.UUID  `json:"id"`
+	RunID               uuid.UUID  `json:"run_id"`
+	DiscordChannelID    string     `json:"discord_channel_id"`
+	DiscordMessageID    string     `json:"discord_message_id,omitempty"`
+	DeliveryAttemptedAt *time.Time `json:"delivery_attempted_at,omitempty"`
+	DeliveryError       string     `json:"delivery_error,omitempty"`
+	InstanceSlug        string     `json:"instance_slug,omitempty"`
+	Status              string     `json:"status"`
+	CreatedAt           time.Time  `json:"created_at"`
+	UpdatedAt           time.Time  `json:"updated_at"`
+}
+
+type GuildDiscordAnnouncementAttemptsResponse struct {
+	Attempts []GuildDiscordAnnouncementAttempt `json:"attempts"`
+	HasMore  bool                              `json:"has_more"`
+}
+
+type UpdateGuildDiscordRaidLogAnnouncementsRequest struct {
+	Enabled   bool   `json:"enabled"`
+	Scope     string `json:"scope"`
+	ChannelID string `json:"channel_id"`
+}
+
 type UpdateGuildSettingsRequest struct {
 	AllowJoinRequestsUntil *time.Time `json:"allow_join_requests_until"`
+}
+
+type UpdateGuildDiscordIntegrationRequest struct {
+	Enabled bool `json:"enabled"`
 }
 
 // Guild Join Requests
@@ -178,20 +228,29 @@ type GuildRaidClearsResponse struct {
 
 // Guild character roster (guild page "Roster" panel)
 
+// CharacterSpecRole is one spec+role combination observed in recent parses.
+type CharacterSpecRole struct {
+	Spec string `json:"spec"`
+	Role string `json:"role"` // "tank", "heal", or "dps"
+}
+
 // GuildRosterCharacter is a guild character seen in raid logs. LastSeenAt is
 // the last time a log updated the character. AvgParse is -1 when the
-// character has no parses in the scoring window.
+// character has no parses in the scoring window. Spec/Role come from the
+// most recent parse; SpecRoles lists every distinct spec+role combo observed
+// across the character's 3 most recent parsed instances, most recent first.
 type GuildRosterCharacter struct {
-	ID         GUIDString `json:"id"`
-	Name       string     `json:"name"`
-	Class      string     `json:"class"`
-	Race       string     `json:"race"`
-	Level      int32      `json:"level"`
-	Spec       string     `json:"spec,omitempty"`
-	Role       string     `json:"role,omitempty"` // "tank", "heal", or "dps"
-	AvgParse   float64    `json:"avg_parse"`
-	LastSeenAt time.Time  `json:"last_seen_at"`
-	RealmName  string     `json:"realm_name"`
+	ID         GUIDString          `json:"id"`
+	Name       string              `json:"name"`
+	Class      string              `json:"class"`
+	Race       string              `json:"race"`
+	Level      int32               `json:"level"`
+	Spec       string              `json:"spec,omitempty"`
+	Role       string              `json:"role,omitempty"` // "tank", "heal", or "dps"
+	SpecRoles  []CharacterSpecRole `json:"spec_roles,omitempty"`
+	AvgParse   float64             `json:"avg_parse"`
+	LastSeenAt time.Time           `json:"last_seen_at"`
+	RealmName  string              `json:"realm_name"`
 }
 
 type GuildCharacterRosterResponse struct {
@@ -282,4 +341,25 @@ type GuildRunEncounterParse struct {
 
 type GuildRunParsesResponse struct {
 	Encounters []GuildRunEncounterParse `json:"encounters"`
+}
+
+const (
+	GuildResourceKindPage     = "guild_page"
+	GuildResourceKindInstance = "instance"
+)
+
+type GuildResourceAnalyticsDay struct {
+	ResourceKind     string `json:"resource_kind"`
+	ResourceKey      string `json:"resource_key"`
+	ResourceGroupKey string `json:"resource_group_key"`
+	ResourceName     string `json:"resource_name"`
+	InstanceDate     string `json:"instance_date"`
+	ViewedOn         string `json:"viewed_on"`
+	Views            int64  `json:"views"`
+	UniqueVisitors   int64  `json:"unique_visitors"`
+}
+
+type GuildResourceAnalyticsResponse struct {
+	LookbackDays int32                       `json:"lookback_days"`
+	Days         []GuildResourceAnalyticsDay `json:"days"`
 }

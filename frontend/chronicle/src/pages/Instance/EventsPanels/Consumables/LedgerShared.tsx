@@ -9,17 +9,47 @@
  */
 
 import { useQueries } from "@tanstack/react-query";
-import { Search, X } from "lucide-react";
+import { ExternalLink, Search, X } from "lucide-react";
+import { Link } from "react-router-dom";
 import { fetchItemTooltip } from "@/api/gamedata";
+import { useSpell } from "@/api/queries";
+import { SpellIconWithTooltip } from "@/components/ui/SpellIconWithTooltip";
+import { HintTooltip, TooltipContent, TooltipTrigger } from "@/components/ui/Tooltip/tooltip";
+import { useDatasetId } from "@/hooks/useDatasetId";
 import { cn } from "@/lib/utils";
 import type { ConsumableUse } from "./consumables.processor";
 import { ItemCell } from "./ConsumablesContent";
 import {
-  formatGold,
   type LedgerAmbiguousRow,
   type LedgerItemRow,
-} from "./consumablesLedger";
-import { fuzzyConsumableMatch, itemIdentity } from "./consumablesTotal";
+} from "./consumablesLedgerLogic";
+import { CoinAmount } from "./CoinAmount";
+import { fuzzyConsumableMatch, itemIdentity } from "./consumablesTotalLogic";
+
+/** Flag token: show every player at once (the merged Consumes Total view). */
+export const VIEW_ALL_TOKEN = "va";
+
+/** panelOption is a comma-separated token list shared by the panel-level
+ * checkbox ("cb"), the player selection ("pl:<guid>"), and view flags. */
+// eslint-disable-next-line react-refresh/only-export-components
+export function panelOptionTokens(option: string | null | undefined): string[] {
+  return (option ?? "")
+    .split(",")
+    .map((part) => part.trim())
+    .filter((part) => part.length > 0);
+}
+
+/** Add or remove a flag token, preserving every other token. */
+// eslint-disable-next-line react-refresh/only-export-components
+export function togglePanelOptionFlag(
+  option: string | null | undefined,
+  flag: string,
+  on: boolean,
+): string | null {
+  const tokens = panelOptionTokens(option).filter((token) => token !== flag);
+  if (on) tokens.push(flag);
+  return tokens.length > 0 ? tokens.join(",") : null;
+}
 
 /**
  * Fuzzy-filter resolved uses by item name (or id). Filtering happens at the
@@ -71,9 +101,42 @@ export function useFilteredUses(uses: ConsumableUse[], filter: string): Consumab
   });
 }
 
+export function ConsumableTimingFilter({
+  label,
+  description,
+  enabled,
+  onToggle,
+}: {
+  label: string;
+  description: string;
+  enabled: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <HintTooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-pressed={enabled}
+          className={cn(
+            "h-7 shrink-0 cursor-pointer whitespace-nowrap rounded border px-2 text-2xs font-medium transition-colors",
+            enabled
+              ? "border-sky-400 bg-sky-500/15 text-sky-400"
+              : "border-border bg-background/70 text-muted-foreground line-through hover:border-border/80 hover:text-foreground",
+          )}
+        >
+          {label}
+        </button>
+      </TooltipTrigger>
+      <TooltipContent className="max-w-64">{description}</TooltipContent>
+    </HintTooltip>
+  );
+}
+
 export function LedgerFilterInput({ value, onChange }: { value: string; onChange: (value: string) => void }) {
   return (
-    <label className="relative block shrink-0">
+    <label className="relative block shrink-0" data-demo-consumables-search>
       <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
       <input
         type="search"
@@ -127,12 +190,33 @@ export function UsesBar({ fraction, subtitle }: { fraction: number; subtitle: st
 export function GoldCell({ totalCopper, unitCopper }: { totalCopper: number | null; unitCopper: number | null }) {
   return (
     <div className="flex w-16 shrink-0 flex-col items-end gap-0.5">
-      <span className={cn("font-mono text-xs", totalCopper === null ? "text-muted-foreground/50" : "text-amber-300/90")}>
-        {totalCopper === null ? "—" : formatGold(totalCopper)}
-      </span>
-      <span className="font-mono text-2xs text-muted-foreground/60">
-        {unitCopper === null ? "no price" : `${formatGold(unitCopper)} ea`}
-      </span>
+      {totalCopper === null ? (
+        <span className="font-mono text-xs text-muted-foreground/50">—</span>
+      ) : (
+        <CoinAmount copper={totalCopper} className="text-xs" />
+      )}
+      {unitCopper === null ? (
+        <span className="font-mono text-2xs text-muted-foreground/60">no price</span>
+      ) : (
+        <span className="inline-flex items-baseline gap-0.5 text-2xs">
+          <CoinAmount copper={unitCopper} />
+          <span className="font-mono text-muted-foreground/60">ea</span>
+        </span>
+      )}
+    </div>
+  );
+}
+
+export function TimingColumnHeaders({ show, showGold }: { show: boolean; showGold: boolean }) {
+  if (!show) return null;
+  return (
+    <div className="flex shrink-0 items-center gap-2.5 px-2 pt-1 text-2xs font-medium text-muted-foreground">
+      <span className="min-w-0 flex-1" />
+      <div className="grid w-32 shrink-0 grid-cols-2 gap-3 text-right">
+        <span className="whitespace-nowrap">In Combat</span>
+        <span className="whitespace-nowrap">Pre-Combat</span>
+      </div>
+      {showGold && <span className="w-16 shrink-0" />}
     </div>
   );
 }
@@ -142,6 +226,7 @@ export function LedgerRow({
   maxUses,
   subtitle,
   showGold,
+  showTimingColumns = false,
   onClick,
   selected = false,
 }: {
@@ -150,6 +235,7 @@ export function LedgerRow({
   /** Under-bar fact: "N players" at raid scope, "N fights" at player scope. */
   subtitle: string;
   showGold: boolean;
+  showTimingColumns?: boolean;
   /** When set, the row is clickable (opens the item breakout). */
   onClick?: (event: React.MouseEvent<HTMLDivElement>) => void;
   selected?: boolean;
@@ -157,6 +243,8 @@ export function LedgerRow({
   return (
     <div
       onClick={onClick}
+      data-lesson-target="inspect-consumable"
+      data-demo-consumables-ledger-row
       className={cn(
         "flex items-center gap-2.5 px-2 py-1",
         onClick && "cursor-pointer transition-colors hover:bg-muted/30",
@@ -168,7 +256,14 @@ export function LedgerRow({
           <div className="min-w-0 flex-1 text-xs">
             <ItemCell itemId={row.itemId} link newTab />
           </div>
-          <span className="shrink-0 font-mono text-xs text-foreground">{row.uses}×</span>
+          {showTimingColumns ? (
+            <div className="grid w-32 shrink-0 grid-cols-2 gap-3 text-right font-mono text-xs text-foreground">
+              <span>{row.inCombatUses}×</span>
+              <span>{row.preCombatUses}×</span>
+            </div>
+          ) : (
+            <span className="shrink-0 font-mono text-xs text-foreground">{row.uses}×</span>
+          )}
         </div>
         <UsesBar fraction={maxUses > 0 ? row.uses / maxUses : 0} subtitle={subtitle} />
       </div>
@@ -190,6 +285,26 @@ function AmbiguousIcon() {
   );
 }
 
+/** The unresolved effect's real spell icon (with its tooltip on hover),
+ * hatched over so it still reads as ambiguous. Falls back to the plain
+ * hatched square while loading or when no spell is known. */
+function AmbiguousSpellIcon({ spellId }: { spellId: number | null }) {
+  const datasetId = useDatasetId();
+  const { data: spell } = useSpell(spellId?.toString() ?? "", datasetId, { enabled: spellId != null });
+  if (spellId == null || !spell) return <AmbiguousIcon />;
+  return (
+    <span className="relative shrink-0">
+      <SpellIconWithTooltip spell={spell} size={18} />
+      <span
+        className="pointer-events-none absolute inset-0 rounded"
+        style={{
+          background: "repeating-linear-gradient(45deg, rgba(0,0,0,.55) 0 3px, transparent 3px 6px)",
+        }}
+      />
+    </span>
+  );
+}
+
 export function AmbiguousSection({
   rows,
   totalAmbiguousUses,
@@ -201,7 +316,11 @@ export function AmbiguousSection({
 }) {
   if (rows.length === 0) return null;
   return (
-    <div className="flex flex-col gap-2 border-t border-border/60 bg-muted/10 px-2 pb-2 pt-1.5">
+    <div
+      className="flex flex-col gap-2 border-t border-border/60 bg-muted/10 px-2 pb-2 pt-1.5"
+      data-lesson-target="unresolved-consumables"
+      data-demo-consumables-ambiguous
+    >
       <div className="flex items-baseline justify-between gap-2">
         <span className="text-2xs font-medium uppercase tracking-wider text-muted-foreground">Ambiguous</span>
         <span className="font-mono text-2xs text-muted-foreground/70">
@@ -212,13 +331,32 @@ export function AmbiguousSection({
         <div key={row.key} className="flex items-start gap-2.5">
           <div className="flex min-w-0 flex-1 flex-col gap-1">
             <div className="flex min-w-0 items-center gap-1.5 text-muted-foreground">
-              <AmbiguousIcon />
-              <span className="min-w-0 flex-1 truncate text-xs">
-                {row.spellName || "Unknown consumable"}
-              </span>
+              {row.spellId !== null ? (
+                <Link
+                  to={`/wowdb/spell/${row.spellId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group flex min-w-0 flex-1 items-center gap-1.5 transition-colors hover:text-foreground"
+                  title={`Open ${row.spellName || `spell ${row.spellId}`} in a new tab`}
+                >
+                  <AmbiguousSpellIcon spellId={row.spellId} />
+                  <span className="min-w-0 truncate text-xs">
+                    {row.spellName || "Unknown consumable"}
+                  </span>
+                  <ExternalLink className="h-3 w-3 shrink-0 opacity-0 transition-opacity group-hover:opacity-70" />
+                </Link>
+              ) : (
+                <>
+                  <AmbiguousIcon />
+                  <span className="min-w-0 flex-1 truncate text-xs">Unknown consumable</span>
+                </>
+              )}
               <span className="shrink-0 font-mono text-xs">{row.uses}×</span>
             </div>
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 pl-6 text-2xs text-muted-foreground/70">
+            <div
+              className="flex flex-wrap items-center gap-x-2 gap-y-0.5 pl-6 text-2xs text-muted-foreground/70"
+              data-demo-consumables-candidates
+            >
               {row.candidateItemIds.length > 0 ? (
                 <>
                   <span>could be</span>

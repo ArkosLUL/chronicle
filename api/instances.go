@@ -49,13 +49,17 @@ func (api *API) SupportedInstances(w http.ResponseWriter, r *http.Request) {
 			trash[j] = chroniclesdk.SupportedInstanceUnit{EntryID: t.EntryID, Name: t.Name}
 		}
 		result[i] = chroniclesdk.SupportedInstance{
-			Name:      d.Name,
-			Comment:   d.Comment,
-			Fallback:  d.Fallback,
-			ZoneNames: d.ZoneNames,
-			BossCount: d.BossCount,
-			Bosses:    bosses,
-			Trash:     trash,
+			Name:                        d.Name,
+			Comment:                     d.Comment,
+			Category:                    string(d.Category),
+			Fallback:                    d.Fallback,
+			ZoneNames:                   d.ZoneNames,
+			DerivedNames:                d.DerivedNames,
+			BossCount:                   d.BossCount,
+			ProgressionBosses:           d.ProgressionBosses,
+			RankedStartAfterRequirement: d.RankedStartAfterRequirement,
+			Bosses:                      bosses,
+			Trash:                       trash,
 		}
 	}
 	httpapi.Write(ctx, w, http.StatusOK, result)
@@ -97,6 +101,36 @@ func (api *API) Instance(w http.ResponseWriter, r *http.Request) {
 
 	db := api.Opts.Zed
 
+	players, err := db.InstancePlayersByInstanceID(ctx, inst.ID)
+	if err != nil {
+		httpapi.HandleResponseError(ctx, w, err, httpapi.APIError{
+			Response: chroniclesdk.Response{
+				Message: "Failed to fetch instance players",
+				Detail:  err.Error(),
+			},
+		})
+		return
+	}
+
+	setDataset := func(out *chroniclesdk.WoWInstance) {
+		datasetID, ok := api.Opts.Dataset.LookupDatasetForRealm(ctx, inst.RealmID)
+		if !ok {
+			return
+		}
+		out.DatasetID = &datasetID
+		if ds, err := api.Opts.Dataset.GetDataset(ctx, datasetID); err == nil {
+			out.IconBaseURL = ds.IconBaseUrl
+		}
+		w.Header().Set(httpapi.DatasetHeader, datasetID.String())
+	}
+
+	if attendanceOnly(r) {
+		out := db2sdk.WowAttendanceInstance(inst, players)
+		setDataset(&out.WoWInstance)
+		httpapi.Write(ctx, w, http.StatusOK, out)
+		return
+	}
+
 	encounters, err := db.EncountersByInstanceID(ctx, inst.ID)
 	if err != nil {
 		httpapi.HandleResponseError(ctx, w, err, httpapi.APIError{
@@ -119,17 +153,6 @@ func (api *API) Instance(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	players, err := db.InstancePlayersByInstanceID(ctx, inst.ID)
-	if err != nil {
-		httpapi.HandleResponseError(ctx, w, err, httpapi.APIError{
-			Response: chroniclesdk.Response{
-				Message: "Failed to fetch instance players",
-				Detail:  err.Error(),
-			},
-		})
-		return
-	}
-
 	fights, err := db.GetInstanceEncounterCharacterFights(ctx, inst.ID)
 	if err != nil {
 		httpapi.HandleResponseError(ctx, w, err, httpapi.APIError{
@@ -141,13 +164,25 @@ func (api *API) Instance(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	out := db2sdk.WowDecoratedInstance(inst, units, players, encounters, fights)
-	out.DatasetID = api.Opts.Dataset.ResolveDatasetForRealm(ctx, inst.RealmID)
-	if ds, err := api.Opts.Dataset.GetDataset(ctx, out.DatasetID); err == nil {
-		out.IconBaseURL = ds.IconBaseUrl
+	phases, err := db.GetEncounterPhasesByInstanceID(ctx, inst.ID)
+	if err != nil {
+		httpapi.HandleResponseError(ctx, w, err, httpapi.APIError{
+			Response: chroniclesdk.Response{
+				Message: "Failed to fetch encounter phases",
+				Detail:  err.Error(),
+			},
+		})
+		return
 	}
-	w.Header().Set(httpapi.DatasetHeader, out.DatasetID.String())
+
+	out := db2sdk.WowDecoratedInstance(inst, units, players, encounters, fights, phases)
+	setDataset(&out.WoWInstance)
 	httpapi.Write(ctx, w, http.StatusOK, out)
+}
+
+func attendanceOnly(r *http.Request) bool {
+	value, err := strconv.ParseBool(r.URL.Query().Get("attendance_only"))
+	return err == nil && value
 }
 
 func (api *API) InstanceOverviewMetrics(w http.ResponseWriter, r *http.Request) {
@@ -166,6 +201,24 @@ func (api *API) InstanceOverviewMetrics(w http.ResponseWriter, r *http.Request) 
 	}
 
 	httpapi.Write(ctx, w, http.StatusOK, db2sdk.InstanceOverviewMetrics(metrics))
+}
+
+func (api *API) InstanceRankingRecords(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	inst := httpmw.Instance(ctx)
+
+	records, err := api.Opts.Zed.InstanceRankingRecords(ctx, inst.ID)
+	if err != nil {
+		httpapi.HandleResponseError(ctx, w, err, httpapi.APIError{
+			Response: chroniclesdk.Response{
+				Message: "Failed to fetch instance ranking records",
+				Detail:  err.Error(),
+			},
+		})
+		return
+	}
+
+	httpapi.Write(ctx, w, http.StatusOK, db2sdk.InstanceRankingRecords(records))
 }
 
 func (api *API) InstanceSpeedrun(w http.ResponseWriter, r *http.Request) {

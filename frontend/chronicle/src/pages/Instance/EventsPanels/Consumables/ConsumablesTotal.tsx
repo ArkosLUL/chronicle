@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useQueries } from "@tanstack/react-query";
-import { FlaskConical, HelpCircle, Search, X } from "lucide-react";
+import { HelpCircle, Search, X } from "lucide-react";
 import { fetchItemTooltip } from "@/api/gamedata";
 import { ScrollArea } from "@/components/ui/ScrollArea/ScrollArea";
 import { SpellIdTooltip } from "@/components/ui/SpellIdTooltip/SpellIdTooltip";
@@ -11,10 +11,9 @@ import type { ConsumableDisambiguation } from "@/api/typesGenerated";
 import { buildConsumableDisambiguationMap, resolveConsumableUse } from "./consumableDisambiguation";
 import { GenericPanel } from "../GenericPanel";
 import { FloatingIncomingEventsBreakout } from "../IncomingEvents/FloatingIncomingEventsBreakout";
-import type { PanelDefinition, PanelRenderProps } from "../types";
+import type { PanelRenderProps } from "../types";
 import {
   CONFIDENCE_LABELS,
-  consumablesTotalProcessor,
   EVIDENCE_KIND_LABELS,
   type ConsumablesResult,
 } from "./consumables.processor";
@@ -23,7 +22,7 @@ import {
   aggregateConsumablesTotal,
   filterConsumablesTotal,
   type ConsumableCount,
-} from "./consumablesTotal.ts";
+} from "./consumablesTotalLogic.ts";
 
 interface PossibleBreakoutState {
   key: string;
@@ -40,7 +39,10 @@ function ConsumeCount({
 }) {
   if (consume.itemId !== null) {
     return (
-      <span className="inline-flex min-h-7 items-center gap-1.5 rounded border border-border/60 bg-muted/30 px-2 py-1 leading-none">
+      <span
+        className="inline-flex min-h-7 items-center gap-1.5 rounded border border-border/60 bg-muted/30 px-2 py-1 leading-none"
+        data-demo-consumables-consume-chip
+      >
         <ItemCell itemId={consume.itemId} link />
         <span className="inline-flex self-stretch items-center font-semibold leading-none text-foreground">x{consume.count}</span>
         <span className="inline-flex self-stretch items-center font-mono text-2xs leading-none text-muted-foreground">
@@ -57,6 +59,7 @@ function ConsumeCount({
         onClick={(event) => onOpenPossible(consume, event.currentTarget)}
         className="inline-flex min-h-7 items-center gap-1.5 rounded border border-amber-500/25 bg-amber-500/10 px-2 py-1 leading-none text-amber-200 transition-colors hover:border-amber-400/50 hover:bg-amber-500/15"
         title="Show possible items and why Chronicle could not identify one item"
+        data-demo-consumables-consume-chip
       >
         <HelpCircle className="h-3.5 w-3.5" />
         <span>Possible</span>
@@ -66,7 +69,10 @@ function ConsumeCount({
   }
 
   return (
-    <span className="inline-flex min-h-7 items-center gap-1.5 rounded border border-border/60 bg-muted/30 px-2 py-1 leading-none">
+    <span
+      className="inline-flex min-h-7 items-center gap-1.5 rounded border border-border/60 bg-muted/30 px-2 py-1 leading-none"
+      data-demo-consumables-consume-chip
+    >
       <span className="text-muted-foreground">Unknown item</span>
       <span className="inline-flex self-stretch items-center font-semibold leading-none text-foreground">x{consume.count}</span>
     </span>
@@ -142,9 +148,12 @@ function PossibleItemsBreakout({ consume, onClose }: { consume: ConsumableCount;
   );
 }
 
-type ConsumablesTotalContentProps = PanelRenderProps<ConsumablesResult>;
+type ConsumablesTotalContentProps = PanelRenderProps<ConsumablesResult> & {
+  /** Rendered beside the search input (e.g. a view-toggle button). */
+  headerExtra?: React.ReactNode;
+};
 
-export function ConsumablesTotalContent(props: ConsumablesTotalContentProps) {
+export function ConsumablesTotalContent({ headerExtra, ...props }: ConsumablesTotalContentProps) {
   const { result, context, loading } = props;
   const { cachedValue: cachedResult, hasCache: hasData } = useCachedValue(
     result,
@@ -208,8 +217,13 @@ export function ConsumablesTotalContent(props: ConsumablesTotalContentProps) {
   return (
     <>
       <GenericPanel {...effectiveProps}>
-        <div className="flex h-full min-h-0 flex-col gap-2">
-          <label className="relative block shrink-0">
+        <div
+          className="flex h-full min-h-0 flex-col gap-2"
+          data-lesson-target="view-all-consumables"
+          data-demo-consumables-all-view
+        >
+          <div className="flex shrink-0 items-center gap-2">
+          <label className="relative block min-w-0 flex-1">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
             <input
               type="search"
@@ -230,6 +244,8 @@ export function ConsumablesTotalContent(props: ConsumablesTotalContentProps) {
               </button>
             )}
           </label>
+          {headerExtra}
+          </div>
 
           {rows.length === 0 ? (
             <div className="py-4 text-center text-xs text-muted-foreground">
@@ -255,6 +271,7 @@ export function ConsumablesTotalContent(props: ConsumablesTotalContentProps) {
                     return (
                       <tr
                         key={row.playerId}
+                        data-demo-consumables-all-row
                         className={rowIndex % 2 === 0
                           ? "border-b border-border/20 align-top bg-muted/10 hover:bg-muted/30"
                           : "border-b border-border/20 align-top bg-muted/25 hover:bg-muted/40"}
@@ -299,19 +316,4 @@ export function ConsumablesTotalContent(props: ConsumablesTotalContentProps) {
       )}
     </>
   );
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any, react-refresh/only-export-components
-export function createConsumablesTotalPanel(): PanelDefinition<ConsumablesResult, any> {
-  return {
-    ...consumablesTotalProcessor,
-    label: "Consumes Total",
-    icon: <FlaskConical className="h-4 w-4" />,
-    underConstruction: true,
-    supportsFiltering: true,
-    defaultFilters: [
-      { type: "source_type" as const, value: ["player"], applyTo: ["consume"] },
-    ],
-    render: (props) => <ConsumablesTotalContent {...props} />,
-  };
 }

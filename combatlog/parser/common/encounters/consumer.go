@@ -12,8 +12,10 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/common/consumeevidence"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/instances"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/messages"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/raidgroups"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/registry"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/unitdb"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/vehicles"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/zoner"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/realm"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
@@ -57,13 +59,19 @@ type State struct {
 	// Friendly/Foe/Relationships, etc.
 	Units *unitdb.Units
 
+	// Vehicles tracks delayed companion vehicle-control records across the full log.
+	Vehicles *vehicles.Tracker
+
+	// RaidGroups tracks companion raid-layout observations across the full log.
+	RaidGroups *raidgroups.Tracker
+
 	// Auras is the parse-wide aura tracker. It processes every aura message
 	// once and persists across zone/instance switches.
 	Auras *auras.Tracking
 
 	// ConsumeTracker is the parse-wide consumable evidence tracker. It
-	// records direct item-use and aura episodes for every message and is
-	// shared by all per-instance Collectors.
+	// records direct item-use and aura episodes plus pending pre-combat
+	// evidence, and is shared by all per-instance Collectors.
 	ConsumeTracker *consumeevidence.Tracker
 
 	instanceResolver InstanceResolver
@@ -75,6 +83,8 @@ func NewWithInstanceResolver(ctx context.Context, logger *slog.Logger, res Insta
 	s := &State{
 		logger:           logger,
 		Units:            unitdb.New(),
+		Vehicles:         vehicles.New(),
+		RaidGroups:       raidgroups.New(),
 		CurrentZone:      zoner.NewLocation(),
 		instanceResolver: res,
 		Instances:        make([]*instances.Hookable, 0),
@@ -109,17 +119,52 @@ func (s *State) Process(m messages.Message) error {
 	if err != nil {
 		return fmt.Errorf("units process: %w", err)
 	}
+	s.Vehicles.Process(m)
+	s.RaidGroups.Process(m)
 
+	if s.CurrentInstance != nil && s.CurrentInstance.ShouldSplitDerived(m) {
+		z := s.CurrentInstance.CurrentZone
+		z.Seen = m.Date()
+		s.createInstance(z)
+	}
+
+	// Capture whether this message arrived during an encounter before processing
+	// it, since processing may start or end the fight.
+	consumeActive := s.CurrentInstance != nil && s.CurrentInstance.FightActive()
+	forwardToInstance := true
 	switch typed := m.(type) {
 	case *messages.Realm:
 		s.CurrentRealm = &typed.Info
 	case *messages.Versions:
 		s.CurrentVersions = typed
+		// Addon headers are log-wide metadata, but they may be emitted while a
+		// later instance is active. Backfill missing metadata on instances already
+		// discovered without replacing an instance's own header. New instances
+		// receive CurrentVersions in matchOrCreateInstance.
+		for _, instance := range s.Instances {
+			instance.SetVersionsIfUnset(typed.Versions, typed.Player)
+		}
 	case *messages.Zone:
 		if s.instanceResolver != nil {
 			zoneStart := time.Now()
 			s.Zone(*typed)
 			s.timings.Add("encounter_state.zone", time.Since(zoneStart))
+		}
+	case *messages.EncounterBoundary:
+		if typed.Active && typed.InstanceID != 0 {
+			for _, instance := range s.Instances {
+				if instance.MatchesZone(zone.Zone{MapID: typed.InstanceID}) {
+					s.CurrentInstance = instance
+					break
+				}
+			}
+		} else if !typed.Active {
+			for _, instance := range s.Instances {
+				if instance.HasExplicitEncounter(typed.EncounterID) {
+					s.CurrentInstance = instance
+					break
+				}
+			}
 		}
 	case *messages.Damage:
 		//s.Damage(typed)
@@ -127,12 +172,24 @@ func (s *State) Process(m messages.Message) error {
 		//s.CastV2(typed)
 	case *messages.Slain:
 		//s.Slain(typed)
+	case *messages.VehicleControl:
+		// Vehicle records use an embedded effective timestamp and are collected
+		// parse-wide. Do not send the delayed metadata message through encounter
+		// processing as if it occurred at its carrier position.
+		forwardToInstance = false
+	case *messages.RaidGroup:
+		forwardToInstance = false
+		if s.CurrentInstance != nil {
+			if err := s.CurrentInstance.ProcessRaidGroupMetadata(typed); err != nil {
+				return fmt.Errorf("processing raid group metadata: %w", err)
+			}
+		}
 	}
 
 	// Process instance hooks BEFORE updating canonical aura state so that
 	// projection sees the pre-message tracker snapshot. This ensures the
 	// pull-starting message's aura is not duplicated by projection.
-	if s.CurrentInstance != nil {
+	if s.CurrentInstance != nil && forwardToInstance {
 		instanceStart := time.Now()
 		err := s.CurrentInstance.Process(m)
 		s.timings.Add("encounter_state.instance_process", time.Since(instanceStart))
@@ -143,8 +200,9 @@ func (s *State) Process(m messages.Message) error {
 
 	// Process consume evidence at the parse level (once, after instance hooks).
 	// This records direct item-use and aura episodes parse-wide so every
-	// per-instance Collector can read shared state.
-	s.ConsumeTracker.Process(m)
+	// per-instance Collector can read shared state. The active state assigns
+	// observed out-of-combat instant consumes to the following encounter.
+	s.ConsumeTracker.Process(m, consumeActive)
 
 	// Process aura messages at the parse level (once, after instance hooks).
 	// This ordering ensures projection captures the pre-message canonical
@@ -231,24 +289,7 @@ func (s *State) matchOrCreateInstance(z messages.Zone) {
 	}
 
 	if !matched {
-		s.CurrentInstance = s.instanceResolver(s.verbose, z.Zone, s.Units)
-		if s.CurrentInstance != nil {
-			// Set any initial realm state that we have
-			s.CurrentInstance.SetRealm(s.CurrentRealm)
-			if s.CurrentVersions != nil {
-				s.CurrentInstance.SetVersions(s.CurrentVersions.Versions, s.CurrentVersions.Player)
-			}
-			// Attach a projection adapter so the instance can project
-			// parse-wide aura state into encounter event streams.
-			s.CurrentInstance.AttachAuraProjection(s.Auras)
-			// Attach consume collector for item-use and
-			// pre-pull buff evidence.
-			s.CurrentInstance.AttachConsumeCollector(s.Auras, s.ConsumeTracker)
-			s.logger.Info("Matched new instance",
-				slog.String("name", s.CurrentInstance.Name()),
-			)
-			s.Instances = append(s.Instances, s.CurrentInstance)
-		}
+		s.createInstance(z.Zone)
 	}
 
 	s.logger.Info(fmt.Sprintf("Zone changed to %q (instance %d)", z.Name, z.InstanceID),
@@ -258,4 +299,23 @@ func (s *State) matchOrCreateInstance(z messages.Zone) {
 		slog.Uint64("exited_instance_id", uint64(s.CurrentZone.InstanceID)),
 		slog.Time("seen", z.Seen),
 	)
+}
+
+func (s *State) createInstance(z zone.Zone) {
+	s.CurrentInstance = s.instanceResolver(s.verbose, z, s.Units)
+	if s.CurrentInstance == nil {
+		return
+	}
+
+	s.CurrentInstance.SetRealm(s.CurrentRealm)
+	if s.CurrentVersions != nil {
+		s.CurrentInstance.SetVersions(s.CurrentVersions.Versions, s.CurrentVersions.Player)
+	}
+	// These trackers are parse-wide and intentionally shared across instance segments.
+	s.CurrentInstance.AttachVehicleTracker(s.Vehicles)
+	s.CurrentInstance.AttachAuraProjection(s.Auras)
+	s.CurrentInstance.AttachConsumeCollector(s.Auras, s.ConsumeTracker)
+	s.CurrentInstance.AttachRaidGroupTracker(s.RaidGroups)
+	s.logger.Info("Matched new instance", slog.String("name", s.CurrentInstance.Name()))
+	s.Instances = append(s.Instances, s.CurrentInstance)
 }

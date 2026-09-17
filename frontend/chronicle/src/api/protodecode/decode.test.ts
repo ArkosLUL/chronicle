@@ -1,7 +1,7 @@
 import { create, toBinary } from '@bufbuild/protobuf';
-import { ConsumeSchema, DamageSchema, EventMetaSchema, EvidenceConfidence, EvidenceKind, ExtraAttackSchema, ResourceChangeSchema, ResurrectionSchema, SlainSchema, SpellDataSchema } from '@/api/proto/chronicle_pb';
+import { AuraSchema, AuraTransition, CombatantGearSlotSchema, CombatantInfoSchema, ConsumeSchema, DamageSchema, EventMetaSchema, EvidenceConfidence, EvidenceKind, ExtraAttackSchema, ResourceChangeSchema, ResurrectionSchema, SlainSchema, SpellDataSchema } from '@/api/proto/chronicle_pb';
 import { describe, it, expect } from 'vitest';
-import { AuraDecoder, FastConsumeCursor, FastExtraAttackCursor, FastResourceChangeCursor, FastResurrectionCursor, FastSlainCursor, readVarint, readVarint64, parseAllHeaders } from './decode';
+import { AuraDecoder, FastCombatantInfoCursor, FastConsumeCursor, FastExtraAttackCursor, FastResourceChangeCursor, FastResurrectionCursor, FastSlainCursor, readVarint, readVarint64, parseAllHeaders } from './decode';
 
 describe('readVarint', () => {
   it('reads single-byte varints', () => {
@@ -71,6 +71,27 @@ describe('readVarint64', () => {
     // More than 10 bytes with continuation bits
     const data = new Uint8Array([0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80]);
     expect(() => readVarint64(data, 0)).toThrow('Varint too long');
+  });
+});
+
+describe('FastCombatantInfoCursor', () => {
+  it('preserves empty gem positions', () => {
+    const message = create(CombatantInfoSchema, {
+      meta: create(EventMetaSchema, { index: 8, offsetMilli: 2000n }),
+      guid: '0xPLAYER',
+      name: 'Player',
+      gear: [create(CombatantGearSlotSchema, {
+        itemId: 51396,
+        gemEnchantIds: [0, 0, 3637, 0],
+      })],
+    });
+    const encoded = toBinary(CombatantInfoSchema, message);
+    const messageData = new Uint8Array([...encodeVarint(encoded.length), ...encoded]);
+    const payload = buildPayload('encounter', 1706000000000n, 1, messageData.length, messageData);
+
+    const cursor = new FastCombatantInfoCursor(payload);
+
+    expect(cursor.next()?.gear[0].gemEnchantIds).toEqual([0, 0, 3637, 0]);
   });
 });
 
@@ -235,14 +256,48 @@ describe('FastConsumeCursor', () => {
   });
 });
 
-describe('AuraDecoder synthetic metadata', () => {
-  it('decodes and resets EventMeta.is_synthetic', () => {
+describe('AuraDecoder', () => {
+  it('decodes aura caster, transition, buff state, and synthetic metadata', () => {
     const decoder = new AuraDecoder();
-    const syntheticAura = new Uint8Array([0x0a, 0x02, 0x20, 0x01]);
-    expect(decoder.decode(syntheticAura, 0, syntheticAura.length).isSynthetic).toBe(true);
+    const aura = create(AuraSchema, {
+      meta: create(EventMetaSchema, { isSynthetic: true }),
+      target: '0xTARGET',
+      caster: '0xCASTER',
+      spellName: 'Power Word: Shield',
+      currentAmount: 1,
+      isBuff: true,
+      transition: AuraTransition.TransitionRefreshed,
+    });
+    const encoded = toBinary(AuraSchema, aura);
+
+    expect(decoder.decode(encoded, 0, encoded.length)).toMatchObject({
+      target: '0xTARGET',
+      caster: '0xCASTER',
+      spellName: 'Power Word: Shield',
+      amount: 1,
+      transition: AuraTransition.TransitionRefreshed,
+      isBuff: true,
+      isSynthetic: true,
+    });
+  });
+
+  it('resets optional caster, transition, buff state, and synthetic metadata', () => {
+    const decoder = new AuraDecoder();
+    const populated = toBinary(AuraSchema, create(AuraSchema, {
+      meta: create(EventMetaSchema, { isSynthetic: true }),
+      caster: '0xCASTER',
+      transition: AuraTransition.TransitionRefreshed,
+      isBuff: true,
+    }));
+    decoder.decode(populated, 0, populated.length);
 
     const emptyAura = new Uint8Array([]);
-    expect(decoder.decode(emptyAura, 0, emptyAura.length).isSynthetic).toBe(false);
+    expect(decoder.decode(emptyAura, 0, emptyAura.length)).toMatchObject({
+      caster: null,
+      transition: AuraTransition.TransitionUnknown,
+      isBuff: false,
+      isSynthetic: false,
+    });
   });
 });
 

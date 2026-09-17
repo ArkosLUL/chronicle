@@ -97,6 +97,14 @@ func WithMaxConns(maxConns int32) PoolOption {
 	}
 }
 
+// WithTracer installs a pgx query tracer. Tracers that also implement pgxpool
+// acquire or release tracing interfaces are used by the pool automatically.
+func WithTracer(tracer pgx.QueryTracer) PoolOption {
+	return func(cfg *pgxpool.Config) {
+		cfg.ConnConfig.Tracer = tracer
+	}
+}
+
 // https://github.com/jackc/pgx/issues/288#issuecomment-901975396
 func PoolConfig(logger *slog.Logger, dbURL string, opts ...PoolOption) (*pgxpool.Config, func(), error) {
 	if logger == nil {
@@ -110,6 +118,13 @@ func PoolConfig(logger *slog.Logger, dbURL string, opts ...PoolOption) (*pgxpool
 
 	for _, opt := range opts {
 		opt(cfg)
+	}
+
+	// Bound liveness checks so stale connections are discarded promptly after
+	// transient network failures instead of leaving acquisitions blocked on an
+	// unbounded ping.
+	if cfg.PingTimeout == 0 {
+		cfg.PingTimeout = 5 * time.Second
 	}
 
 	r := &registerTypes{}

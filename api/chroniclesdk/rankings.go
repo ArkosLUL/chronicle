@@ -63,22 +63,58 @@ type RankingsEntry struct {
 	KilledAt      time.Time `json:"killed_at"`
 }
 
+// InstanceRankingRecord is a raw per-player ranking row recorded for one encounter
+// in a specific log instance. Zero-value metrics are retained for debugging.
+type InstanceRankingRecord struct {
+	ID            uuid.UUID  `json:"id"`
+	EncounterID   *uuid.UUID `json:"encounter_id,omitempty"`
+	EncounterName string     `json:"encounter_name"`
+	PlayerGUID    string     `json:"player_guid"`
+	PlayerName    string     `json:"player_name"`
+	PlayerClass   string     `json:"player_class"`
+	PlayerSpec    string     `json:"player_spec"`
+	PlayerSubSpec string     `json:"player_sub_spec,omitempty"`
+	PlayerRole    string     `json:"player_role"`
+	PlayerLevel   int16      `json:"player_level"`
+	DamageDone    int64      `json:"damage_done"`
+	HealingDone   int64      `json:"healing_done"`
+	AbsorbedDone  int64      `json:"absorbed_done"`
+	DurationSecs  float64    `json:"duration_secs"`
+	DPS           float64    `json:"dps"`
+	HPS           float64    `json:"hps"`
+	LogHashedSlug string     `json:"log_hashed_slug"`
+	KilledAt      time.Time  `json:"killed_at"`
+}
+
 // RankingsLeaderboardResponse wraps leaderboard entries with total count for pagination.
 type RankingsLeaderboardResponse struct {
 	Entries    []RankingsEntry `json:"entries"`
 	TotalCount int64           `json:"total_count"`
 }
 
+// RankingsFilterClass describes the specs and sub-specs available for one class.
+type RankingsFilterClass struct {
+	PlayerClass string               `json:"player_class"`
+	Specs       []RankingsFilterSpec `json:"specs"`
+}
+
+// RankingsFilterSpec describes one broad spec and its available sub-specs.
+type RankingsFilterSpec struct {
+	Spec     string   `json:"spec"`
+	SubSpecs []string `json:"sub_specs"`
+}
+
 // RankingsBoxPlotStats contains box plot statistics for a class/spec combination.
 type RankingsBoxPlotStats struct {
-	PlayerClass string  `json:"player_class"`
-	PlayerSpec  string  `json:"player_spec"`
-	MinDPS      float64 `json:"min_dps"`
-	Q1DPS       float64 `json:"q1_dps"`
-	MedianDPS   float64 `json:"median_dps"`
-	Q3DPS       float64 `json:"q3_dps"`
-	MaxDPS      float64 `json:"max_dps"`
-	Count       int64   `json:"count"`
+	PlayerClass   string  `json:"player_class"`
+	PlayerSpec    string  `json:"player_spec"`
+	PlayerSubSpec string  `json:"player_sub_spec,omitempty"`
+	MinDPS        float64 `json:"min_dps"`
+	Q1DPS         float64 `json:"q1_dps"`
+	MedianDPS     float64 `json:"median_dps"`
+	Q3DPS         float64 `json:"q3_dps"`
+	MaxDPS        float64 `json:"max_dps"`
+	Count         int64   `json:"count"`
 }
 
 // RankingsKillTimeStats contains box plot statistics for encounter kill durations.
@@ -166,11 +202,12 @@ type InstanceParsesResponse struct {
 
 // InstanceParsePlayer is a player's parse data across selected encounters.
 type InstanceParsePlayer struct {
-	PlayerGUID  string `json:"player_guid"`
-	PlayerName  string `json:"player_name"`
-	PlayerClass string `json:"player_class"`
-	PlayerSpec  string `json:"player_spec"`
-	PlayerRole  string `json:"player_role"`
+	PlayerGUID    string `json:"player_guid"`
+	PlayerName    string `json:"player_name"`
+	PlayerClass   string `json:"player_class"`
+	PlayerSpec    string `json:"player_spec"`
+	PlayerSubSpec string `json:"player_sub_spec,omitempty"`
+	PlayerRole    string `json:"player_role"`
 
 	// Bosses contains per-encounter parse results for bosses this player killed.
 	Bosses []InstanceParseBoss `json:"bosses"`
@@ -238,6 +275,25 @@ type AdminTriggerSnapshotResponse struct {
 	Jobs []AdminTriggerSnapshotJobResult `json:"jobs"`
 }
 
+// AdminRankingsRefreshTenantStatus describes rankings summary freshness for one tenant.
+type AdminRankingsRefreshTenantStatus struct {
+	TenantID            uuid.UUID  `json:"tenant_id"`
+	TenantName          string     `json:"tenant_name"`
+	LastRebuiltAt       *time.Time `json:"last_rebuilt_at,omitempty"`
+	CurrentRowCount     int64      `json:"current_row_count"`
+	MinLastRowCount     int64      `json:"min_last_row_count"`
+	MaxLastRowCount     int64      `json:"max_last_row_count"`
+	SummaryCount        int64      `json:"summary_count"`
+	StoredQueryVersion  int16      `json:"stored_query_version"`
+	CurrentQueryVersion int16      `json:"current_query_version"`
+	RefreshNeeded       bool       `json:"refresh_needed"`
+}
+
+// AdminRankingsRefreshStatusResponse lists rankings summary freshness by tenant.
+type AdminRankingsRefreshStatusResponse struct {
+	Tenants []AdminRankingsRefreshTenantStatus `json:"tenants"`
+}
+
 // AdminRefreshRankingsJob describes one tenant summary refresh job.
 type AdminRefreshRankingsJob struct {
 	TenantID string `json:"tenant_id"`
@@ -260,7 +316,6 @@ type AdminSnapshotSummary struct {
 	CohortMode    string     `json:"cohort_mode"`
 	PolicyVersion int16      `json:"policy_version"`
 	QueryVersion  int16      `json:"query_version"`
-	MemberCount   int64      `json:"member_count"`
 	Status        string     `json:"status"`
 	PublishedAt   *time.Time `json:"published_at"`
 	CreatedAt     time.Time  `json:"created_at"`
@@ -275,6 +330,7 @@ type AdminBulkDeleteSnapshotsRequest struct {
 type AdminBulkDeleteSnapshotsResponse struct {
 	Deleted int `json:"deleted"`
 }
+
 // AdminTimeParseSnapshotSummary is a time-parse snapshot listed in the admin tab.
 type AdminTimeParseSnapshotSummary struct {
 	ID                uuid.UUID  `json:"id"`
@@ -313,6 +369,7 @@ type CohortBucket struct {
 	EncounterName  string `json:"encounter_name"`
 	PlayerClass    string `json:"player_class"`
 	PlayerSpec     string `json:"player_spec"`
+	PlayerSubSpec  string `json:"player_sub_spec,omitempty"`
 	DifficultyName string `json:"difficulty_name"`
 	MaxPlayers     int16  `json:"max_players"`
 }
@@ -335,6 +392,7 @@ type CohortDebugResponse struct {
 	EncounterName string             `json:"encounter_name"`
 	PlayerClass   string             `json:"player_class"`
 	PlayerSpec    string             `json:"player_spec"`
+	PlayerSubSpec string             `json:"player_sub_spec,omitempty"`
 	Metric        string             `json:"metric"`
 	TotalKills    int                `json:"total_kills"`
 	MinValue      float64            `json:"min_value"`

@@ -25,6 +25,7 @@ func RootCmd() *serpent.Command {
 		versionCmd(),
 		ServerCmd(),
 		GenerateSecretKey(),
+		ResyncCmd(),
 	)
 
 	return cmd
@@ -50,6 +51,6 @@ func getLogger(i *serpent.Invocation) *slog.Logger {
 	}
 
 	zl := zerolog.New(out)
-	logger := slog.New(slogzerolog.Option{Level: slog.LevelDebug, Logger: &zl}.NewZerologHandler())
+	logger := slog.New(slogzerolog.Option{Level: slog.LevelInfo, Logger: &zl}.NewZerologHandler())
 	return logger.With(slog.String("deployment_id", uuid.NewString()))
 }

@@ -4,7 +4,7 @@
 
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Skull, Swords, Heart, Zap, Wand2, Sparkles, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search, X, Crosshair, Play, CircleX, Bubbles, WandSparkles, CircleFadingPlus, UserCheck, Ban, Shield, HeartPulse, FlaskConical } from "lucide-react";
+import { Skull, Swords, Heart, Zap, Wand2, Sparkles, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search, X, Crosshair, Play, CircleX, Bubbles, WandSparkles, CircleFadingPlus, UserCheck, Ban, Shield, HeartPulse, FlaskConical, Download, LoaderCircle, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatNumber } from "@/lib/format";
 import { ScrollArea, ScrollBar } from "@/components/ui/ScrollArea/ScrollArea";
@@ -14,6 +14,7 @@ import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/comp
 import type { PanelDefinition, PanelRenderProps, PanelContext } from "./types";
 import { allActivityProcessor, type AllActivityState, type RawDebugEvent, type EncounterMeta, type ResourceType } from "./processors";
 import { ALL_ACTIVITY_STREAMS, STREAM_TYPE_CODES, collectAllActivityEvents, eventDetail, eventValue } from "./allActivityEvents";
+import { appendAllActivityCsvPage, createAllActivityCsv, downloadAllActivityCsv, sortAllActivityEvents, type AllActivityCsvExportState, type AllActivityCsvOptions } from "./allActivityCsv";
 import type { StreamType } from "@/hooks/instanceEvents";
 import { usePanelAggregation } from "./usePanelAggregation";
 
@@ -47,6 +48,7 @@ const STREAM_CONFIG: Record<StreamType, { icon: React.ElementType; color: string
   absorbed: { icon: Shield, color: "text-sky-400", label: "Absorbed", description: "Damage prevented by shields and other absorb effects." },
   companion_stats: { icon: Shield, color: "text-teal-400", label: "Companion Stats", description: "Stat snapshots reported for pets and other companions." },
   consume: { icon: FlaskConical, color: "text-fuchsia-400", label: "Consume", description: "Consumable use inferred from items, spells, auras, or combat effects." },
+  raid_group: { icon: Users, color: "text-blue-300", label: "Raid Group", description: "Eight-group raid composition snapshots reported by the companion." },
 
   cast: { icon: Wand2, color: "text-purple-500", label: "Cast", description: "General spell cast actions and their selected targets." },
 };
@@ -66,6 +68,7 @@ const STREAM_CODES: Record<StreamType, string> = {
   absorbed: "ab",
   companion_stats: "cs",
   consume: "q",
+  raid_group: "y",
 };
 const CODE_TO_STREAM = Object.fromEntries(
   Object.entries(STREAM_CODES).map(([k, v]) => [v, k as StreamType]),
@@ -490,6 +493,22 @@ function RawEventRow({ event, index, useRelativeTime = false, useLocalTime = fal
             ))}
           </div>
 
+          {event.raidGroups ? (
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              {event.raidGroups.map((group, groupIndex) => (
+                <div key={groupIndex} className="rounded border border-blue-300/20 bg-blue-300/5 px-2 py-1.5">
+                  <div className="mb-1 font-mono text-[9px] font-semibold tracking-[0.08em] text-blue-300">GROUP {groupIndex + 1}</div>
+                  {group.length ? group.map((member) => (
+                    <div key={member.guid} className="flex min-w-0 justify-between gap-2 font-mono text-[10px] leading-5">
+                      <span className={cn("truncate", member.className ? `class-${member.className.toLowerCase()}` : "text-foreground/85")}>{member.name}</span>
+                      <span className="truncate text-muted-foreground" title={member.guid}>{member.guid}</span>
+                    </div>
+                  )) : <div className="font-mono text-[10px] text-muted-foreground/50">Empty</div>}
+                </div>
+              ))}
+            </div>
+          ) : null}
+
           {event.activityEvents?.length ? (
             <div className="mt-3 max-w-4xl rounded border border-teal-400/20 bg-teal-400/5 px-3 py-2">
               <div className="mb-1 font-mono text-[9px] font-semibold tracking-[0.08em] text-teal-300">
@@ -653,6 +672,9 @@ interface AllActivityContentProps {
   useRelativeTime?: boolean;
   useLocalTime?: boolean;
   onToggleLocalTime?: () => void;
+  onExportCsv: () => void;
+  exportPage: number | null;
+  exportTotalPages: number;
 }
 
 function AllActivityContent({
@@ -675,19 +697,23 @@ function AllActivityContent({
   useRelativeTime = false,
   useLocalTime = false,
   onToggleLocalTime,
+  onExportCsv,
+  exportPage,
+  exportTotalPages,
 }: AllActivityContentProps) {
   
   // Default state during loading
-  const emptyByStream = { damage: [], heal: [], resource_change: [], extra_attack: [], slain: [], ressurection: [], cast: [], aura: [], spell_go: [], aura_cast: [], spell_start: [], spell_fail: [], unit_classification: [], combatant_info: [], dispel: [], interrupt: [], absorbed: [], companion_stats: [], consume: [] };
+  const emptyByStream = { damage: [], heal: [], resource_change: [], extra_attack: [], slain: [], ressurection: [], cast: [], aura: [], spell_go: [], aura_cast: [], spell_start: [], spell_fail: [], unit_classification: [], combatant_info: [], dispel: [], interrupt: [], absorbed: [], companion_stats: [], consume: [], raid_group: [] };
   const emptyEncounters = new Map<string, EncounterMeta>();
   const safeResult = result ?? {
     counts: new Map<string, number>(),
     rawEventsByStream: emptyByStream,
-    streamCounts: { damage: 0, heal: 0, resource_change: 0, extra_attack: 0, slain: 0, ressurection: 0, cast: 0, aura: 0, spell_go: 0, aura_cast: 0, spell_start: 0, spell_fail: 0, unit_classification: 0, combatant_info: 0, dispel: 0, interrupt: 0, absorbed: 0, companion_stats: 0, consume: 0 },
+    streamCounts: { damage: 0, heal: 0, resource_change: 0, extra_attack: 0, slain: 0, ressurection: 0, cast: 0, aura: 0, spell_go: 0, aura_cast: 0, spell_start: 0, spell_fail: 0, unit_classification: 0, combatant_info: 0, dispel: 0, interrupt: 0, absorbed: 0, companion_stats: 0, consume: 0, raid_group: 0 },
     encounters: emptyEncounters,
     totalProcessed: 0,
     eventsSkipped: 0,
     eventsCaptured: 0,
+    pageOffset: 0,
   };
   
   // Get encounters map (handle both Map and deserialized object)
@@ -700,12 +726,7 @@ function AllActivityContent({
   const allCapturedEvents = collectAllActivityEvents(rawEventsByStream);
   
   // Sort by encounter first, then by index within encounter to reconstruct true event order
-  const sortedEvents = allCapturedEvents.sort((a, b) => {
-    if (a.encounterID !== b.encounterID) {
-      return a.encounterID.localeCompare(b.encounterID);
-    }
-    return a.index - b.index;
-  });
+  const sortedEvents = sortAllActivityEvents(allCapturedEvents);
   
   // Calculate pagination info from the result
   const totalProcessed = safeResult.totalProcessed;
@@ -817,13 +838,34 @@ function AllActivityContent({
           )}
         </div>
         
-        <PaginationControls
-          currentPage={currentPage}
-          totalPages={totalPages}
-          totalEvents={totalProcessed}
-          onPageChange={onPageChange}
-          loading={loading || processing}
-        />
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onExportCsv}
+            disabled={totalProcessed === 0 || loading || processing || exportPage !== null}
+            className={cn(
+              "flex items-center gap-1 rounded border border-border px-2 py-1 text-xs font-medium text-foreground transition-colors hover:bg-muted",
+              (totalProcessed === 0 || loading || processing || exportPage !== null) && "cursor-not-allowed opacity-50",
+            )}
+            title="Export all filtered activity pages to CSV"
+          >
+            {exportPage !== null ? (
+              <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Download className="h-3.5 w-3.5" />
+            )}
+            {exportPage !== null
+              ? `Exporting ${exportPage} / ${exportTotalPages}`
+              : "Export CSV"}
+          </button>
+          <PaginationControls
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalEvents={totalProcessed}
+            onPageChange={onPageChange}
+            loading={loading || processing}
+          />
+        </div>
       </div>
 
       {error && (
@@ -911,6 +953,17 @@ function AllActivityContent({
  * Wrapper component that manages its own pagination state and aggregation.
  * This is necessary because pagination changes need to trigger re-processing in the worker.
  */
+interface AllActivityCsvExportConfig extends AllActivityCsvOptions {
+  enabledStreams: StreamType[];
+  abilityFilter?: string;
+  sourceFilter?: string;
+  targetFilter?: string;
+}
+
+interface ActiveAllActivityCsvExport extends AllActivityCsvExportState {
+  config: AllActivityCsvExportConfig;
+}
+
 interface AllActivityWrapperProps {
   context: PanelContext;
   panelIndex?: number;
@@ -931,6 +984,9 @@ function AllActivityWrapper({ context, panelIndex, useRelativeTime = false, pane
   const [sourceFilter, setSourceFilter] = useState(initial.sourceFilter);
   const [targetFilter, setTargetFilter] = useState(initial.targetFilter);
   const [useLocalTime, setUseLocalTime] = useState(initial.useLocalTime);
+
+  const [csvExport, setCsvExport] = useState<ActiveAllActivityCsvExport | null>(null);
+  const [csvExportError, setCsvExportError] = useState<Error | null>(null);
 
   // Sync state changes back to panelOption for persistence in shared layouts/links.
   // Uses a ref for panelOption to avoid feedback loops (state change → setPanelOption →
@@ -988,6 +1044,79 @@ function AllActivityWrapper({ context, panelIndex, useRelativeTime = false, pane
     panelContext: panelContextData,
   });
   
+  const csvExportConfig = csvExport?.config;
+  const csvExportContext = useMemo((): PanelContext => ({
+    ...context,
+    pagination: {
+      offset: ((csvExport?.page ?? 1) - 1) * PAGE_SIZE,
+      limit: PAGE_SIZE,
+      enabledStreams: csvExportConfig?.enabledStreams ?? [],
+      abilityFilter: csvExportConfig?.abilityFilter,
+      sourceFilter: csvExportConfig?.sourceFilter,
+      targetFilter: csvExportConfig?.targetFilter,
+    },
+  }), [context, csvExport?.page, csvExportConfig]);
+
+  const csvAggregation = usePanelAggregation({
+    panel: allActivityProcessor as PanelDefinition<AllActivityState>,
+    context: csvExportContext,
+    panelContext: panelContextData,
+    panelContextKey: csvExport ? `csv-export-${csvExport.page}` : "csv-export-idle",
+    enabled: csvExport !== null,
+  });
+
+  const handleExportCsv = useCallback(() => {
+    const totalPages = Math.ceil(result.totalProcessed / PAGE_SIZE);
+    if (totalPages === 0) return;
+
+    setCsvExportError(null);
+    setCsvExport({
+      page: 1,
+      totalPages,
+      events: [],
+      config: {
+        enabledStreams: Array.from(enabledStreams),
+        abilityFilter: abilityFilter.trim() || undefined,
+        sourceFilter: sourceFilter.trim() || undefined,
+        targetFilter: targetFilter.trim() || undefined,
+        useRelativeTime,
+        useLocalTime,
+      },
+    });
+  }, [result.totalProcessed, enabledStreams, abilityFilter, sourceFilter, targetFilter, useRelativeTime, useLocalTime]);
+
+  useEffect(() => {
+    if (!csvExport) return;
+    if (csvAggregation.error) {
+      setCsvExportError(csvAggregation.error);
+      setCsvExport(null);
+      return;
+    }
+
+    const expectedOffset = (csvExport.page - 1) * PAGE_SIZE;
+    if (
+      csvAggregation.loading
+      || csvAggregation.processing
+      || csvAggregation.processingTimeMs === null
+      || csvAggregation.result.pageOffset !== expectedOffset
+    ) {
+      return;
+    }
+
+    const pageEvents = collectAllActivityEvents(csvAggregation.result.rawEventsByStream);
+    const nextExport = appendAllActivityCsvPage(csvExport, pageEvents);
+    if (csvExport.page >= csvExport.totalPages) {
+      downloadAllActivityCsv(
+        createAllActivityCsv(nextExport.events, csvExport.config),
+        context.instance.id,
+      );
+      setCsvExport(null);
+      return;
+    }
+
+    setCsvExport(nextExport);
+  }, [csvExport, csvAggregation.loading, csvAggregation.processing, csvAggregation.processingTimeMs, csvAggregation.error, csvAggregation.result, context.instance.id]);
+
   const handlePageChange = useCallback((page: number) => {
     setCurrentPage(page);
   }, []);
@@ -1031,7 +1160,7 @@ function AllActivityWrapper({ context, panelIndex, useRelativeTime = false, pane
       processingTimeMs={processingTimeMs}
       loading={loading}
       processing={processing}
-      error={error}
+      error={error ?? csvExportError}
       currentPage={currentPage}
       onPageChange={handlePageChange}
       enabledStreams={enabledStreams}
@@ -1045,6 +1174,9 @@ function AllActivityWrapper({ context, panelIndex, useRelativeTime = false, pane
       useRelativeTime={useRelativeTime}
       useLocalTime={useLocalTime}
       onToggleLocalTime={() => setUseLocalTime((prev) => !prev)}
+      onExportCsv={handleExportCsv}
+      exportPage={csvExport?.page ?? null}
+      exportTotalPages={csvExport?.totalPages ?? 0}
     />
   );
 }

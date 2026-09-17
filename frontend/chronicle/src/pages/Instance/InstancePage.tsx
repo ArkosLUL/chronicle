@@ -5,10 +5,12 @@ import { useInstance, useInstanceYoutube, useAuthorizationCheck } from "@/api/qu
 import { useAuth } from "@/hooks/useAuth";
 import { InstanceEventsProvider } from "@/hooks/instanceEvents";
 import { DatasetProvider } from "@/hooks/useDatasetId";
-import type { ActivityPeriod, InstancePlayer, InstanceUnit, WoWEncounterWithHostiles, KillType } from "@/api/typesGenerated";
+import { PlayerSpecializationProvider } from "@/components/ui/PlayerMetricChart/PlayerSpecializationContext";
+import type { ActivityPeriod, InstancePlayer, InstanceUnit, WoWEncounterWithHostiles, KillType, VehicleControlMetadata } from "@/api/typesGenerated";
 import { Card } from "@/components/ui/Card/Card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { shouldShowChronicleCompanionWarning } from "@/lib/logReliability";
 import { InstancePageView } from "./InstancePageView";
 import { YouTubeOverlay } from "./YouTubeOverlay";
 import { SyncModeProvider, useSyncModeContext } from "./SyncModeContext";
@@ -28,6 +30,20 @@ export interface EnemyUnit {
   periods: readonly ActivityPeriod[]; // activity periods for debugging
 }
 
+/** A named sub-range within an encounter (e.g. boss phases). */
+export interface EncounterPhase {
+  id: string;
+  encounter_id: string;
+  key: string;
+  name: string;
+  order: number;
+  start_offset_ms: number;
+  end_offset_ms: number;
+  start_time: string;
+  end_time: string;
+  kill_type: KillType;
+}
+
 export interface Encounter {
   id: string;
   name: string;
@@ -37,6 +53,8 @@ export interface Encounter {
   end_time: string;
   enemies?: EnemyUnit[];
   remaining?: string[]; // GUIDs of enemies that did not die
+  /** Optional phases within this encounter (sorted by order). */
+  phases?: EncounterPhase[];
 }
 
 export interface Instance {
@@ -71,6 +89,8 @@ export interface Instance {
   difficultyName?: string;
   maxPlayers?: number;
   dynamicDifficulty?: number;
+  // Timestamped vehicle-to-controller intervals and transport diagnostics
+  vehicleControlIntervals?: VehicleControlMetadata;
   // Tenant info for cross-tenant gating
   serverName?: string;
   tenantName?: string;
@@ -105,7 +125,7 @@ function transformToInstance(
     start_time?: string;
     end_time?: string;
     realm_name?: string;
-    dataset_id?: string;
+    dataset_id?: string | null;
     icon_base_url?: string;
     guild?: { id: string; name: string };
     encounters: readonly WoWEncounterWithHostiles[] | null;
@@ -120,6 +140,7 @@ function transformToInstance(
     difficulty_name?: string;
     max_players?: number;
     dynamic_difficulty?: number;
+    vehicle_control_intervals?: VehicleControlMetadata;
     server_name?: string;
     tenant_name?: string;
     tenant_slug?: string;
@@ -156,6 +177,18 @@ function transformToInstance(
       players,
       enemies,
       remaining: enc.remaining as string[] | undefined,
+      phases: normalizeArray(enc.phases).map((phase) => ({
+        id: phase.id,
+        encounter_id: enc.id,
+        key: phase.key,
+        name: phase.name,
+        order: phase.order,
+        start_offset_ms: phase.start_offset_ms,
+        end_offset_ms: phase.end_offset_ms,
+        start_time: new Date(new Date(enc.start_time).getTime() + phase.start_offset_ms).toISOString(),
+        end_time: new Date(new Date(enc.start_time).getTime() + phase.end_offset_ms).toISOString(),
+        kill_type: phase.kill_type,
+      })),
     };
   });
 
@@ -171,7 +204,7 @@ function transformToInstance(
     slug: apiInstance.slug,
     name: apiInstance.name,
     realm: apiInstance.realm_name,
-    datasetId: apiInstance.dataset_id,
+    datasetId: apiInstance.dataset_id ?? undefined,
     iconBaseUrl: apiInstance.icon_base_url,
     guild: apiInstance.guild,
     startTime,
@@ -188,6 +221,7 @@ function transformToInstance(
     difficultyName: apiInstance.difficulty_name,
     maxPlayers: apiInstance.max_players,
     dynamicDifficulty: apiInstance.dynamic_difficulty,
+    vehicleControlIntervals: apiInstance.vehicle_control_intervals,
     serverName: apiInstance.server_name,
     tenantName: apiInstance.tenant_name,
     tenantSlug: apiInstance.tenant_slug,
@@ -434,23 +468,29 @@ export function InstancePage() {
     <SyncModeProvider>
       <TimeRangeProvider totalDurationMs={totalEncounterDurationMs}>
         <InstanceEventsProvider instanceId={instance.id}>
-          {tenantGate.banner && (
-            <div className="w-full px-4 pt-4">
-              {tenantGate.banner}
-            </div>
-          )}
-          <AddonMissingBanner instance={instance} />
-          <InstancePageInner
-            instance={instance}
+          <PlayerSpecializationProvider
+            datasetId={instance.datasetId}
+            flavor={instance.flavor ?? []}
             selectedEncounterIds={selectedEncounterIds}
-            onSelectEncounters={setUserSelectedEncounterIds}
-            youtubeData={youtubeData}
-            selectedEncounterTimes={selectedEncounterTimes}
-            logDetailUrl={logDetailUrl}
-            rawEncounters={apiInstance?.encounters}
-            canAdminLogs={canAdminLogs}
-            duplicateGroupId={apiInstance?.duplicate_group_id}
-          />
+          >
+            {tenantGate.banner && (
+              <div className="w-full px-4 pt-4">
+                {tenantGate.banner}
+              </div>
+            )}
+            <AddonMissingBanner instance={instance} />
+            <InstancePageInner
+              instance={instance}
+              selectedEncounterIds={selectedEncounterIds}
+              onSelectEncounters={setUserSelectedEncounterIds}
+              youtubeData={youtubeData}
+              selectedEncounterTimes={selectedEncounterTimes}
+              logDetailUrl={logDetailUrl}
+              rawEncounters={apiInstance?.encounters}
+              canAdminLogs={canAdminLogs}
+              duplicateGroupId={apiInstance?.duplicate_group_id}
+            />
+          </PlayerSpecializationProvider>
         </InstanceEventsProvider>
       </TimeRangeProvider>
     </SyncModeProvider>
@@ -459,10 +499,7 @@ export function InstancePage() {
 }
 
 function AddonMissingBanner({ instance }: { instance: Instance }) {
-  const hasAddon = !!instance.versions?.["addon"] || !!instance.versions?.["chronicle_companion"];
-  const isServerSide = instance.capabilities?.includes("server-side");
-
-  if (hasAddon || isServerSide) return null;
+  if (!shouldShowChronicleCompanionWarning(instance)) return null;
 
   return (
     <div className="w-full px-4 pt-4">

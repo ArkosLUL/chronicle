@@ -38,6 +38,14 @@ enum AuraState {
   StateModified = 3;
 }
 
+enum AuraTransition {
+  TransitionUnknown = 0;
+  TransitionApplied = 1;
+  TransitionRefreshed = 2;
+  TransitionStackChanged = 3;
+  TransitionRemoved = 4;
+}
+
 message SpellData {
   int32 id = 1;
   string name = 2;
@@ -148,6 +156,8 @@ message Aura {
   AuraState state = 6;
   optional SpellData spellData = 7;
   bool isBuff = 8;
+  optional string caster = 9;
+  AuraTransition transition = 10;
 }
 
 message AuraCast {
@@ -268,6 +278,7 @@ enum EvidenceKind {
   EvidenceDamage = 6;          // damage event from a consumable (sapper, etc)
   EvidenceActiveAtPull = 7;    // pre-pull aura projected into encounter
   EvidenceCooldown = 8;        // inferred from cooldown window
+  EvidencePreCombat = 9;       // observed outside combat and assigned to the next encounter
 }
 
 // EvidenceConfidence describes how certain we are about the evidence.
@@ -296,7 +307,7 @@ message Consume {
   int64 observedAtUnixMilli = 11;          // when the observation occurred
   optional int32 amount = 12;              // heal/resource/damage amount
   optional string resourceType = 13;       // resource type string (matches ResourceChange.resourceType)
-  bool isProjection = 14;                  // true when projected from prior encounter
+  bool isProjection = 14;                  // true when projected into an encounter
   optional string itemName = 15;           // item name when itemId is known
 }
 
@@ -304,6 +315,7 @@ message CombatantGearSlot {
   int32 itemId = 1;
   optional int32 enchantId = 2;
   optional int32 temporaryEnchantId = 3;
+  repeated int32 gemEnchantIds = 4; // SpellItemEnchantment IDs by socket position; 0 means empty
 }
 
 message CombatantTalents {
@@ -317,5 +329,12 @@ message CompanionStats {
   EventMeta meta = 1;
   int32 dirty = 2;             // total pending (unsent) segments across all providers
   repeated int32 buckets = 3;  // [10] landed chunk counts per minute
+}
+
+// RaidGroup carries the fixed 8 x 5 raid layout reported by the companion.
+// Empty strings preserve unused slots and subgroup boundaries.
+message RaidGroup {
+  EventMeta meta = 1;
+  repeated string group_member_guids = 2; // exactly 40 entries
 }
 

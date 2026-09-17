@@ -1,22 +1,37 @@
 import { useMemo } from "react"
-import { cn } from "@/lib/utils"
+import { CircleHelp } from "lucide-react"
+import { Link } from "react-router-dom"
+import type { RankingsFilterClass } from "@/api/typesGenerated"
+import {
+  HintTooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/Tooltip/tooltip"
 import { serverCapabilities } from "@/config/serverCapabilities"
-import { ALL_DPS_CLASSES, CLASS_CSS_VAR, CLASS_DISPLAY, CLASS_NAME_TO_ID, SPEC_BY_CLASS } from "./classDisplay"
+import { cn } from "@/lib/utils"
+import { ALL_DPS_CLASSES, CLASS_CSS_VAR, CLASS_DISPLAY, CLASS_NAME_TO_ID } from "./classDisplay"
 
 interface ClassSpecFilterProps {
   selectedClass: string | null
   selectedSpec: string | null
+  selectedSubSpec: string | null
+  options: readonly RankingsFilterClass[]
   onClassSelect: (cls: string | null) => void
   onSpecSelect: (spec: string | null) => void
+  onSubSpecSelect: (subSpec: string | null) => void
 }
 
 export function ClassSpecFilter({
   selectedClass,
   selectedSpec,
+  selectedSubSpec,
+  options,
   onClassSelect,
   onSpecSelect,
+  onSubSpecSelect,
 }: ClassSpecFilterProps) {
-  const specs = selectedClass ? SPEC_BY_CLASS[selectedClass] : undefined
+  const specs = selectedClass ? options.find((option) => option.player_class === selectedClass)?.specs : undefined
+  const subSpecs = specs?.find((spec) => spec.spec === selectedSpec)?.sub_specs ?? []
 
   const visibleClasses = useMemo(() => {
     const classIds = serverCapabilities.talentCalculator?.classIds
@@ -29,9 +44,9 @@ export function ClassSpecFilter({
   }, [])
 
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex min-w-0 flex-col gap-1.5">
       {/* Class buttons */}
-      <div className="flex flex-wrap items-center gap-1">
+      <div className="-mx-3 flex items-center gap-1.5 overflow-x-auto px-3 pb-2 styled-scrollbar sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
         {visibleClasses.map((cls) => {
           const active = selectedClass === cls
           const color = CLASS_CSS_VAR[cls]
@@ -40,7 +55,7 @@ export function ClassSpecFilter({
               key={cls}
               onClick={() => onClassSelect(active ? null : cls)}
               className={cn(
-                "flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs font-medium transition-all",
+                "flex shrink-0 items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium transition-all sm:px-2 sm:py-1",
                 active
                   ? "border-white/25 bg-white/10 text-foreground"
                   : selectedClass
@@ -63,11 +78,11 @@ export function ClassSpecFilter({
 
       {/* Spec sub-buttons (shown when a class is selected) */}
       {selectedClass && specs && (
-        <div className="flex flex-wrap items-center gap-1 pl-1">
+        <div className="-mx-3 flex items-center gap-1 overflow-x-auto px-3 pb-2 styled-scrollbar sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-1 sm:pb-0">
           <button
             onClick={() => onSpecSelect(null)}
             className={cn(
-              "rounded-md border px-2 py-0.5 text-[11px] font-medium transition-colors",
+              "shrink-0 rounded-md border px-2.5 py-1 text-[11px] font-medium transition-colors sm:px-2 sm:py-0.5",
               !selectedSpec
                 ? "border-[#5F8FA6] bg-[#5F8FA6]/20 text-foreground"
                 : "border-white/10 text-muted-foreground hover:text-foreground hover:bg-white/5",
@@ -75,20 +90,70 @@ export function ClassSpecFilter({
           >
             All Specs
           </button>
-          {specs.map((spec) => {
+          {specs.map((specOption) => {
+            const spec = specOption.spec
             const active = selectedSpec === spec
             return (
               <button
                 key={spec}
                 onClick={() => onSpecSelect(active ? null : spec)}
                 className={cn(
-                  "rounded-md border px-2 py-0.5 text-[11px] font-medium transition-colors",
+                  "shrink-0 rounded-md border px-2.5 py-1 text-[11px] font-medium transition-colors sm:px-2 sm:py-0.5",
                   active
                     ? "border-[#5F8FA6] bg-[#5F8FA6]/20 text-foreground"
                     : "border-white/10 text-muted-foreground hover:text-foreground hover:bg-white/5",
                 )}
               >
                 {spec}
+              </button>
+            )
+          })}
+        </div>
+      )}
+      {selectedSpec && subSpecs.length > 0 && (
+        <div className="-mx-3 flex items-center gap-1 overflow-x-auto px-3 pb-2 styled-scrollbar sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-1 sm:pb-0">
+          <HintTooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                aria-label="What are subspecs?"
+                className="mr-0.5 flex size-6 shrink-0 items-center justify-center rounded-full border border-white/10 bg-black/25 text-muted-foreground transition-colors hover:border-white/20 hover:bg-black/40 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5F8FA6]"
+              >
+                <CircleHelp className="size-3.5" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent
+              side="bottom"
+              sideOffset={6}
+              hideArrow
+              className="max-w-72 border border-white/10 bg-zinc-950 px-3.5 py-3 text-zinc-100 shadow-xl shadow-black/40"
+            >
+              <p className="leading-relaxed text-zinc-300">
+                Subspecs split some specializations into more precise ranking cohorts using detected
+                talent builds.
+              </p>
+              <Link
+                to="/subspecs"
+                className="mt-2 inline-flex font-semibold text-orange-300 underline decoration-orange-300/40 underline-offset-2 transition-colors hover:text-orange-200"
+              >
+                Learn how subspecs work
+              </Link>
+            </TooltipContent>
+          </HintTooltip>
+          {subSpecs.map((subSpec) => {
+            const active = selectedSubSpec === subSpec
+            return (
+              <button
+                key={subSpec}
+                onClick={() => onSubSpecSelect(active ? null : subSpec)}
+                className={cn(
+                  "shrink-0 rounded-md border px-2.5 py-1 text-[11px] font-medium transition-colors sm:px-2 sm:py-0.5",
+                  active
+                    ? "border-[#5F8FA6] bg-[#5F8FA6]/20 text-foreground"
+                    : "border-white/10 text-muted-foreground hover:text-foreground hover:bg-white/5",
+                )}
+              >
+                {subSpec}
               </button>
             )
           })}

@@ -1,9 +1,12 @@
 import { cn } from "@/lib/utils";
+import { playerClassLabel } from "./playerClassLabel";
 
 interface BreakoutIdentityProps {
   color: string;
   name: string;
   className: string;
+  specialization?: string;
+  subSpec?: string;
   compact?: boolean;
 }
 
@@ -11,6 +14,8 @@ export function BreakoutIdentity({
   color,
   name,
   className,
+  specialization,
+  subSpec,
   compact = true,
 }: BreakoutIdentityProps) {
   return (
@@ -37,7 +42,7 @@ export function BreakoutIdentity({
         )}
         data-breakout-identity-class
       >
-        {className}
+        {playerClassLabel(className, specialization, subSpec)}
       </span>
     </div>
   );

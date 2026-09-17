@@ -1,10 +1,15 @@
 package chronicle
 
 import (
+	"log/slog"
 	"testing"
 	"time"
 
 	"github.com/Emyrk/chronicle/database"
+	"github.com/Emyrk/chronicle/database/authz"
+	"github.com/Emyrk/chronicle/database/dbtestutil"
+	"github.com/Emyrk/chronicle/internal/testutil"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -26,6 +31,42 @@ func TestScanCompanionHeaderClockSkipsLegacyAndMalformedHeaders(t *testing.T) {
 	data := []byte("5/23 17:00:00.000  EVENT,\"[1H:0.1,Icecrown,enUS,3.3.5a,12340,old1]\"\n" +
 		"5/23 17:00:01.000  EVENT,\"[2H:0.1,Icecrown,enUS,3.3.5a,12340,bad1,not-an-epoch,-420]\"")
 	assert.Nil(t, scanCompanionHeaderClock(data))
+}
+
+func TestResolveRealmByNamePrefersExplicitRealmID(t *testing.T) {
+	t.Parallel()
+	ctx := testutil.Context(t, testutil.WaitMedium)
+
+	store, _ := dbtestutil.NewDB(t)
+	db := authz.NewDatabaseOnly(slog.Default(), store)
+
+	serverID := uuid.New()
+	_, err := db.InsertWoWServer(ctx, database.InsertWoWServerParams{
+		ID:   serverID,
+		Name: "Example Server",
+	})
+	require.NoError(t, err)
+
+	original, err := db.InsertWoWServerRealm(ctx, database.InsertWoWServerRealmParams{
+		ID:       uuid.New(),
+		ServerID: serverID,
+		Name:     "Example",
+	})
+	require.NoError(t, err)
+	mirror, err := db.InsertWoWServerRealm(ctx, database.InsertWoWServerRealmParams{
+		ID:       uuid.New(),
+		ServerID: serverID,
+		Name:     "Example - Serverside",
+	})
+	require.NoError(t, err)
+
+	resolved := resolveRealmByName(ctx, db, original.Name, mirror.ID)
+	assert.Equal(t, mirror.ID, resolved.ID)
+	assert.Equal(t, mirror.Name, resolved.Name)
+
+	resolved = resolveRealmByName(ctx, db, original.Name, uuid.Nil)
+	assert.Equal(t, original.ID, resolved.ID)
+	assert.Equal(t, original.Name, resolved.Name)
 }
 
 func TestScanRealmName(t *testing.T) {
@@ -85,6 +126,14 @@ func TestScanRealmName(t *testing.T) {
 			expected:  "",
 		},
 
+		// ── TBC companion ────────────────────────────────────────────
+		{
+			name:      "tbc/companion_header",
+			logFormat: database.LogFormat243CcAddon,
+			input:     `5/20 15:52:10.073  SPELL_CAST_FAILED,0x000000000008DCCC,"Rhyd",0x10511,0x0000000000000000,nil,0x80000000,26992,"Thorns",0x8,"[1Z:Karazhan,raid,1,10 Player,10,0,0,0,0,Deadwind Pass][2H:0.1,Netherwing,enUS,2.4.3,8606,0d31]"`,
+			expected:  "Netherwing",
+		},
+
 		// ── WoTLK companion ──────────────────────────────────────────
 		{
 			name:      "wotlk/companion_header",
@@ -113,6 +162,26 @@ continuation line that doesn't have framing`,
 			logFormat: database.LogFormat335aCcAddon,
 			input:     `6/15 18:00:00.000  SWING_DAMAGE,0x01,0x02,100,1,0,0,0,nil,nil`,
 			expected:  "",
+		},
+
+		// ── HermesProxy 1.14.2 companion ─────────────────────────────
+		{
+			name:      "hermesproxy/companion_header",
+			logFormat: database.LogFormatHermesproxy1142Cc,
+			input:     `9/9 22:45:47.545  SPELL_CAST_FAILED,Player-1-00004AAF,"Brainfever-",0x511,0x0,0000000000000000,nil,0x80000000,0x80000000,10161,"Cone of Cold",0x10,"[5Z:Blackrock Spire,party,0,,0,0,0,229,0,][6H:0.8,Kronos V,enUS,1.14.2,42597,da29,1788986746,120]"`,
+			expected:  "Kronos V",
+		},
+
+		// ── Blizzard combat log v9 ───────────────────────────────────
+		{
+			name:      "v9/dominant_engaged_realm",
+			logFormat: database.LogFormatV9Cleu,
+			input: `9/3/2026 18:57:03.000-6  SPELL_CAST_SUCCESS,Player-1-00000001,"Visitor-Dreamscythe-US",0x514,0,0000000000000000,nil,0,0,1,"Spell",0x1
+9/3/2026 18:58:00.000-6  ENCOUNTER_START,601,"Boss",4,25,564,5
+9/3/2026 18:58:01.000-6  SPELL_DAMAGE,Player-2-00000001,"One-Nightslayer-US",0x514,0,Creature-0-1-564-1-1-1,"Boss",0,0,1,"Spell",0x1,1,1,-1,1,0,0,0,nil,nil,nil
+9/3/2026 18:58:02.000-6  SPELL_HEAL,Player-2-00000002,"Two-Nightslayer-US",0x514,0,Player-2-00000001,"One-Nightslayer-US",0x514,0,1,"Heal",0x2,1,1,0,0,nil
+9/3/2026 18:59:00.000-6  ENCOUNTER_END,601,"Boss",4,25,1`,
+			expected: "Nightslayer-US",
 		},
 
 		// ── AzerothCore server-side ──────────────────────────────────

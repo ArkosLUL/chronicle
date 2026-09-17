@@ -27,6 +27,8 @@ const (
 	FlavorVanilla FlavorTag = "vanilla"
 	// FlavorTBC is (TBC)-era behavior.
 	FlavorTBC FlavorTag = "tbc"
+	// FlavorTBCAnniversary is Blizzard's official TBC Anniversary behavior.
+	FlavorTBCAnniversary FlavorTag = "tbc_anniversary"
 	// FlavorWrath is 3.3.5a (WotLK)-era behavior (Warmane, Epoch, AzerothCore).
 	FlavorWrath FlavorTag = "wrath"
 	// FlavorTurtle is Turtle WoW-specific behavior.
@@ -38,6 +40,8 @@ const (
 	// FlavorAzerothcore is AzerothCore-specific behavior (server-side or
 	// client-side; distinguish the two via LogFormat, not this tag).
 	FlavorAzerothcore FlavorTag = "azerothcore"
+	// FlavorChromieCraft is ChromieCraft-specific behavior.
+	FlavorChromieCraft FlavorTag = "chromiecraft"
 	// FlavorAzerothcoreProgression enables progression-server behavior where
 	// multiple expansion versions of the same instance can coexist.
 	FlavorAzerothcoreProgression FlavorTag = "azerothcore-progression"
@@ -60,11 +64,13 @@ func AllFlavorTagValues() []FlavorTag {
 	return []FlavorTag{
 		FlavorVanilla,
 		FlavorTBC,
+		FlavorTBCAnniversary,
 		FlavorWrath,
 		FlavorTurtle,
 		FlavorKronos,
 		FlavorEpoch,
 		FlavorAzerothcore,
+		FlavorChromieCraft,
 		FlavorAzerothcoreProgression,
 		FlavorVanillaPlus,
 		FlavorOctoWoW,

@@ -150,6 +150,31 @@ export interface AdminOutdatedInstancesResponse {
 
 // From chroniclesdk/rankings.go
 /**
+ * AdminRankingsRefreshStatusResponse lists rankings summary freshness by tenant.
+ */
+export interface AdminRankingsRefreshStatusResponse {
+    readonly tenants: readonly AdminRankingsRefreshTenantStatus[];
+}
+
+// From chroniclesdk/rankings.go
+/**
+ * AdminRankingsRefreshTenantStatus describes rankings summary freshness for one tenant.
+ */
+export interface AdminRankingsRefreshTenantStatus {
+    readonly tenant_id: string;
+    readonly tenant_name: string;
+    readonly last_rebuilt_at?: string;
+    readonly current_row_count: number;
+    readonly min_last_row_count: number;
+    readonly max_last_row_count: number;
+    readonly summary_count: number;
+    readonly stored_query_version: number;
+    readonly current_query_version: number;
+    readonly refresh_needed: boolean;
+}
+
+// From chroniclesdk/rankings.go
+/**
  * AdminRefreshRankingsJob describes one tenant summary refresh job.
  */
 export interface AdminRefreshRankingsJob {
@@ -191,7 +216,6 @@ export interface AdminSnapshotSummary {
     readonly cohort_mode: string;
     readonly policy_version: number;
     readonly query_version: number;
-    readonly member_count: number;
     readonly status: string;
     readonly published_at: string | null;
     readonly created_at: string;
@@ -387,6 +411,11 @@ export interface ArmorySearchResult {
     readonly updated_at: string;
 }
 
+// From chroniclesdk/item_pricing.go
+export type AuctionHouseFaction = "alliance" | "horde" | "merged";
+
+export const AuctionHouseFactions: AuctionHouseFaction[] = ["alliance", "horde", "merged"];
+
 // From chroniclesdk/authz.go
 /**
  * AuthorizationRequest is a request to check multiple authorizations at once.
@@ -547,6 +576,15 @@ export interface CharacterScore {
     readonly encounter_groups: number;
 }
 
+// From chroniclesdk/guild_page.go
+/**
+ * CharacterSpecRole is one spec+role combination observed in recent parses.
+ */
+export interface CharacterSpecRole {
+    readonly spec: string;
+    readonly role: string; // "tank", "heal", or "dps"
+}
+
 // From chroniclesdk/events.go
 export interface ChronicleEncounterEvents {
     readonly encounter_id: string;
@@ -563,6 +601,7 @@ export interface CohortBucket {
     readonly encounter_name: string;
     readonly player_class: string;
     readonly player_spec: string;
+    readonly player_sub_spec?: string;
     readonly difficulty_name: string;
     readonly max_players: number;
 }
@@ -591,6 +630,7 @@ export interface CohortDebugResponse {
     readonly encounter_name: string;
     readonly player_class: string;
     readonly player_spec: string;
+    readonly player_sub_spec?: string;
     readonly metric: string;
     readonly total_kills: number;
     readonly min_value: number;
@@ -628,6 +668,42 @@ export interface CorePayload {
     readonly tags: readonly string[];
 }
 
+// From chroniclesdk/gear_builder.go
+/**
+ * CreateGearListRequest is the request body for creating a gear list.
+ */
+export interface CreateGearListRequest {
+    readonly title: string;
+    readonly description: string;
+    readonly class_id: number;
+    readonly spec_name: string;
+    readonly payload: Record<string, string>;
+}
+
+// From chroniclesdk/gear_progression.go
+/**
+ * CreateGearProgressionRequest is the request body for creating a progression.
+ */
+export interface CreateGearProgressionRequest {
+    readonly title: string;
+    readonly description: string;
+    readonly class_id: number;
+    readonly spec_name: string;
+    readonly payload: Record<string, string>;
+}
+
+// From chroniclesdk/gear_builder.go
+/**
+ * CreateGearStatWeightRequest is the request body for creating a stat weight.
+ */
+export interface CreateGearStatWeightRequest {
+    readonly name: string;
+    readonly description: string;
+    readonly class_id: number;
+    readonly spec_name: string;
+    readonly weights: Record<string, string>;
+}
+
 // From chroniclesdk/guild_page.go
 export interface CreateJoinRequestBody {
     readonly message: string;
@@ -641,6 +717,13 @@ export interface CreateModificationRequestPayload {
     readonly type: string;
     readonly parent_id?: string;
     readonly payload: Record<string, string>;
+}
+
+// From chroniclesdk/raid_compositions.go
+export interface CreateRaidCompositionRequest {
+    readonly name: string;
+    readonly guild_id?: string;
+    readonly data: RaidCompData;
 }
 
 // From chroniclesdk/server_application.go
@@ -721,6 +804,8 @@ export interface CreateWoWServerRealmRequest {
     readonly name: string;
     readonly description: string;
     readonly url?: string;
+    readonly pricing_route_name?: string;
+    readonly pricing_auction_house?: PricingAuctionHouse;
 }
 
 // From chroniclesdk/azerothcore.go
@@ -728,6 +813,7 @@ export interface CreateWoWServerRequest {
     readonly name: string;
     readonly description: string;
     readonly url?: string;
+    readonly pricing_provider?: ItemPricingProvider;
 }
 
 // From chroniclesdk/gamedata.go
@@ -748,6 +834,13 @@ export interface CreatureSearchResult {
     readonly dmg_min: number;
     readonly dmg_max: number;
     readonly unit_class: number;
+}
+
+// From chroniclesdk/item_pricing.go
+export interface CurrentItemPricesRequest {
+    readonly realm_id: string;
+    readonly faction: AuctionHouseFaction;
+    readonly item_ids: readonly number[];
 }
 
 // From chroniclesdk/gamedata.go
@@ -836,6 +929,12 @@ export type DeviceVisibility = "all" | "desktop" | "mobile";
 
 export const DeviceVisibilitys: DeviceVisibility[] = ["all", "desktop", "mobile"];
 
+// From chroniclesdk/guild_page.go
+export interface DiscordChannel {
+    readonly id: string;
+    readonly name: string;
+}
+
 // From chroniclesdk/discovery.go
 /**
  * DiscoveryEntry is one server/tenant in the discovery response.
@@ -883,6 +982,17 @@ export interface DuplicateInstance {
 
 // From chroniclesdk/log.go
 export type Duration = number;
+
+// From chroniclesdk/gamedata.go
+/**
+ * ItemSetSearchResult is a summary for item set search results.
+ * EnchantmentSearchResult is one enchantment matched by name. The same
+ * display name can exist at several IDs (ranks), so both are returned.
+ */
+export interface EnchantmentSearchResult {
+    readonly id: number;
+    readonly name: string;
+}
 
 // From chroniclesdk/log.go
 export interface EncounterKillTime {
@@ -973,6 +1083,247 @@ export interface ExternalVerificationPublic {
 // From chroniclesdk/log.go
 export type GUIDString = string;
 
+// From chroniclesdk/gear_builder.go
+/**
+ * GearList is a user-owned gear progression list.
+ */
+export interface GearList {
+    readonly id: string;
+    readonly user_id: string;
+    readonly tenant_id: string;
+    readonly title: string;
+    readonly description: string;
+    readonly class_id: number;
+    readonly spec_name: string;
+    readonly payload: Record<string, string>;
+    readonly created_at: string;
+    readonly updated_at: string;
+    /**
+     * Fork lineage; nil when the list was not forked.
+     */
+    readonly forked_from_list_id?: string;
+}
+
+// From chroniclesdk/gear_builder.go
+/**
+ * GearListAlternate is a ranked alternate item for a slot; array order
+ * is the rank.
+ */
+export interface GearListAlternate {
+    readonly item_id: number;
+    readonly note?: string;
+}
+
+// From chroniclesdk/gear_builder.go
+/**
+ * GearListPayload is the versioned document stored in GearList.Payload.
+ */
+export interface GearListPayload {
+    readonly version: number;
+    readonly stages: readonly GearListStage[];
+}
+
+// From chroniclesdk/gear_builder.go
+/**
+ * GearListSlot is the primary pick for one equipment slot plus its
+ * ranked alternates and an optional author note.
+ */
+export interface GearListSlot {
+    readonly item_id: number;
+    readonly enchant_id?: number;
+    readonly gem_enchant_ids?: readonly number[];
+    readonly note?: string;
+    readonly alternates?: readonly GearListAlternate[];
+}
+
+// From chroniclesdk/gear_builder.go
+/**
+ * GearListStage is one stage of a gear progression. Slot keys are the
+ * 19 PlayerOutfit indexes ("0".."18"); slots without an item are absent.
+ */
+export interface GearListStage {
+    readonly name: string;
+    readonly slots: Record<string, GearListSlot>;
+    /**
+     * Level is the character level this stage assumes (its item picker
+     * filters to it). Nil means the level slider is disabled for the
+     * stage and the level cap is assumed.
+     */
+    readonly level?: number;
+}
+
+// From chroniclesdk/gear_progression.go
+/**
+ * GearProgression is a user-owned gear progression: one player-picked
+ * pool of items that drives a leveling scrubber, plus explicit stage
+ * snapshots for the max-level half of the journey.
+ */
+export interface GearProgression {
+    readonly id: string;
+    readonly user_id: string;
+    readonly tenant_id: string;
+    readonly title: string;
+    readonly description: string;
+    readonly class_id: number;
+    readonly spec_name: string;
+    readonly payload: Record<string, string>;
+    readonly created_at: string;
+    readonly updated_at: string;
+}
+
+// From chroniclesdk/gear_progression.go
+/**
+ * GearProgressionAnalysisProfile is a portable snapshot of a stat-weight profile.
+ */
+export interface GearProgressionAnalysisProfile {
+    readonly id: string;
+    readonly name: string;
+    readonly description?: string;
+    readonly weights: Record<string, number>;
+    readonly targets?: readonly GearProgressionAnalysisTarget[];
+}
+
+// From chroniclesdk/gear_progression.go
+/**
+ * GearProgressionAnalysisTarget is a raw-stat minimum or maximum constraint.
+ */
+export interface GearProgressionAnalysisTarget {
+    readonly stat: string;
+    readonly type: string;
+    readonly value: number;
+}
+
+// From chroniclesdk/gear_progression.go
+/**
+ * GearProgressionPayload is the versioned document stored in
+ * GearProgression.Payload. Best-per-slot for the leveling axis is derived
+ * from Pool at render time and never stored.
+ */
+export interface GearProgressionPayload {
+    readonly version: number;
+    readonly pool: readonly GearProgressionPoolItem[];
+    /**
+     * Stages reuses the gear-list stage shape for the max-level axis.
+     */
+    readonly stages: readonly GearListStage[];
+    /**
+     * AnalysisProfileID retains the source profile for owner-side selection.
+     */
+    readonly analysis_profile_id?: string;
+    /**
+     * AnalysisProfile snapshots the selected profile so shared progressions can
+     * score gear without access to the owner's private stat-weight records.
+     */
+    readonly analysis_profile?: GearProgressionAnalysisProfile;
+    /**
+     * LevelingDisabled turns the progressive-gear (levelling) half off
+     * for the whole document; everything assumes the level cap.
+     */
+    readonly leveling_disabled?: boolean;
+}
+
+// From chroniclesdk/gear_progression.go
+/**
+ * GearProgressionPoolItem is one hand-picked item in the pool.
+ */
+export interface GearProgressionPoolItem {
+    readonly item_id: number;
+    readonly enchant_id?: number;
+    readonly note?: string;
+}
+
+// From chroniclesdk/gear_builder.go
+/**
+ * GearStatWeight is a user-defined stat-weight set.
+ */
+export interface GearStatWeight {
+    readonly id: string;
+    readonly user_id: string;
+    readonly tenant_id: string;
+    readonly name: string;
+    readonly description: string;
+    readonly class_id: number;
+    readonly spec_name: string;
+    readonly weights: Record<string, string>;
+    readonly created_at: string;
+    readonly updated_at: string;
+}
+
+// From chroniclesdk/gear_trends.go
+/**
+ * GearTrendsEnchant is one observed permanent enchant with its rate.
+ */
+export interface GearTrendsEnchant {
+    readonly enchant_id: number;
+    readonly name: string;
+    readonly wearer_count: number;
+    readonly percent: number;
+}
+
+// From chroniclesdk/gear_trends.go
+/**
+ * GearTrendsItem is one observed item with its equip rate.
+ */
+export interface GearTrendsItem {
+    readonly item_id: number;
+    readonly item_name: string;
+    readonly item_quality: number;
+    readonly item_icon: string;
+    readonly item_level?: number;
+    readonly wearer_count: number;
+    readonly percent: number;
+}
+
+// From chroniclesdk/gear_trends.go
+/**
+ * GearTrendsResponse is the observed-gear-trends aggregate for one
+ * class/spec cohort: the gear worn during the top leaderboard
+ * performances. This is observed equipment, not a recommendation.
+ */
+export interface GearTrendsResponse {
+    readonly class: string;
+    readonly spec: string;
+    readonly lookback_days: number;
+    /**
+     * InstanceName is the raid filter, empty when all raids qualify.
+     */
+    readonly instance_name?: string;
+    /**
+     * RealmID is the realm filter, empty when all realms qualify.
+     */
+    readonly realm_id?: string;
+    /**
+     * TopPerformances is the cohort target: the N best-parsing unique
+     * players considered (each observed in the gear worn during that
+     * parse).
+     */
+    readonly top_performances: number;
+    /**
+     * CohortSize is how many qualifying players were actually found
+     * (at most TopPerformances).
+     */
+    readonly cohort_size: number;
+    readonly min_sample_size: number;
+    /**
+     * InsufficientSample is true when the cohort is below the minimum
+     * sample size; Slots is empty in that case.
+     */
+    readonly insufficient_sample: boolean;
+    readonly generated_at: string;
+    readonly slots: readonly GearTrendsSlot[];
+}
+
+// From chroniclesdk/gear_trends.go
+/**
+ * GearTrendsSlot is one equipment slot's observed items and enchants.
+ * Slot is the PlayerOutfit index (0-18).
+ */
+export interface GearTrendsSlot {
+    readonly slot: number;
+    readonly items: readonly GearTrendsItem[];
+    readonly enchants?: readonly GearTrendsEnchant[];
+}
+
 // From chroniclesdk/log.go
 export interface Guild {
     readonly id: string;
@@ -1007,6 +1358,46 @@ export interface GuildBestRunsResponse {
 // From chroniclesdk/guild_page.go
 export interface GuildCharacterRosterResponse {
     readonly members: readonly GuildRosterCharacter[];
+}
+
+// From chroniclesdk/guild_page.go
+export interface GuildDiscordAnnouncementAttempt {
+    readonly id: string;
+    readonly run_id: string;
+    readonly discord_channel_id: string;
+    readonly discord_message_id?: string;
+    readonly delivery_attempted_at?: string;
+    readonly delivery_error?: string;
+    readonly instance_slug?: string;
+    readonly status: string;
+    readonly created_at: string;
+    readonly updated_at: string;
+}
+
+// From chroniclesdk/guild_page.go
+export interface GuildDiscordAnnouncementAttemptsResponse {
+    readonly attempts: readonly GuildDiscordAnnouncementAttempt[];
+    readonly has_more: boolean;
+}
+
+// From chroniclesdk/guild_page.go
+export interface GuildDiscordIntegrationSettings {
+    readonly enabled: boolean;
+    readonly available: boolean;
+    readonly can_enable: boolean;
+    readonly installed: boolean;
+    readonly discord_guild_id?: string;
+    readonly discord_guild_name?: string;
+    readonly install_url?: string;
+    readonly channels?: readonly DiscordChannel[];
+    readonly raid_log_announcements: GuildDiscordRaidLogAnnouncements;
+}
+
+// From chroniclesdk/guild_page.go
+export interface GuildDiscordRaidLogAnnouncements {
+    readonly enabled: boolean;
+    readonly scope: string;
+    readonly channel_id?: string;
 }
 
 // From chroniclesdk/guild_page.go
@@ -1131,10 +1522,36 @@ export interface GuildRaidClearsResponse {
 }
 
 // From chroniclesdk/guild_page.go
+export interface GuildResourceAnalyticsDay {
+    readonly resource_kind: string;
+    readonly resource_key: string;
+    readonly resource_group_key: string;
+    readonly resource_name: string;
+    readonly instance_date: string;
+    readonly viewed_on: string;
+    readonly views: number;
+    readonly unique_visitors: number;
+}
+
+// From chroniclesdk/guild_page.go
+export interface GuildResourceAnalyticsResponse {
+    readonly lookback_days: number;
+    readonly days: readonly GuildResourceAnalyticsDay[];
+}
+
+// From chroniclesdk/guild_page.go
+export const GuildResourceKindInstance = "instance";
+
+// From chroniclesdk/guild_page.go
+export const GuildResourceKindPage = "guild_page";
+
+// From chroniclesdk/guild_page.go
 /**
  * GuildRosterCharacter is a guild character seen in raid logs. LastSeenAt is
  * the last time a log updated the character. AvgParse is -1 when the
- * character has no parses in the scoring window.
+ * character has no parses in the scoring window. Spec/Role come from the
+ * most recent parse; SpecRoles lists every distinct spec+role combo observed
+ * across the character's 3 most recent parsed instances, most recent first.
  */
 export interface GuildRosterCharacter {
     readonly id: string;
@@ -1144,6 +1561,7 @@ export interface GuildRosterCharacter {
     readonly level: number;
     readonly spec?: string;
     readonly role?: string; // "tank", "heal", or "dps"
+    readonly spec_roles?: readonly CharacterSpecRole[];
     readonly avg_parse: number;
     readonly last_seen_at: string;
     readonly realm_name: string;
@@ -1272,6 +1690,28 @@ export interface InstanceDefaultsResponse {
     readonly action_bar_layouts: readonly UserPanelLayout[];
 }
 
+// From chroniclesdk/item_pricing.go
+export interface InstanceItemPrice {
+    readonly item_id: number;
+    readonly price_copper?: number;
+    readonly observed_date?: string;
+    readonly future_fallback: boolean;
+}
+
+// From chroniclesdk/item_pricing.go
+export interface InstanceItemPricesRequest {
+    readonly item_ids: readonly number[];
+}
+
+// From chroniclesdk/item_pricing.go
+export interface InstanceItemPricesResponse {
+    readonly available: boolean;
+    readonly reason?: string;
+    readonly requested_date: string;
+    readonly faction?: AuctionHouseFaction;
+    readonly prices: readonly InstanceItemPrice[];
+}
+
 // From chroniclesdk/loot.go
 export interface InstanceLoot {
     readonly source_guid: GUID;
@@ -1335,6 +1775,7 @@ export interface InstanceParsePlayer {
     readonly player_name: string;
     readonly player_class: string;
     readonly player_spec: string;
+    readonly player_sub_spec?: string;
     readonly player_role: string;
     /**
      * Bosses contains per-encounter parse results for bosses this player killed.
@@ -1400,6 +1841,61 @@ export interface InstancePlayer {
     readonly level: number;
 }
 
+// From chroniclesdk/instance_raid_group.go
+export interface InstanceRaidGroupComposition {
+    readonly observed_at: string;
+    readonly groups: readonly InstanceRaidGroupMember[][];
+}
+
+// From chroniclesdk/instance_raid_group.go
+export interface InstanceRaidGroupKill {
+    readonly encounter_id: string;
+    readonly encounter_name: string;
+    readonly killed_at: string;
+    readonly composition: InstanceRaidGroupComposition;
+}
+
+// From chroniclesdk/instance_raid_group.go
+export interface InstanceRaidGroupMember {
+    readonly guid: string;
+    readonly name?: string;
+    readonly class?: string;
+    readonly spec?: string;
+}
+
+// From chroniclesdk/instance_raid_group.go
+export interface InstanceRaidGroupResponse {
+    readonly available: boolean;
+    readonly final?: InstanceRaidGroupComposition;
+    readonly clean_kills: readonly InstanceRaidGroupKill[];
+}
+
+// From chroniclesdk/rankings.go
+/**
+ * InstanceRankingRecord is a raw per-player ranking row recorded for one encounter
+ * in a specific log instance. Zero-value metrics are retained for debugging.
+ */
+export interface InstanceRankingRecord {
+    readonly id: string;
+    readonly encounter_id?: string;
+    readonly encounter_name: string;
+    readonly player_guid: string;
+    readonly player_name: string;
+    readonly player_class: string;
+    readonly player_spec: string;
+    readonly player_sub_spec?: string;
+    readonly player_role: string;
+    readonly player_level: number;
+    readonly damage_done: number;
+    readonly healing_done: number;
+    readonly absorbed_done: number;
+    readonly duration_secs: number;
+    readonly dps: number;
+    readonly hps: number;
+    readonly log_hashed_slug: string;
+    readonly killed_at: string;
+}
+
 // From chroniclesdk/log.go
 /**
  * InstanceReport contains timing details for a single parsed instance.
@@ -1451,7 +1947,7 @@ export interface InstanceTimeParsesResponse {
 // From chroniclesdk/log.go
 export interface InstanceUnit {
     readonly name: string;
-    readonly owner: GUID | null;
+    readonly owner?: GUID;
     readonly entry: number;
 }
 
@@ -1492,6 +1988,19 @@ export interface ItemDisplayData {
     readonly flags: number; // Display flags
 }
 
+// From chroniclesdk/azerothcore.go
+export type ItemPricingProvider = "wowauctions";
+
+export const ItemPricingProviders: ItemPricingProvider[] = ["wowauctions"];
+
+// From chroniclesdk/item_pricing.go
+export interface ItemPricingRealm {
+    readonly id: string;
+    readonly server_name: string;
+    readonly realm_name: string;
+    readonly auction_house: PricingAuctionHouse;
+}
+
 // From chroniclesdk/tooltip.go
 export interface ItemResistance {
     readonly school: number;
@@ -1518,6 +2027,7 @@ export interface ItemSearchResult {
     readonly required_skill: number;
     readonly required_skill_rank: number;
     readonly armor: number;
+    readonly gem_enchant_id?: number;
     readonly icon: string;
 }
 
@@ -1575,9 +2085,6 @@ export interface ItemSetPieceInfo {
 }
 
 // From chroniclesdk/gamedata.go
-/**
- * ItemSetSearchResult is a summary for item set search results.
- */
 export interface ItemSetSearchResult {
     readonly id: number;
     readonly name: string;
@@ -1751,6 +2258,15 @@ export interface ListGuildsResponse {
     readonly total: number;
 }
 
+// From chroniclesdk/raid_compositions.go
+export interface ListRaidCompositionsResponse {
+    readonly compositions: readonly RaidComposition[];
+    /**
+     * Limit is the maximum number of compositions a user may save (per tenant).
+     */
+    readonly limit: number;
+}
+
 // From chroniclesdk/panel_layout.go
 export interface ListUserPanelLayoutsResponse {
     readonly layouts: readonly UserPanelLayout[];
@@ -1899,6 +2415,14 @@ export interface ParseConfig {
     readonly snapshot_cadence?: string;
 }
 
+// From chroniclesdk/parser_version.go
+/**
+ * ParserVersionResponse is returned by GET /api/v1/parser-version.
+ */
+export interface ParserVersionResponse {
+    readonly version: string;
+}
+
 // From chroniclesdk/log.go
 export interface PeriodMoment {
     readonly timestamp: string;
@@ -1911,6 +2435,7 @@ export interface PeriodMoment {
 export interface PlayerGear {
     readonly item_id: number;
     readonly enchant_id?: number;
+    readonly gem_enchant_ids?: readonly number[];
     readonly item_name?: string;
     readonly item_quality?: number;
     readonly item_icon?: string;
@@ -1977,6 +2502,97 @@ export interface Preferences {
     readonly raw_log_retention_hours: number | null;
 }
 
+// From chroniclesdk/azerothcore.go
+export type PricingAuctionHouse = "merged" | "split";
+
+export const PricingAuctionHouses: PricingAuctionHouse[] = ["merged", "split"];
+
+// From chroniclesdk/raid_compositions.go
+/**
+ * RaidCompData is the typed payload of a saved raid composition. The board
+ * is sparse: slots without a placement are empty.
+ */
+export interface RaidCompData {
+    /**
+     * Groups is the group count; every group has five slots.
+     */
+    readonly groups: number;
+    readonly placements: readonly RaidCompPlacement[];
+    readonly bench: readonly RaidCompEntry[];
+    /**
+     * GroupNotes align by index with the groups; missing/short is allowed.
+     */
+    readonly group_notes?: readonly string[];
+}
+
+// From chroniclesdk/raid_compositions.go
+/**
+ * RaidCompEntry is one occupant of a raid composition slot or bench spot.
+ */
+export interface RaidCompEntry {
+    readonly kind: RaidCompEntryKind;
+    /**
+     * CharacterID is the game_players id when the entry is a guild roster
+     * character. Empty for placeholders and standalone imports (e.g.
+     * raid-helper sign-ups that matched no roster character).
+     */
+    readonly character_id?: string;
+    /**
+     * Name is the display name. Empty for placeholders.
+     */
+    readonly name?: string;
+    /**
+     * Class is the WoWHeroClasses enum value ("WARRIOR").
+     */
+    readonly class: string;
+    /**
+     * Spec is the planned spec display name; empty means unset/any.
+     */
+    readonly spec?: string;
+    readonly note?: string;
+}
+
+// From chroniclesdk/raid_compositions.go
+export type RaidCompEntryKind = "placeholder" | "player";
+
+export const RaidCompEntryKinds: RaidCompEntryKind[] = ["placeholder", "player"];
+
+// From chroniclesdk/raid_compositions.go
+/**
+ * RaidCompPlacement pins an entry to a specific board slot.
+ */
+export interface RaidCompPlacement {
+    /**
+     * Group is the 0-based group index.
+     */
+    readonly group: number;
+    /**
+     * Slot is the 0-based slot index within the group (0–4).
+     */
+    readonly slot: number;
+    readonly entry: RaidCompEntry;
+}
+
+// From chroniclesdk/raid_compositions.go
+/**
+ * RaidComposition is a saved raid planner composition. Viewing defaults to
+ * public (share links); editing is gated by SpiceDB (owner + granted
+ * editors).
+ */
+export interface RaidComposition {
+    readonly id: string;
+    readonly user_id: string;
+    readonly guild_id?: string;
+    readonly name: string;
+    readonly data: RaidCompData;
+    /**
+     * PublicView mirrors the SpiceDB public_viewer wildcard for display.
+     */
+    readonly public_view: boolean;
+    readonly created_at: string;
+    readonly updated_at: string;
+}
+
 // From chroniclesdk/rankings.go
 /**
  * RankingsBoxPlotStats contains box plot statistics for a class/spec combination.
@@ -1984,6 +2600,7 @@ export interface Preferences {
 export interface RankingsBoxPlotStats {
     readonly player_class: string;
     readonly player_spec: string;
+    readonly player_sub_spec?: string;
     readonly min_dps: number;
     readonly q1_dps: number;
     readonly median_dps: number;
@@ -2037,6 +2654,24 @@ export interface RankingsEntry {
     readonly avg_ilvl?: number;
     readonly log_hashed_slug: string;
     readonly killed_at: string;
+}
+
+// From chroniclesdk/rankings.go
+/**
+ * RankingsFilterClass describes the specs and sub-specs available for one class.
+ */
+export interface RankingsFilterClass {
+    readonly player_class: string;
+    readonly specs: readonly RankingsFilterSpec[];
+}
+
+// From chroniclesdk/rankings.go
+/**
+ * RankingsFilterSpec describes one broad spec and its available sub-specs.
+ */
+export interface RankingsFilterSpec {
+    readonly spec: string;
+    readonly sub_specs: readonly string[];
 }
 
 // From chroniclesdk/rankings.go
@@ -2401,6 +3036,10 @@ export interface Session {
      * AuthProvider is the provider used for the current session (e.g. "discord", "password").
      */
     readonly auth_provider: string;
+    /**
+     * CreatedAt is when the user's account was created.
+     */
+    readonly created_at: string;
 }
 
 // From chroniclesdk/consumables.go
@@ -2608,7 +3247,8 @@ export const SocialPlatforms: SocialPlatform[] = ["discord", "twitch", "twitter"
 
 // From chroniclesdk/tooltip.go
 export interface SocketBonus {
-    readonly spell_id: number;
+    readonly enchantment_id: number;
+    readonly name: string;
 }
 
 // From chroniclesdk/log.go
@@ -2819,6 +3459,12 @@ export interface SpeedrunResult {
     readonly start_time: string;
     readonly completion_time: string;
     readonly duration_ms: number;
+    readonly ranked_start_time?: string;
+    readonly ranked_completion_time?: string;
+    readonly ranked_duration_ms?: number;
+    readonly boss_to_boss_start_time?: string;
+    readonly boss_to_boss_completion_time?: string;
+    readonly boss_to_boss_duration_ms?: number;
     readonly proof: readonly SpeedrunProof[];
     readonly version_status?: SpeedrunVersionStatus;
     readonly level_range?: SpeedrunLevelRangeResult;
@@ -2858,9 +3504,13 @@ export interface SpeedrunVersionStatus {
 export interface SupportedInstance {
     readonly name: string;
     readonly comment?: string;
+    readonly category: string;
     readonly fallback?: boolean;
     readonly zone_names?: readonly string[];
+    readonly derived_names?: readonly string[];
     readonly boss_count?: number;
+    readonly progression_bosses?: readonly string[];
+    readonly ranked_start_after_requirement?: string;
     readonly bosses?: readonly SupportedInstanceUnit[];
     readonly trash?: readonly SupportedInstanceUnit[];
 }
@@ -2992,6 +3642,54 @@ export interface UpdateActionBarSlotsRequest {
     readonly slot_0: string | null;
 }
 
+// From chroniclesdk/gear_builder.go
+/**
+ * UpdateGearListRequest is the request body for updating a gear list.
+ */
+export interface UpdateGearListRequest {
+    readonly title?: string;
+    readonly description?: string;
+    readonly class_id?: number;
+    readonly spec_name?: string;
+    readonly payload?: (Record<string, string>);
+}
+
+// From chroniclesdk/gear_progression.go
+/**
+ * UpdateGearProgressionRequest is the request body for updating a progression.
+ */
+export interface UpdateGearProgressionRequest {
+    readonly title?: string;
+    readonly description?: string;
+    readonly class_id?: number;
+    readonly spec_name?: string;
+    readonly payload?: (Record<string, string>);
+}
+
+// From chroniclesdk/gear_builder.go
+/**
+ * UpdateGearStatWeightRequest is the request body for updating a stat weight.
+ */
+export interface UpdateGearStatWeightRequest {
+    readonly name?: string;
+    readonly description?: string;
+    readonly class_id?: number;
+    readonly spec_name?: string;
+    readonly weights?: (Record<string, string>);
+}
+
+// From chroniclesdk/guild_page.go
+export interface UpdateGuildDiscordIntegrationRequest {
+    readonly enabled: boolean;
+}
+
+// From chroniclesdk/guild_page.go
+export interface UpdateGuildDiscordRaidLogAnnouncementsRequest {
+    readonly enabled: boolean;
+    readonly scope: string;
+    readonly channel_id: string;
+}
+
 // From chroniclesdk/guild_page.go
 export interface UpdateGuildMemberRoleRequest {
     readonly role: string; // "member" or "leader"
@@ -3022,6 +3720,23 @@ export interface UpdatePreferencesRequest {
      * RawLogRetentionHours controls raw log file retention. nil = no change, 0 = keep forever.
      */
     readonly raw_log_retention_hours: number | null;
+}
+
+// From chroniclesdk/raid_compositions.go
+export interface UpdateRaidCompositionRequest {
+    readonly name?: string;
+    readonly guild_id?: string;
+    readonly data?: RaidCompData;
+}
+
+// From chroniclesdk/raid_compositions.go
+/**
+ * UpdateRaidCompositionSharingRequest declaratively sets the sharing state:
+ * the editor list replaces all existing editor grants.
+ */
+export interface UpdateRaidCompositionSharingRequest {
+    readonly public_view: boolean;
+    readonly editor_user_ids: readonly string[];
 }
 
 // From chroniclesdk/regression.go
@@ -3159,6 +3874,7 @@ export interface User {
     readonly id: string;
     readonly username: string;
     readonly email: string;
+    readonly discord_id?: string;
     readonly roles: readonly string[];
     readonly created_at: string;
     readonly updated_at: string;
@@ -3196,6 +3912,17 @@ export interface UserStorageInfo {
     readonly max_storage_bytes: number;
     readonly consumed_storage_bytes: number;
     readonly grants: readonly DataGrant[];
+    /**
+     * ParsedStorageBytes is the total size, in bytes, of this user's parsed
+     * combat-log event streams. It does not count against MaxStorageBytes and
+     * is not currently limited.
+     */
+    readonly parsed_storage_bytes: number;
+    /**
+     * ParsedInstanceCount is the number of parsed instances contributing to
+     * ParsedStorageBytes.
+     */
+    readonly parsed_instance_count: number;
 }
 
 // From chroniclesdk/talent_builds.go
@@ -3213,6 +3940,39 @@ export interface UserTalentBuild {
     readonly locked: boolean;
     readonly created_at: string;
     readonly updated_at: string;
+}
+
+// From chroniclesdk/log.go
+export interface VehicleControlDiagnostic {
+    readonly kind: string;
+    readonly session_id?: string;
+    readonly timestamp_ms: number;
+    readonly ordinal: number;
+    readonly vehicle_guid: string;
+    readonly controller_guid: string;
+    readonly vehicle_name?: string;
+    readonly controller_name?: string;
+    readonly active_controller_guid?: string;
+}
+
+// From chroniclesdk/log.go
+export interface VehicleControlInterval {
+    readonly session_id?: string;
+    readonly vehicle_guid: string;
+    readonly controller_guid: string;
+    readonly vehicle_name?: string;
+    readonly controller_name?: string;
+    readonly assigned_at_ms: number;
+    readonly released_at_ms?: number;
+    readonly assigned_ordinal: number;
+    readonly release_reason?: string;
+    readonly inferred_release?: boolean;
+}
+
+// From chroniclesdk/log.go
+export interface VehicleControlMetadata {
+    readonly intervals?: readonly VehicleControlInterval[];
+    readonly diagnostics?: readonly VehicleControlDiagnostic[];
 }
 
 // From chroniclesdk/youtube.go
@@ -3288,6 +4048,16 @@ export type WoWAffiliation = 1 | 2 | 3 | 0;
 
 export const WoWAffiliations: WoWAffiliation[] = [1, 2, 3, 0];
 
+// From chroniclesdk/log.go
+/**
+ * WoWAttendanceInstance is the lightweight instance detail response used when
+ * only the raid roster is needed.
+ */
+export interface WoWAttendanceInstance extends WoWInstance {
+    readonly realm_name?: string;
+    readonly players: Record<string, InstancePlayer>;
+}
+
 // From types/constants.go
 export type WoWAuraApplication = "Fades" | "Gains" | "Removed" | "Unknown";
 
@@ -3332,6 +4102,20 @@ export interface WoWEncounterHostile {
     readonly periods: readonly ActivityPeriod[];
 }
 
+// From chroniclesdk/log.go
+/**
+ * WoWEncounterPhase represents a named sub-range within an encounter.
+ */
+export interface WoWEncounterPhase {
+    readonly id: string;
+    readonly key: string;
+    readonly name: string;
+    readonly order: number;
+    readonly start_offset_ms: number;
+    readonly end_offset_ms: number;
+    readonly kill_type: KillType;
+}
+
 // From types/constants.go
 export type WoWEncounterType = "BOSS" | "TRASH" | "UNKNOWN";
 
@@ -3340,6 +4124,7 @@ export const WoWEncounterTypes: WoWEncounterType[] = ["BOSS", "TRASH", "UNKNOWN"
 // From chroniclesdk/log.go
 export interface WoWEncounterWithHostiles extends WoWEncounter {
     readonly hostiles: readonly WoWEncounterHostile[];
+    readonly phases?: readonly WoWEncounterPhase[];
 }
 
 // From types/constants.go
@@ -3348,9 +4133,9 @@ export type WoWEnvironmentType = "drowning" | "fall" | "fatigue" | "fire" | "lav
 export const WoWEnvironmentTypes: WoWEnvironmentType[] = ["drowning", "fall", "fatigue", "fire", "lava", "slime"];
 
 // From chroniclesdk/constants.go
-export type WoWEventType = "absorbed" | "aura" | "aura_cast" | "cast" | "combatant_info" | "companion_stats" | "consume" | "damage" | "dispel" | "extra_attack" | "heal" | "interrupt" | "resource_change" | "ressurection" | "slain" | "spell_fail" | "spell_go" | "spell_start" | "unit_classification";
+export type WoWEventType = "absorbed" | "aura" | "aura_cast" | "cast" | "combatant_info" | "companion_stats" | "consume" | "damage" | "dispel" | "extra_attack" | "heal" | "interrupt" | "raid_group" | "resource_change" | "ressurection" | "slain" | "spell_fail" | "spell_go" | "spell_start" | "unit_classification";
 
-export const WoWEventTypes: WoWEventType[] = ["absorbed", "aura", "aura_cast", "cast", "combatant_info", "companion_stats", "consume", "damage", "dispel", "extra_attack", "heal", "interrupt", "resource_change", "ressurection", "slain", "spell_fail", "spell_go", "spell_start", "unit_classification"];
+export const WoWEventTypes: WoWEventType[] = ["absorbed", "aura", "aura_cast", "cast", "combatant_info", "companion_stats", "consume", "damage", "dispel", "extra_attack", "heal", "interrupt", "raid_group", "resource_change", "ressurection", "slain", "spell_fail", "spell_go", "spell_start", "unit_classification"];
 
 // From types/constants.go
 export type WoWHeroClasses = "DEATHKNIGHT" | "DRUID" | "HUNTER" | "MAGE" | "PALADIN" | "PRIEST" | "ROGUE" | "SHAMAN" | "UNKNOWN" | "WARLOCK" | "WARRIOR";
@@ -3381,7 +4166,7 @@ export interface WoWInstance {
      * Frontends use it to fetch matching talent/spell data regardless of the
      * tenant domain serving the request. Only populated on the detail endpoint.
      */
-    readonly dataset_id?: string;
+    readonly dataset_id: string | null;
     readonly icon_base_url?: string;
     /**
      * Format is the log group's parse format (e.g. "1.12a-cc-addon").
@@ -3409,6 +4194,7 @@ export interface WoWInstance {
     readonly difficulty_name: string;
     readonly max_players: number;
     readonly dynamic_difficulty: number;
+    readonly vehicle_control_intervals?: VehicleControlMetadata;
 }
 
 // From chroniclesdk/log.go
@@ -3437,6 +4223,12 @@ export interface WoWLogGroup {
     readonly flavor?: readonly string[];
     readonly files: readonly WoWLogFile[];
     readonly processing_output?: Record<string, string>;
+    /**
+     * ParsedBytes is the total size, in bytes, of the parsed combat-log event
+     * streams (log_instance_events.events) for this log group. It does not
+     * count against the owner's raw storage allowance.
+     */
+    readonly parsed_bytes: number;
 }
 
 // From chroniclesdk/log.go
@@ -3482,6 +4274,7 @@ export interface WoWServer {
     readonly created_by?: string;
     readonly tenant_id?: string;
     readonly default_dataset_id?: string;
+    readonly pricing_provider?: ItemPricingProvider;
 }
 
 // From chroniclesdk/azerothcore.go
@@ -3492,6 +4285,8 @@ export interface WoWServerRealm {
     readonly description: string;
     readonly url?: string;
     readonly created_by?: string;
+    readonly pricing_route_name?: string;
+    readonly pricing_auction_house?: PricingAuctionHouse;
 }
 
 // From chroniclesdk/log.go

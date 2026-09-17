@@ -8,6 +8,7 @@ import { useItemTooltip } from "@/api/gamedata";
 import { cn } from "@/lib/utils";
 import { getQualityBorderClass, getQualityTextClass, getClassColorVar } from "@/pages/ArmoryPage/types";
 import { formatRaceLabel } from "@/pages/ArmoryPage/characterDisplay";
+import { classNameToId } from "@/pages/Rankings/classDisplay";
 import { HelpCircle, ExternalLink } from "lucide-react";
 import { ItemTooltip } from "@/components/ui/ItemTooltip/ItemTooltip";
 import {
@@ -51,7 +52,7 @@ function getItemIconUrl(icon: string): string {
 }
 
 /** Compact single-row item display with tooltip-fetched icon/name/quality. */
-function GearRow({ itemId, enchantId, slotLabel, equippedItemIds }: { itemId: number; enchantId: number | null; slotLabel: string; equippedItemIds?: ReadonlySet<number> }) {
+function GearRow({ itemId, enchantId, gemEnchantIds, slotLabel, equippedItemIds }: { itemId: number; enchantId: number | null; gemEnchantIds: readonly number[]; slotLabel: string; equippedItemIds?: ReadonlySet<number> }) {
   const isEmpty = itemId === 0;
   const tooltip = useItemTooltip(
     !isEmpty ? { itemId, enchant: enchantId ?? undefined } : null,
@@ -111,7 +112,7 @@ function GearRow({ itemId, enchantId, slotLabel, equippedItemIds }: { itemId: nu
           className="p-0 bg-transparent border-0 z-[10000]"
           hideArrow
         >
-          <ItemTooltip item={tooltip.data} equippedItemIds={equippedItemIds} />
+          <ItemTooltip item={tooltip.data} gemEnchantIds={gemEnchantIds} equippedItemIds={equippedItemIds} />
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
@@ -174,11 +175,6 @@ function DropdownList({ playerList, search, setSearch, searchRef, selectedGuid, 
   );
 }
 
-const CLASS_NAME_TO_ID: Record<string, number> = {
-  warrior: 1, paladin: 2, hunter: 3, rogue: 4, priest: 5,
-  shaman: 7, mage: 8, warlock: 9, druid: 11,
-};
-
 /**
  * Encode talent allocations as a talent-calculator build string.
  * The `?build=` param uses the positional format: one digit per talent in
@@ -200,7 +196,7 @@ function PlayerTalentsView({
   player: PlayerSnapshot;
   datasetId?: string;
 }) {
-  const classId = CLASS_NAME_TO_ID[player.heroClass.toLowerCase()];
+  const classId = classNameToId(player.heroClass);
 
   const allocations = useMemo<TalentAllocation[] | undefined>(() => {
     if (!player.talents || player.talents.trees.length < 3) return undefined;
@@ -391,6 +387,7 @@ export function EquipmentContent(props: PanelRenderProps<EquipmentResult>) {
                   key={i}
                   itemId={g?.itemId ?? 0}
                   enchantId={g?.enchantId ?? null}
+                  gemEnchantIds={g?.gemEnchantIds ?? []}
                   slotLabel={slot.label}
                   equippedItemIds={equippedItemIds}
                 />

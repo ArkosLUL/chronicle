@@ -163,10 +163,14 @@ func (p *Parser) dispatch(ts time.Time, event string, m *Matched, raw string) ([
 // Suffix handlers
 // ---------------------------------------------------------------------------
 
-// suffixDamage handles _DAMAGE: amount, overkill, school, resisted, blocked, absorbed, critical, glancing, crushing
+// suffixDamage handles _DAMAGE. WotLK adds overkill between amount and school;
+// native TBC 2.4.3 records do not include that field.
 func (p *Parser) suffixDamage(ts time.Time, base baseParams, spell *spellInfo, envType *types.EnvironmentType, isPeriodic bool, prefix string, m *Matched) ([]messages.Message, error) {
 	amount := m.Int32()
-	overkill := m.Int32() // overkill
+	var overkill int32
+	if p.clientFormat == clientFormatWotLK {
+		overkill = m.Int32()
+	}
 	school := m.School()
 	resisted := m.Int32()
 	blocked := m.Int32()
@@ -281,13 +285,16 @@ func (p *Parser) suffixMissed(ts time.Time, base baseParams, spell *spellInfo, i
 	})
 }
 
-// suffixHeal handles _HEAL: amount, overhealing, absorbed, critical
+// suffixHeal handles _HEAL. Native TBC 2.4.3 records contain amount and
+// critical only; WotLK adds overhealing and absorbed healing before critical.
 func (p *Parser) suffixHeal(ts time.Time, base baseParams, spell *spellInfo, isPeriodic bool, m *Matched) ([]messages.Message, error) {
 	amount := m.Int32()
-	overheal := m.Int32()
-	absorbed := m.Int32() // Absorbed healing, not absorbed damage incoming.
+	var overheal int32
+	if p.clientFormat == clientFormatWotLK {
+		overheal = m.Int32()
+		_ = m.Int32() // Absorbed healing, not absorbed damage incoming.
+	}
 	critical := m.NilBool()
-	var _ = absorbed
 
 	if err := m.Error(); err != nil {
 		return nil, err
@@ -718,35 +725,34 @@ func (p *Parser) suffixSummon(ts time.Time, spell *spellInfo, base baseParams, m
 		return []messages.Message{}, nil
 	}
 
-	ty := types.UnitTypeUnknown
-	if base.destGUID.IsPlayer() {
-		ty = types.UnitTypePlayer
-	} else if base.destGUID.IsObject() {
-		ty = types.UnitTypeObject
-	} else if base.destGUID.IsAnyCreature() {
-		ty = types.UnitTypeCreature
-	}
+	unitType := types.UnitTypeFromGUID(base.destGUID)
 
 	var spellData *chrondbc.Spell
 	if spell != nil {
 		spellData = p.lookupSpell(chrondbc.SpellID(spell.spellID), spell.spellName)
 	}
 
+	classification := &messages.UnitClassificationEvent{
+		MessageBase: messages.Base(ts),
+		Target:      base.destGUID,
+		UnitType:    unitType,
+		Affiliation: types.AffiliationUnknown,
+		Controller:  nil,
+		Spell:       spellData,
+	}
+	if base.destGUID.IsVehicle() {
+		return set(classification)
+	}
+
+	classification.Owner = ptr.Ref(base.sourceGUID)
 	return set(
 		&messages.NewOwner{
 			MessageBase: messages.Base(ts),
 			Target:      base.destGUID,
 			NewOwner:    base.sourceGUID,
 		},
-		&messages.UnitClassificationEvent{
-			MessageBase: messages.Base(ts),
-			Target:      base.destGUID,
-			UnitType:    ty,
-			Affiliation: types.AffiliationUnknown,
-			Owner:       ptr.Ref(base.sourceGUID),
-			Controller:  nil,
-			Spell:       spellData,
-		})
+		classification,
+	)
 }
 
 // suffixInstakill handles _INSTAKILL.

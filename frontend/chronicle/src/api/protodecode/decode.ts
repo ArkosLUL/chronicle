@@ -2273,6 +2273,19 @@ export const AuraState = {
 export type AuraState = (typeof AuraState)[keyof typeof AuraState];
 
 /**
+ * Aura transition types from proto enum.
+ */
+export const AuraTransition = {
+  Unknown: 0,
+  Applied: 1,
+  Refreshed: 2,
+  StackChanged: 3,
+  Removed: 4,
+} as const;
+
+export type AuraTransition = (typeof AuraTransition)[keyof typeof AuraTransition];
+
+/**
  * Reusable Aura message object
  */
 export interface ReusableAura {
@@ -2280,12 +2293,15 @@ export interface ReusableAura {
   index: number;
   offsetMilli: number;
   target: string;
+  caster: string | null;
   spellName: string;
   spellId: number | null;
   spellAttackOutcome: number | null;
   amount: number;
   application: AuraApplication;
   state: AuraState;
+  transition: AuraTransition;
+  isBuff: boolean;
   activity: ReusableActivityEntry[];
   activityCount: number;
   isSynthetic: boolean;
@@ -2300,6 +2316,11 @@ export interface ReusableAura {
  *   3: spellName (string)
  *   4: amount (int32)
  *   5: application (AuraApplication enum)
+ *   6: state (AuraState enum)
+ *   7: spellData (SpellData)
+ *   8: isBuff (bool)
+ *   9: caster (optional string)
+ *   10: transition (AuraTransition enum)
  */
 export class AuraDecoder {
   // Use shared TextDecoder for better memory efficiency
@@ -2311,12 +2332,15 @@ export class AuraDecoder {
     index: 0,
     offsetMilli: 0,
     target: "",
+    caster: null,
     spellName: "",
     spellId: null,
     spellAttackOutcome: null,
     amount: 0,
     application: AuraApplication.Unknown,
     state: AuraState.Unknown,
+    transition: AuraTransition.Unknown,
+    isBuff: false,
     activity: [],
     activityCount: 0,
     isSynthetic: false,
@@ -2334,12 +2358,15 @@ export class AuraDecoder {
     msg.index = 0;
     msg.offsetMilli = 0;
     msg.target = "";
+    msg.caster = null;
     msg.spellName = "";
     msg.spellId = null;
     msg.spellAttackOutcome = null;
     msg.amount = 0;
     msg.application = AuraApplication.Unknown;
     msg.state = AuraState.Unknown;
+    msg.transition = AuraTransition.Unknown;
+    msg.isBuff = false;
     msg.activityCount = 0;
     msg.isSynthetic = false;
     
@@ -2356,6 +2383,8 @@ export class AuraDecoder {
         if (fieldNumber === 4) msg.amount = value;
         else if (fieldNumber === 5) msg.application = value as AuraApplication;
         else if (fieldNumber === 6) msg.state = value as AuraState;
+        else if (fieldNumber === 8) msg.isBuff = value !== 0;
+        else if (fieldNumber === 10) msg.transition = value as AuraTransition;
       } else if (wireType === 2) {
         // Length-delimited
         const { value: len, bytesRead } = readVarintFast(data, offset);
@@ -2409,6 +2438,9 @@ export class AuraDecoder {
           offset += len;
         } else if (fieldNumber === 3) {
           msg.spellName = this.textDecoder.decode(data.subarray(offset, offset + len));
+          offset += len;
+        } else if (fieldNumber === 9) {
+          msg.caster = this.textDecoder.decode(data.subarray(offset, offset + len));
           offset += len;
         } else if (fieldNumber === 7) {
           // SpellData - decode nested message (field 1: id, field 2: name)
@@ -4967,6 +4999,7 @@ export interface ReusableCombatantGearSlot {
   itemId: number;
   enchantId: number | null;
   temporaryEnchantId: number | null;
+  gemEnchantIds: number[];
 }
 
 export interface ReusableCombatantTalents {
@@ -5116,12 +5149,13 @@ export class CombatantInfoDecoder {
         } else if (fieldNumber === 8) {
           // CombatantGearSlot (repeated)
           if (msg.gearCount >= msg.gear.length) {
-            msg.gear.push({ itemId: 0, enchantId: null, temporaryEnchantId: null });
+            msg.gear.push({ itemId: 0, enchantId: null, temporaryEnchantId: null, gemEnchantIds: [] });
           }
           const slot = msg.gear[msg.gearCount];
           slot.itemId = 0;
           slot.enchantId = null;
           slot.temporaryEnchantId = null;
+          slot.gemEnchantIds.length = 0;
 
           const slotEnd = offset + len;
           while (offset < slotEnd) {
@@ -5135,6 +5169,16 @@ export class CombatantInfoDecoder {
               if (slotField === 1) slot.itemId = value;
               else if (slotField === 2) slot.enchantId = value;
               else if (slotField === 3) slot.temporaryEnchantId = value;
+              else if (slotField === 4) slot.gemEnchantIds.push(value);
+            } else if (slotWire === 2 && slotField === 4) {
+              const { value: packedLen, bytesRead: packedLenBytes } = readVarintFast(data, offset);
+              offset += packedLenBytes;
+              const packedEnd = offset + packedLen;
+              while (offset < packedEnd) {
+                const { value, bytesRead } = readVarintFast(data, offset);
+                offset += bytesRead;
+                slot.gemEnchantIds.push(value);
+              }
             }
           }
           msg.gearCount++;
@@ -5697,7 +5741,7 @@ export interface ReusableConsume {
   candidateItemIds: number[];
   candidateItemIdsCount: number;
   spell: ReusableConsumeSpell;
-  kind: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8; // EvidenceKind enum
+  kind: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9; // EvidenceKind enum
   confidence: 0 | 1 | 2 | 3 | 4;          // EvidenceConfidence enum
   consumedAtUnixMilli: number | null;
   observedAtUnixMilli: number;
@@ -6042,6 +6086,154 @@ export class FastConsumeCursor {
     this._messagesReadInEncounter = 0;
     this._bytesProcessed += (this.offset - startOffset);
 
+    return true;
+  }
+}
+
+// ============================================================================
+// Raid group decoder
+// ============================================================================
+
+export interface ReusableRaidGroup {
+  type: "raid_group";
+  index: number;
+  offsetMilli: number;
+  groupMemberGuids: string[];
+  activity: ReusableActivityEntry[];
+  activityCount: number;
+  isSynthetic: boolean;
+}
+
+class RaidGroupDecoder {
+  readonly message: ReusableRaidGroup = {
+    type: "raid_group",
+    index: 0,
+    offsetMilli: 0,
+    groupMemberGuids: [],
+    activity: [],
+    activityCount: 0,
+    isSynthetic: false,
+  };
+
+  decode(data: Uint8Array, offset: number, length: number): ReusableRaidGroup {
+    const end = offset + length;
+    const msg = this.message;
+    msg.index = 0;
+    msg.offsetMilli = 0;
+    msg.groupMemberGuids.length = 0;
+    msg.activityCount = 0;
+    msg.isSynthetic = false;
+
+    while (offset < end) {
+      const tag = data[offset++];
+      const fieldNumber = tag >> 3;
+      const wireType = tag & 0x7;
+      if (wireType !== 2) {
+        const skipped = readVarintFast(data, offset);
+        offset += skipped.bytesRead;
+        continue;
+      }
+
+      const { value: len, bytesRead } = readVarintFast(data, offset);
+      offset += bytesRead;
+      if (fieldNumber === 1) {
+        const metaEnd = offset + len;
+        while (offset < metaEnd) {
+          const metaTag = data[offset++];
+          const metaField = metaTag >> 3;
+          const metaWire = metaTag & 0x7;
+          if (metaWire === 0) {
+            const decoded = metaField === 2 ? readInt64Number(data, offset) : readVarintFast(data, offset);
+            offset += decoded.bytesRead;
+            if (metaField === 1) msg.index = decoded.value;
+            else if (metaField === 2) msg.offsetMilli = decoded.value;
+            else if (metaField === 4) msg.isSynthetic = decoded.value !== 0;
+          } else if (metaWire === 2) {
+            const nested = readVarintFast(data, offset);
+            offset += nested.bytesRead + nested.value;
+          }
+        }
+      } else if (fieldNumber === 2) {
+        msg.groupMemberGuids.push(sharedTextDecoder.decode(data.subarray(offset, offset + len)));
+        offset += len;
+      } else {
+        offset += len;
+      }
+    }
+
+    while (msg.groupMemberGuids.length < 40) msg.groupMemberGuids.push("");
+    return msg;
+  }
+}
+
+export class FastRaidGroupCursor {
+  private readonly data: Uint8Array;
+  private readonly decoder = new RaidGroupDecoder();
+  private offset = 0;
+  private _currentHeader: PayloadHeader | null = null;
+  private _messagesReadInEncounter = 0;
+  private _bytesProcessed = 0;
+
+  constructor(data: Uint8Array) {
+    this.data = data;
+    this._loadNextEncounterHeader();
+  }
+
+  get currentHeader(): PayloadHeader | null { return this._currentHeader; }
+  get hasMoreInEncounter(): boolean { return Boolean(this._currentHeader && this._messagesReadInEncounter < this._currentHeader.count); }
+  get bytesProcessed(): number { return this._bytesProcessed; }
+  get bytesTotal(): number { return this.data.length; }
+
+  next(): ReusableRaidGroup | null {
+    if (!this.hasMoreInEncounter) return null;
+    const { value: length, bytesRead } = readVarint(this.data, this.offset);
+    const msgStart = this.offset + bytesRead;
+    const msg = this.decoder.decode(this.data, msgStart, length);
+    this.offset = msgStart + length;
+    this._bytesProcessed += bytesRead + length;
+    this._messagesReadInEncounter++;
+    return msg;
+  }
+
+  nextEncounter(): boolean {
+    while (this.hasMoreInEncounter) this.next();
+    return this._loadNextEncounterHeader();
+  }
+
+  skipEncounter(): boolean {
+    if (!this._currentHeader) return false;
+    if (this._messagesReadInEncounter > 0) return this.nextEncounter();
+    this.offset += this._currentHeader.dataLength;
+    this._bytesProcessed += this._currentHeader.dataLength;
+    this._currentHeader = null;
+    this._messagesReadInEncounter = 0;
+    return this._loadNextEncounterHeader();
+  }
+
+  private _loadNextEncounterHeader(): boolean {
+    if (this.offset >= this.data.length) {
+      this._currentHeader = null;
+      return false;
+    }
+    const startOffset = this.offset;
+    const idLength = readVarint(this.data, this.offset);
+    this.offset += idLength.bytesRead;
+    const encounterID = sharedTextDecoder.decode(this.data.subarray(this.offset, this.offset + idLength.value));
+    this.offset += idLength.value;
+    const timestamp = readVarint64(this.data, this.offset);
+    this.offset += timestamp.bytesRead;
+    const count = readVarint(this.data, this.offset);
+    this.offset += count.bytesRead;
+    const dataLength = readVarint(this.data, this.offset);
+    this.offset += dataLength.bytesRead;
+    this._currentHeader = {
+      encounterID,
+      firstTimestamp: new Date(Number(timestamp.value)),
+      count: count.value,
+      dataLength: dataLength.value,
+    };
+    this._messagesReadInEncounter = 0;
+    this._bytesProcessed += this.offset - startOffset;
     return true;
   }
 }

@@ -32,6 +32,12 @@ import { AdminOutdatedInstancesPage } from "./pages/Admin/AdminOutdatedInstances
 import { AdminApplicationsListPage } from "./pages/Admin/AdminApplicationsListPage"
 import { AdminCacheStatsPage } from "./pages/Admin/AdminCacheStatsPage"
 import { AdminParsingPage } from "./pages/Admin/AdminParsingPage"
+import { GearLayout } from "./pages/Gear/GearLayout"
+import { GearListPage } from "./pages/Gear/builder/GearListPage"
+import { GearTrendsPage } from "./pages/Gear/trends/GearTrendsPage"
+import { GearProgressionsPage } from "./pages/Gear/progression/GearProgressionsPage"
+import { GearProgressionPage } from "./pages/Gear/progression/builder/GearProgressionPage"
+import { StatWeightsPage } from "./pages/Gear/weights/StatWeightsPage"
 import { ServersLayout, ServersPage, UploadKeysPage, RetentionPage } from "./pages/Servers"
 import { SpellPage } from "./pages/WoWDB/SpellPage"
 import { SpellByNamePage } from "./pages/WoWDB/SpellByNamePage"
@@ -49,6 +55,7 @@ import {
   VulnerabilitySpellsPage,
   AuraDurationModifiersPage,
   ClassSpellsPage,
+  SpecClassIconsPage,
   TalentTreesPage,
   PetTargetingAbilitiesPage,
   ConsumablesPage,
@@ -65,13 +72,14 @@ import {
   LayoutBookSettings,
   LayoutLabSettings,
 } from "./pages/Settings"
-import { GuildPage, GuildPageEditor, GuildRoster, GuildSettings } from "./pages/GuildPage"
+import { GuildAnalytics, GuildPage, GuildPageEditor, GuildRoster, GuildSettings } from "./pages/GuildPage"
 import { ArmoryPage } from "./pages/ArmoryPage"
 import { ArmorySearchPage } from "./pages/ArmorySearch"
 import { GuildSearchPage } from "./pages/GuildSearch"
 import { ApplyPage } from "./pages/Apply/ApplyPage"
 import { ApplicationPage } from "./pages/Apply/ApplicationPage"
 import { SimPage } from "./pages/Sim"
+import { RaidPlannerPage } from "./pages/RaidPlanner"
 import { TalentCalculatorPage } from "./pages/TalentCalculator/TalentCalculatorPage"
 import { GameDataLayout } from "./pages/GameData/GameDataPage"
 import { WDBTab } from "./pages/GameData/WDBTab"
@@ -81,6 +89,10 @@ import { DatasetsTab } from "./pages/GameData/DatasetsTab"
 import { LeaderboardsPage, LeaderboardRedirect, RankingsRedirect } from "./pages/Leaderboards/LeaderboardsPage"
 import { CensusPage } from "./pages/Census/CensusPage"
 import { APIExplorer } from "./pages/APIExplorer/APIExplorer"
+import { ToolsPage } from "./pages/Tools/ToolsPage"
+import { SpeedrunningPage } from "./pages/Speedrunning/SpeedrunningPage"
+import { ClassDetailsPage } from "./pages/ClassDetails/ClassDetailsPage"
+import { SubspecsPage } from "./pages/Subspecs/SubspecsPage"
 import { Layout } from "./components/Layout/Layout"
 import { TenantDatasetLayout } from "./components/Layout/TenantDatasetLayout"
 
@@ -123,6 +135,8 @@ function App() {
         <Route path="/armory/:realmName/:playerIdentifier" element={<ArmoryPage />} />
         <Route path="/sim" element={<SimPage />} />
         <Route path="/talents" element={<TalentCalculatorPage />} />
+        {/* Unlinked while in development — reachable by URL only. */}
+        <Route path="/raidplanner" element={<RaidPlannerPage />} />
         <Route path="/talents/:classSlug" element={<TalentCalculatorPage />} />
         <Route path="/leaderboards" element={<LeaderboardsPage />} />
         <Route path="/leaderboard" element={<LeaderboardRedirect />} />
@@ -130,6 +144,7 @@ function App() {
         <Route path="/apply" element={<ApplyPage />} />
         <Route path="/apply/:id" element={<ApplicationPage />} />
         <Route path="/census" element={<CensusPage />} />
+        <Route path="/tools" element={<ToolsPage />} />
         <Route path="/developers/api" element={<APIExplorer />} />
         <Route path="/debug/proto" element={<ProtoDecode />} />
         <Route path="/admin" element={<AdminLayout />}>
@@ -165,6 +180,14 @@ function App() {
           <Route path="/wowdb/spell/:spellId" element={<SpellPage />} />
           <Route path="/wowdb/spell-by-name" element={<SpellByNamePage />} />
           <Route path="/wowdb/spell-by-name/:name" element={<SpellByNamePage />} />
+          <Route path="/gear" element={<GearLayout />}>
+            <Route index element={<Navigate to="progression" replace />} />
+            <Route path="weights" element={<StatWeightsPage />} />
+            <Route path="trends" element={<GearTrendsPage />} />
+            <Route path="progression" element={<GearProgressionsPage />} />
+          </Route>
+          <Route path="/gear/lists/:listID" element={<GearListPage />} />
+          <Route path="/gear/progression/:progressionID" element={<GearProgressionPage />} />
         </Route>
         <Route path="/technical" element={<TenantDatasetLayout />}>
           <Route index element={<TechnicalDetailsPage />} />
@@ -174,6 +197,7 @@ function App() {
           <Route path="aura-duration-modifiers" element={<AuraDurationModifiersPage />} />
           <Route path="class-spells" element={<ClassSpellsPage />} />
           <Route path="pet-targeting-abilities" element={<PetTargetingAbilitiesPage />} />
+          <Route path="spec-class-icons" element={<SpecClassIconsPage />} />
           <Route path="talent-trees" element={<TalentTreesPage />} />
           <Route path="consumables" element={<ConsumablesPage />} />
           <Route path="cooldowns" element={<CooldownSpellsPage />} />
@@ -185,10 +209,14 @@ function App() {
         <Route path="/terms" element={<Terms />} />
         <Route path="/parsing" element={<ParsingPage />} />
         <Route path="/parsing/cohorts" element={<CohortViewerPage />} />
+        <Route path="/speedrunning" element={<SpeedrunningPage />} />
+        <Route path="/subspecs" element={<SubspecsPage />} />
+        <Route path="/class-details" element={<ClassDetailsPage />} />
         <Route path="/g/:guildId" element={<GuildPage />} />
         <Route path="/g/:guildId/:tabSlug" element={<GuildPage />} />
         <Route path="/g/:guildId/edit" element={<GuildPageEditor />} />
         <Route path="/g/:guildId/roster" element={<GuildRoster />} />
+        <Route path="/g/:guildId/analytics" element={<GuildAnalytics />} />
         <Route path="/g/:guildId/settings" element={<GuildSettings />} />
         <Route path="/game-data" element={<GameDataLayout />}>
           <Route index element={<Navigate to="/game-data/datasets" replace />} />

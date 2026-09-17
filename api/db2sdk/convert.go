@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/Emyrk/chronicle/api/chroniclesdk"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/vehicles"
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/database"
@@ -38,7 +39,17 @@ func WoWServerRealm(r database.WowServerRealm) chroniclesdk.WoWServerRealm {
 	}
 }
 
-func User(user database.ChronicleUser, roles []string) chroniclesdk.User {
+func User[T database.ChronicleUser | database.ListAllUsersRow](row T, roles []string) chroniclesdk.User {
+	var user database.ChronicleUser
+	var discordID string
+	switch row := any(row).(type) {
+	case database.ChronicleUser:
+		user = row
+	case database.ListAllUsersRow:
+		user = row.ChronicleUser
+		discordID = row.DiscordID
+	}
+
 	var dataLimitUpdated time.Time
 	if t, ok := user.DataLimitUpdatedAt.(time.Time); ok {
 		dataLimitUpdated = t
@@ -47,6 +58,7 @@ func User(user database.ChronicleUser, roles []string) chroniclesdk.User {
 		ID:                     user.ID,
 		Username:               user.Username,
 		Email:                  user.Email,
+		DiscordID:              discordID,
 		Roles:                  roles,
 		CreatedAt:              user.CreatedAt.Time,
 		UpdatedAt:              user.UpdatedAt.Time,
@@ -73,6 +85,7 @@ func WoWLogGroupRow[T database.GetWoWLogGroupsByOwnerRow | database.GetWoWLogGro
 			LogType:          string(g.WoWLogGroup.LogType),
 			Files:            slice.List(g.Files, WoWLogFile),
 			ProcessingOutput: g.ProcessingOutput,
+			ParsedBytes:      g.ParsedBytes,
 		}
 	case database.GetWoWLogGroupByIDRow:
 		out := chroniclesdk.WoWLogGroup{
@@ -118,6 +131,44 @@ func WoWLogFile(file database.LogFile) chroniclesdk.WoWLogFile {
 	}
 }
 
+func VehicleControlMetadata(metadata vehicles.Metadata) *chroniclesdk.VehicleControlMetadata {
+	if len(metadata.Intervals) == 0 && len(metadata.Diagnostics) == 0 {
+		return nil
+	}
+	result := &chroniclesdk.VehicleControlMetadata{
+		Intervals:   make([]chroniclesdk.VehicleControlInterval, 0, len(metadata.Intervals)),
+		Diagnostics: make([]chroniclesdk.VehicleControlDiagnostic, 0, len(metadata.Diagnostics)),
+	}
+	for _, interval := range metadata.Intervals {
+		result.Intervals = append(result.Intervals, chroniclesdk.VehicleControlInterval{
+			SessionID:       interval.SessionID,
+			VehicleGUID:     interval.VehicleGUID,
+			ControllerGUID:  interval.ControllerGUID,
+			VehicleName:     interval.VehicleName,
+			ControllerName:  interval.ControllerName,
+			AssignedAtMs:    interval.AssignedAtMs,
+			ReleasedAtMs:    interval.ReleasedAtMs,
+			AssignedOrdinal: interval.AssignedOrdinal,
+			ReleaseReason:   string(interval.ReleaseReason),
+			InferredRelease: interval.InferredRelease,
+		})
+	}
+	for _, diagnostic := range metadata.Diagnostics {
+		result.Diagnostics = append(result.Diagnostics, chroniclesdk.VehicleControlDiagnostic{
+			Kind:                 string(diagnostic.Kind),
+			SessionID:            diagnostic.SessionID,
+			TimestampMs:          diagnostic.TimestampMs,
+			Ordinal:              diagnostic.Ordinal,
+			VehicleGUID:          diagnostic.VehicleGUID,
+			ControllerGUID:       diagnostic.ControllerGUID,
+			VehicleName:          diagnostic.VehicleName,
+			ControllerName:       diagnostic.ControllerName,
+			ActiveControllerGUID: diagnostic.ActiveControllerGUID,
+		})
+	}
+	return result
+}
+
 func WoWInstanceWithGuild(instance database.LogInstance, dbG *database.Guild) chroniclesdk.WoWInstance {
 	var g *chroniclesdk.Guild
 	if dbG != nil {
@@ -128,19 +179,20 @@ func WoWInstanceWithGuild(instance database.LogInstance, dbG *database.Guild) ch
 		}
 	}
 	ret := chroniclesdk.WoWInstance{
-		ID:                instance.ID,
-		RealmID:           instance.RealmID,
-		LogGroupID:        instance.LogGroupID,
-		Name:              instance.Name,
-		Slug:              instance.HashedSlug.String,
-		Guild:             g,
-		Capabilities:      instance.Capabilities,
-		Versions:          map[string]string(instance.Versions),
-		RecorderName:      instance.RecorderName,
-		RecorderGUID:      instance.RecorderGuid,
-		DifficultyName:    instance.DifficultyName,
-		MaxPlayers:        int(instance.MaxPlayers),
-		DynamicDifficulty: int(instance.DynamicDifficulty),
+		ID:                      instance.ID,
+		RealmID:                 instance.RealmID,
+		LogGroupID:              instance.LogGroupID,
+		Name:                    instance.Name,
+		Slug:                    instance.HashedSlug.String,
+		Guild:                   g,
+		Capabilities:            instance.Capabilities,
+		Versions:                map[string]string(instance.Versions),
+		RecorderName:            instance.RecorderName,
+		RecorderGUID:            instance.RecorderGuid,
+		DifficultyName:          instance.DifficultyName,
+		MaxPlayers:              int(instance.MaxPlayers),
+		DynamicDifficulty:       int(instance.DynamicDifficulty),
+		VehicleControlIntervals: VehicleControlMetadata(instance.VehicleControlIntervals),
 	}
 	if instance.StartTime.Valid {
 		ret.StartTime = &instance.StartTime.Time
@@ -164,19 +216,20 @@ func WoWInstance(instance database.LogInstancesGuild) chroniclesdk.WoWInstance {
 		}
 	}
 	ret := chroniclesdk.WoWInstance{
-		ID:                instance.ID,
-		RealmID:           instance.RealmID,
-		LogGroupID:        instance.LogGroupID,
-		Name:              instance.Name,
-		Slug:              instance.HashedSlug.String,
-		Guild:             g,
-		Capabilities:      instance.Capabilities,
-		Versions:          map[string]string(instance.Versions),
-		RecorderName:      instance.RecorderName,
-		RecorderGUID:      instance.RecorderGuid,
-		DifficultyName:    instance.DifficultyName,
-		MaxPlayers:        int(instance.MaxPlayers),
-		DynamicDifficulty: int(instance.DynamicDifficulty),
+		ID:                      instance.ID,
+		RealmID:                 instance.RealmID,
+		LogGroupID:              instance.LogGroupID,
+		Name:                    instance.Name,
+		Slug:                    instance.HashedSlug.String,
+		Guild:                   g,
+		Capabilities:            instance.Capabilities,
+		Versions:                map[string]string(instance.Versions),
+		RecorderName:            instance.RecorderName,
+		RecorderGUID:            instance.RecorderGuid,
+		DifficultyName:          instance.DifficultyName,
+		MaxPlayers:              int(instance.MaxPlayers),
+		DynamicDifficulty:       int(instance.DynamicDifficulty),
+		VehicleControlIntervals: VehicleControlMetadata(instance.VehicleControlIntervals),
 	}
 	if instance.DuplicateGroupID.Valid {
 		ret.DuplicateGroupID = &instance.DuplicateGroupID.UUID
@@ -203,11 +256,12 @@ func WowDecoratedInstance(instance database.LogInstancesGuild,
 	players []database.LogInstancePlayer,
 	encounters []database.LogInstanceEncounter,
 	fights []database.LogInstanceEncounterHostile,
+	phases []database.LogInstanceEncounterPhase,
 ) chroniclesdk.WoWParsedInstance {
 	ret := chroniclesdk.WoWParsedInstance{
 		WoWInstance: WoWInstance(instance),
 		RealmName:   instance.RealmName,
-		Encounters:  WoWEncountersWithHostiles(encounters, fights),
+		Encounters:  WoWEncountersWithHostiles(encounters, fights, phases),
 		Units: maps.MapFromSlice(units, func(u database.LogInstanceUnit) guid.GUID { return u.UnitGuid }, func(u database.LogInstanceUnit) chroniclesdk.InstanceUnit {
 			return chroniclesdk.InstanceUnit{
 				Name:  u.Name,
@@ -215,16 +269,60 @@ func WowDecoratedInstance(instance database.LogInstancesGuild,
 				Entry: uint32(u.Entry),
 			}
 		}),
-		Players: maps.MapFromSlice(players, func(u database.LogInstancePlayer) guid.GUID { return u.UnitGuid }, func(u database.LogInstancePlayer) chroniclesdk.InstancePlayer {
-			return chroniclesdk.InstancePlayer{
-				Name:  u.Name,
-				Class: HeroClass(u.Class),
-				Race:  HeroRace(u.Race),
-				Level: u.Level,
-			}
-		}),
+		Players: InstancePlayers(players),
 	}
 	return ret
+}
+
+func WowAttendanceInstance(instance database.LogInstancesGuild, players []database.LogInstancePlayer) chroniclesdk.WoWAttendanceInstance {
+	return chroniclesdk.WoWAttendanceInstance{
+		WoWInstance: WoWInstance(instance),
+		RealmName:   instance.RealmName,
+		Players:     InstancePlayers(players),
+	}
+}
+
+func InstancePlayers(players []database.LogInstancePlayer) map[guid.GUID]chroniclesdk.InstancePlayer {
+	return maps.MapFromSlice(players, func(u database.LogInstancePlayer) guid.GUID { return u.UnitGuid }, func(u database.LogInstancePlayer) chroniclesdk.InstancePlayer {
+		return chroniclesdk.InstancePlayer{
+			Name:  u.Name,
+			Class: HeroClass(u.Class),
+			Race:  HeroRace(u.Race),
+			Level: u.Level,
+		}
+	})
+}
+
+func InstanceRankingRecords(rows []database.EncounterDpsRanking) []chroniclesdk.InstanceRankingRecord {
+	result := make([]chroniclesdk.InstanceRankingRecord, 0, len(rows))
+	for _, row := range rows {
+		var encounterID *uuid.UUID
+		if row.EncounterID.Valid {
+			id := row.EncounterID.UUID
+			encounterID = &id
+		}
+		result = append(result, chroniclesdk.InstanceRankingRecord{
+			ID:            row.ID,
+			EncounterID:   encounterID,
+			EncounterName: row.EncounterName,
+			PlayerGUID:    row.PlayerGuid,
+			PlayerName:    row.PlayerName,
+			PlayerClass:   row.PlayerClass,
+			PlayerSpec:    row.PlayerSpec,
+			PlayerSubSpec: row.PlayerSubSpec,
+			PlayerRole:    row.PlayerRole,
+			PlayerLevel:   row.PlayerLevel,
+			DamageDone:    row.DamageDone,
+			HealingDone:   row.HealingDone,
+			AbsorbedDone:  row.AbsorbedDone,
+			DurationSecs:  row.DurationSecs,
+			DPS:           row.Dps,
+			HPS:           row.Hps,
+			LogHashedSlug: row.LogHashedSlug,
+			KilledAt:      row.KilledAt.Time,
+		})
+	}
+	return result
 }
 
 // SpeedrunResult converts a database speedrun row to an SDK SpeedrunResult.
@@ -235,6 +333,16 @@ func SpeedrunResult(sr database.GetInstanceSpeedrunRow) *chroniclesdk.SpeedrunRe
 		StartTime:      sr.StartTime.Time,
 		CompletionTime: sr.CompletionTime.Time,
 		DurationMs:     sr.DurationMs,
+	}
+	if sr.RankedStartTime.Valid && sr.RankedCompletionTime.Valid && sr.RankedDurationMs.Valid {
+		result.RankedStartTime = &sr.RankedStartTime.Time
+		result.RankedCompletionTime = &sr.RankedCompletionTime.Time
+		result.RankedDurationMs = &sr.RankedDurationMs.Int64
+	}
+	if sr.BossToBossStartTime.Valid && sr.BossToBossCompletionTime.Valid && sr.BossToBossDurationMs.Valid {
+		result.BossToBossStartTime = &sr.BossToBossStartTime.Time
+		result.BossToBossCompletionTime = &sr.BossToBossCompletionTime.Time
+		result.BossToBossDurationMs = &sr.BossToBossDurationMs.Int64
 	}
 
 	// The proof JSONB column may be the new format (object with "proof" +
@@ -322,8 +430,8 @@ func SpeedrunCohortRun(row database.InstanceSpeedrunCohortRow) chroniclesdk.Spee
 	if row.GuildID.Valid {
 		run.GuildID = &row.GuildID.UUID
 	}
-	if row.DurationMs > 0 {
-		duration := row.DurationMs
+	if row.DurationMs.Valid && row.DurationMs.Int64 > 0 {
+		duration := row.DurationMs.Int64
 		run.DurationMs = &duration
 	}
 	if !row.CompletionTime.Time.IsZero() {
@@ -572,15 +680,31 @@ func WoWEncounter(encounter database.LogInstanceEncounter) chroniclesdk.WoWEncou
 	}
 }
 
-func WoWEncountersWithHostiles(encounter []database.LogInstanceEncounter, hostiles []database.LogInstanceEncounterHostile) []chroniclesdk.WoWEncounterWithHostiles {
+func WoWEncounterPhase(phase database.LogInstanceEncounterPhase) chroniclesdk.WoWEncounterPhase {
+	return chroniclesdk.WoWEncounterPhase{
+		ID:            phase.ID,
+		Key:           phase.Key,
+		Name:          phase.Name,
+		Order:         int(phase.PhaseOrder),
+		StartOffsetMs: phase.StartOffsetMs,
+		EndOffsetMs:   phase.EndOffsetMs,
+		KillType:      chroniclesdk.KillType(phase.KillType),
+	}
+}
+
+func WoWEncountersWithHostiles(encounter []database.LogInstanceEncounter, hostiles []database.LogInstanceEncounterHostile, phases []database.LogInstanceEncounterPhase) []chroniclesdk.WoWEncounterWithHostiles {
 	output := make([]chroniclesdk.WoWEncounterWithHostiles, 0, len(encounter))
 	for _, e := range encounter {
-		output = append(output, chroniclesdk.WoWEncounterWithHostiles{
+		enc := chroniclesdk.WoWEncounterWithHostiles{
 			WoWEncounter: WoWEncounter(e),
 			Hostiles: slice.List(slice.Filter(hostiles, func(h database.LogInstanceEncounterHostile) bool {
 				return h.EncounterID == e.ID
 			}), WoWHostile),
-		})
+			Phases: slice.List(slice.Filter(phases, func(p database.LogInstanceEncounterPhase) bool {
+				return p.EncounterID == e.ID
+			}), WoWEncounterPhase),
+		}
+		output = append(output, enc)
 	}
 	return output
 }
@@ -687,13 +811,14 @@ func ArmoryPlayer(row database.GetGamePlayerByGUIDRow) chroniclesdk.ArmoryPlayer
 	if row.Gear != nil {
 		for i, g := range row.Gear {
 			gear[i] = chroniclesdk.PlayerGear{
-				ItemID:      g.ItemID,
-				EnchantID:   g.EnchantID,
-				ItemName:    g.ItemName,
-				ItemQuality: g.ItemQuality,
-				ItemIcon:    g.ItemIcon,
-				TransmogID:  g.TransmogID,
-				ItemLevel:   g.ItemLevel,
+				ItemID:        g.ItemID,
+				EnchantID:     g.EnchantID,
+				GemEnchantIDs: g.GemEnchantIDs,
+				ItemName:      g.ItemName,
+				ItemQuality:   g.ItemQuality,
+				ItemIcon:      g.ItemIcon,
+				TransmogID:    g.TransmogID,
+				ItemLevel:     g.ItemLevel,
 			}
 		}
 	}
@@ -732,13 +857,14 @@ func ArmoryGearSnapshot(row database.GetPlayerGearHistoryRow) chroniclesdk.Armor
 	var gear chroniclesdk.PlayerOutfit
 	for i, g := range row.Gear {
 		gear[i] = chroniclesdk.PlayerGear{
-			ItemID:      g.ItemID,
-			EnchantID:   g.EnchantID,
-			ItemName:    g.ItemName,
-			ItemQuality: g.ItemQuality,
-			ItemIcon:    g.ItemIcon,
-			TransmogID:  g.TransmogID,
-			ItemLevel:   g.ItemLevel,
+			ItemID:        g.ItemID,
+			EnchantID:     g.EnchantID,
+			GemEnchantIDs: g.GemEnchantIDs,
+			ItemName:      g.ItemName,
+			ItemQuality:   g.ItemQuality,
+			ItemIcon:      g.ItemIcon,
+			TransmogID:    g.TransmogID,
+			ItemLevel:     g.ItemLevel,
 		}
 	}
 
@@ -824,4 +950,35 @@ func UserTalentBuilds(rows []database.UserTalentBuild) []chroniclesdk.UserTalent
 		out = append(out, UserTalentBuild(row))
 	}
 	return out
+}
+
+// RaidComposition converts a stored raid composition, decoding its typed
+// JSONB payload.
+func RaidComposition(row database.RaidComposition) (chroniclesdk.RaidComposition, error) {
+	var data chroniclesdk.RaidCompData
+	if err := json.Unmarshal(row.Data, &data); err != nil {
+		return chroniclesdk.RaidComposition{}, err
+	}
+	return chroniclesdk.RaidComposition{
+		ID:         row.ID,
+		UserID:     row.UserID,
+		GuildID:    nullUUIDPtr(row.GuildID),
+		Name:       row.Name,
+		Data:       data,
+		PublicView: row.PublicView,
+		CreatedAt:  row.CreatedAt.Time,
+		UpdatedAt:  row.UpdatedAt.Time,
+	}, nil
+}
+
+func RaidCompositions(rows []database.RaidComposition) ([]chroniclesdk.RaidComposition, error) {
+	out := make([]chroniclesdk.RaidComposition, 0, len(rows))
+	for _, row := range rows {
+		comp, err := RaidComposition(row)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, comp)
+	}
+	return out, nil
 }

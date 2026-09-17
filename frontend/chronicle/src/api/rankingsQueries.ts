@@ -12,6 +12,7 @@ import type {
   CohortDebugResponse,
   CharacterParseHistoryResponse,
   CharacterEncounterStatsResponse,
+  RankingsFilterClass,
 } from "./typesGenerated";
 
 const RANKINGS_STALE_TIME = 5 * 60 * 1000; // 5 minutes
@@ -98,6 +99,17 @@ export function useRankingsEncounters(instanceName: string) {
   });
 }
 
+export function useRankingsFilters(instanceName?: string) {
+  const searchParams = new URLSearchParams();
+  if (instanceName) searchParams.set("instance_names", instanceName);
+  const qs = searchParams.toString();
+  return useQuery({
+    queryKey: ["rankings", "filters", instanceName],
+    queryFn: () => fetchJSON<RankingsFilterClass[]>(`/api/v1/rankings/filters${qs ? `?${qs}` : ""}`),
+    staleTime: RANKINGS_STALE_TIME,
+  });
+}
+
 export function useRankingsLeaderboard(params: {
   instance_names?: string;
   encounter_names?: string;
@@ -106,6 +118,7 @@ export function useRankingsLeaderboard(params: {
   period?: string;
   class?: string;
   spec?: string;
+  sub_spec?: string;
   role?: string;
   hide_unknowns?: boolean;
   metric?: "dps" | "hps";
@@ -121,6 +134,7 @@ export function useRankingsLeaderboard(params: {
   if (params.period) searchParams.set("period", params.period);
   if (params.class) searchParams.set("class", params.class);
   if (params.spec) searchParams.set("spec", params.spec);
+  if (params.sub_spec) searchParams.set("sub_spec", params.sub_spec);
   if (params.role) searchParams.set("role", params.role);
   if (params.hide_unknowns) searchParams.set("hide_unknowns", "true");
   if (params.metric && params.metric !== "dps") searchParams.set("metric", params.metric);
@@ -148,7 +162,7 @@ export function useRankingsStats(params: {
   metric?: "dps" | "hps";
   group_by_class?: boolean;
   max_players?: number;
-}) {
+}, enabled = true) {
   const searchParams = new URLSearchParams();
   if (params.instance_names) searchParams.set("instance_names", params.instance_names);
   if (params.encounter_names) searchParams.set("encounter_names", params.encounter_names);
@@ -166,6 +180,7 @@ export function useRankingsStats(params: {
     queryFn: () =>
       fetchJSON<RankingsBoxPlotStats[]>(`/api/v1/rankings/stats${qs ? `?${qs}` : ""}`),
     staleTime: RANKINGS_STALE_TIME,
+    enabled,
   });
 }
 
@@ -177,7 +192,7 @@ export function useRankingsRealms() {
   });
 }
 
-export function useRankingsKillTimes(instanceName: string, period?: string) {
+export function useRankingsKillTimes(instanceName: string, period?: string, enabled = true) {
   const searchParams = new URLSearchParams();
   searchParams.set("instance_name", instanceName);
   if (period) searchParams.set("period", period);
@@ -187,7 +202,7 @@ export function useRankingsKillTimes(instanceName: string, period?: string) {
     queryFn: () =>
       fetchJSON<RankingsKillTimeStats[]>(`/api/v1/rankings/kill-times?${searchParams.toString()}`),
     staleTime: RANKINGS_STALE_TIME,
-    enabled: !!instanceName,
+    enabled: enabled && !!instanceName,
   });
 }
 
@@ -195,6 +210,7 @@ export function useRankingsSuccessRates(
   instanceName: string,
   period?: string,
   opts?: { difficulty_names?: string; max_players?: number },
+  enabled = true,
 ) {
   const searchParams = new URLSearchParams();
   searchParams.set("instance_name", instanceName);
@@ -209,7 +225,7 @@ export function useRankingsSuccessRates(
         `/api/v1/rankings/success-rates?${searchParams.toString()}`,
       ),
     staleTime: RANKINGS_STALE_TIME,
-    enabled: !!instanceName,
+    enabled: enabled && !!instanceName,
   });
 }
 export function useRankingsKillTimeLeaderboard(params: {
@@ -218,7 +234,7 @@ export function useRankingsKillTimeLeaderboard(params: {
   period?: string;
   limit?: number;
   offset?: number;
-}) {
+}, enabled = true) {
   const searchParams = new URLSearchParams();
   searchParams.set("instance_name", params.instance_name);
   if (params.encounter_name) searchParams.set("encounter_name", params.encounter_name);
@@ -233,7 +249,7 @@ export function useRankingsKillTimeLeaderboard(params: {
         `/api/v1/rankings/kill-time-leaderboard?${searchParams.toString()}`,
       ),
     staleTime: RANKINGS_STALE_TIME,
-    enabled: !!params.instance_name,
+    enabled: enabled && !!params.instance_name,
   });
 }
 
@@ -250,6 +266,7 @@ export function useSnapshotCohort(params: {
   encounter_name?: string;
   class?: string;
   spec?: string;
+  sub_spec?: string;
   difficulty?: string;
   max_players?: number;
   metric?: "dps" | "hps";
@@ -258,6 +275,7 @@ export function useSnapshotCohort(params: {
   if (params.encounter_name) searchParams.set("encounter_name", params.encounter_name);
   if (params.class) searchParams.set("class", params.class);
   if (params.spec) searchParams.set("spec", params.spec);
+  if (params.sub_spec) searchParams.set("sub_spec", params.sub_spec);
   if (params.difficulty !== undefined) searchParams.set("difficulty", params.difficulty);
   if (params.max_players !== undefined) searchParams.set("max_players", String(params.max_players));
   if (params.metric && params.metric !== "dps") searchParams.set("metric", params.metric);

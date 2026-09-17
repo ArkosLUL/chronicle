@@ -619,7 +619,6 @@ const PANEL_CODES: Record<PanelType, string> = {
   healing_taken: 'ht',
   extra_attacks: 'xa',
   consumables: 'cons',
-  consumables_total: 'ct',
   consumables_ledger: 'cl',
   deaths: 'd',
   death_log: 'dl',
@@ -629,15 +628,18 @@ const PANEL_CODES: Record<PanelType, string> = {
   roles: 'r',
   all_activity: 'aa',
   empty: 'e',
+  ranking_records: 'rkr',
   leaderboard: 'lb',
   // Class: Druid
   innervate: 'inn',
+  faerie_fire: 'ff',
   // Class: Warrior
   sunder: 'sun',
   // Class: Paladin
   judgement: 'jdg',
   // Aura tracking
   aura_uptime: 'au',
+  unit_auras: 'ua',
   // Debug/Analysis
   metrics: 'met',
   periods: 'per',
@@ -648,7 +650,9 @@ const PANEL_CODES: Record<PanelType, string> = {
   rotations: 'rot',
   status: 'st',
   healer_casts: 'hc',
+  spell_count: 'sc',
   possession: 'pos',
+  vehicle: 'veh',
   unit_lookup: 'ul',
   equipment: 'eq',
   // Dispels
@@ -665,6 +669,7 @@ const PANEL_CODES: Record<PanelType, string> = {
   guilds: 'gld',
   companion_stats: 'cs',
   pulls_and_cleanup: 'pac',
+  raid_composition: 'rc',
 };
 
 // ============================================================================
@@ -690,6 +695,8 @@ const CODE_TO_LAYOUT: Record<string, LayoutType> = Object.fromEntries(
 const CODE_TO_PANEL: Record<string, PanelType> = Object.fromEntries(
   Object.entries(PANEL_CODES).map(([k, v]) => [v, k as PanelType])
 );
+// Legacy: Consumes Total merged into the Consumes Used panel's "View All".
+CODE_TO_PANEL['ct'] = 'consumables_ledger';
 
 /**
  * Parse a panel code with optional brackets: "au[Slice and Dice]" -> { code: "au", option: "Slice and Dice" }

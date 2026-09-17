@@ -5,6 +5,7 @@ import (
 
 	"github.com/Emyrk/chronicle/combatlog/parser/common/characters"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/messages"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/phases"
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/database"
 )
@@ -19,13 +20,77 @@ func NewNefarian(id guid.GUID, all *characters.Characters) (characters.Character
 		return nil, false
 	}
 
-	c, ok := characters.NewRoomMechanic(id, 11583, all)
+	base, ok := characters.NewRoomMechanic(id, 11583, all)
 	if !ok {
 		return nil, false
 	}
+
+	var c characters.CharacterBase = base
+	if entry == 11583 {
+		c = &nefarian{RoomMechanic: base, all: all}
+	}
 	return characters.NewAdsGoWithBossCustomCharacter(c, all, 11583,
 		14668, // Corrupted Infernals
+		14605, // "Bone Construct"
 	), true
+}
+
+// Phase key constants for Nefarian.
+const (
+	NefarianPhaseKeyP1 = "nefarian_p1"
+	NefarianPhaseKeyP2 = "nefarian_p2"
+)
+
+// NefarianPhaseDefinitions contains the encounter phase definitions for Nefarian.
+// Exported for testing.
+var NefarianPhaseDefinitions = &phases.EncounterPhases{
+	EncounterName: "Nefarian",
+	Definitions: []phases.Definition{
+		{Key: NefarianPhaseKeyP1, Name: "Adds", Order: 0},
+		{Key: NefarianPhaseKeyP2, Name: "Boss", Order: 1},
+	},
+}
+
+type nefarian struct {
+	*characters.RoomMechanic
+	all       *characters.Characters
+	p2Emitted bool
+}
+
+// PhaseDefinitions implements phases.PhaseProvider.
+func (c *nefarian) PhaseDefinitions() *phases.EncounterPhases {
+	return NefarianPhaseDefinitions
+}
+
+func (c *nefarian) Process(m messages.Message) error {
+	// Resolve inactivity before inspecting this message. A new pull's first hit
+	// can arrive after the previous pull timed out, ending and restarting the
+	// activity period on the same message.
+	if current, ok := c.Activity.Current(); ok {
+		current.HandleTimeout(m.Date())
+	}
+	if !c.IsActive() {
+		c.p2Emitted = false
+	}
+	wasActive := c.IsActive()
+
+	if damage, ok := m.(*messages.Damage); ok &&
+		damage.Target == c.ID() &&
+		damage.Amount > 0 &&
+		!c.p2Emitted {
+		c.p2Emitted = true
+		c.all.EmitPhaseTransition(phases.Transition{
+			SourceGUID: c.ID(),
+			ToPhaseKey: NefarianPhaseKeyP2,
+			Timestamp:  m.Date(),
+		})
+	}
+
+	err := c.RoomMechanic.Process(m)
+	if wasActive && !c.IsActive() {
+		c.p2Emitted = false
+	}
+	return err
 }
 
 func isNefarianEntry(entry uint32) bool {
@@ -48,9 +113,25 @@ func NewBroodlordLashlayer(id guid.GUID, all *characters.Characters) (characters
 	)(id, all)
 }
 
-func NewBlackwingMarksman(flavor database.WoWFlavor) func(id guid.GUID, all *characters.Characters) (characters.Character, bool) {
+type RazorAdCharacter struct {
+	*characters.Common
+	all *characters.Characters
+}
+
+func NewRazorAdCharacter(flavor database.WoWFlavor) func(id guid.GUID, all *characters.Characters) (characters.Character, bool) {
 	return func(id guid.GUID, all *characters.Characters) (characters.Character, bool) {
-		if entry, ok := id.GetEntry(); !ok || entry != 50142 {
+		entry, ok := id.GetEntry()
+		if !ok {
+			return nil, false
+		}
+		switch entry {
+		case 12416, // Blackwing Legionnaire
+			12420, // Blackwing Mage
+			12422, // Death Talon Dragonspawn
+			14456, // Blackwing Guardsman
+			50142, // Blackwing Marksman
+			52153: // Death Talon Scorcher
+		default:
 			return nil, false
 		}
 
@@ -58,18 +139,39 @@ func NewBlackwingMarksman(flavor database.WoWFlavor) func(id guid.GUID, all *cha
 		if flavor.Has(database.FlavorNightmareOfUrsol) {
 			base.WithTimeoutAsDeath()
 		}
-		return base, true
+		return &RazorAdCharacter{Common: base, all: all}, true
+	}
+}
+
+func (c *RazorAdCharacter) Process(m messages.Message) error {
+	cur, ok := c.Activity.Current()
+	if ok {
+		cur.HandleTimeout(m.Date())
+	}
+	return characters.ProcessCommonActivity(c, m)
+}
+
+func (c *RazorAdCharacter) Start(reason string, m messages.Message) {
+	c.Common.Start(reason, m)
+	c.bumpRazorgore(m)
+}
+
+func (c *RazorAdCharacter) Bump(reason string, m messages.Message) {
+	c.Common.Bump(reason, m)
+	c.bumpRazorgore(m)
+}
+
+func (c *RazorAdCharacter) bumpRazorgore(m messages.Message) {
+	for _, razor := range c.all.ByEntry[12435] {
+		boss, ok := razor.(characters.CharacterBase)
+		if ok && boss.IsActive() {
+			boss.Bump("razorgore_add_activity", m)
+		}
 	}
 }
 
 func NewRazorgore(flavor database.WoWFlavor) func(id guid.GUID, all *characters.Characters) (characters.Character, bool) {
-	eggThreshold := 0
-	switch {
-	case flavor.Has(database.FlavorNightmareOfUrsol):
-		eggThreshold = 20
-	case flavor.Has(database.FlavorVanillaPlus):
-		eggThreshold = 30
-	}
+	eggThreshold := RazorgoreEggThreshold(flavor)
 	return func(id guid.GUID, all *characters.Characters) (characters.Character, bool) {
 		if entry, ok := id.GetEntry(); !ok || entry != 12435 {
 			return nil, false
@@ -84,9 +186,24 @@ func NewRazorgore(flavor database.WoWFlavor) func(id guid.GUID, all *characters.
 			12422,
 			50142,
 			52153,
-			52153,
 		), true
 	}
+}
+
+// Phase key constants for Razorgore.
+const (
+	RazorgorePhaseKeyP1 = "razorgore_p1"
+	RazorgorePhaseKeyP2 = "razorgore_p2"
+)
+
+// RazorgorePhaseDefinitions returns the encounter phase definitions for Razorgore.
+// Exported for testing.
+var RazorgorePhaseDefinitions = &phases.EncounterPhases{
+	EncounterName: "Razorgore the Untamed",
+	Definitions: []phases.Definition{
+		{Key: RazorgorePhaseKeyP1, Name: "Adds", Order: 0},
+		{Key: RazorgorePhaseKeyP2, Name: "Boss", Order: 1},
+	},
 }
 
 type razorgore struct {
@@ -95,6 +212,14 @@ type razorgore struct {
 	eggThreshold int
 	eggCount     int
 	adsGone      bool
+}
+
+// PhaseDefinitions implements phases.PhaseProvider.
+func (c *razorgore) PhaseDefinitions() *phases.EncounterPhases {
+	if c.eggThreshold == 0 {
+		return nil
+	}
+	return RazorgorePhaseDefinitions
 }
 
 func (c *razorgore) Process(m messages.Message) error {
@@ -112,6 +237,12 @@ func (c *razorgore) Process(m messages.Message) error {
 			if c.eggCount >= c.eggThreshold {
 				c.killEggAds(m)
 				c.adsGone = true
+				// Emit phase transition to P2 at the threshold crossing.
+				c.all.EmitPhaseTransition(phases.Transition{
+					SourceGUID: c.ID(),
+					ToPhaseKey: RazorgorePhaseKeyP2,
+					Timestamp:  m.Date(),
+				})
 			}
 		}
 	}
@@ -133,8 +264,8 @@ func (c *razorgore) killEggAds(m messages.Message) {
 		12416, // Blackwing Legionnaire
 		12420, // Blackwing Mage
 		12422, // Death Talon Dragonspawn
-
 		50142, // Blackwing Marksman
+		52153, // Death Talon Scorcher
 		14456, // Blackwing Guardian
 	} {
 		for _, add := range c.all.ByEntry[entry] {

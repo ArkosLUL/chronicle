@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from "react"
 import { createPortal } from "react-dom"
 import { useSearchParams } from "react-router-dom"
-import { ArrowLeft, CheckCircle, ChevronDown, ChevronLeft, ChevronRight, List, Loader2, X } from "lucide-react"
+import { ArrowLeft, CheckCircle, ChevronDown, ChevronLeft, ChevronRight, CircleDashed, List, Loader2, X } from "lucide-react"
 import { Checkbox } from "@/components/ui/Checkbox/Checkbox"
 import {
   Tooltip,
@@ -22,7 +22,7 @@ import { useIsMobile } from "@/hooks/useIsMobile"
 import { getInstanceBackground } from "@/pages/Logs/utils/instanceImages"
 import { cn } from "@/lib/utils"
 import type { RankingsKillTimeStats, RankingsSuccessRate } from "@/api/typesGenerated"
-import { useSiteConfig } from "@/api/queries"
+import { useSiteConfig, useSupportedInstanceProgressionBosses } from "@/api/queries"
 import {
   useRankingsEncounters,
   useRankingsInstances,
@@ -32,14 +32,30 @@ import {
   useRankingsKillTimeLeaderboard,
   useRankingsSuccessRates,
   useRankingsRealms,
+  useRankingsFilters,
 } from "@/api/rankingsQueries"
 import type { RankedEntry } from "./RankingsTable"
 import type { RankedKillTimeEntry } from "./KillTimeTable"
 import type { TimePeriod } from "./timePeriod"
+import { EmeraldSanctumModeSwitch } from "./EmeraldSanctumModeSwitch"
+import {
+  EMERALD_SANCTUM_INSTANCE,
+  emeraldSanctumModeParamForValue,
+  getEmeraldSanctumEncounterNames,
+  parseEmeraldSanctumMode,
+  type EmeraldSanctumMode,
+} from "./emeraldSanctumState"
 import { BoxPlotChart } from "./BoxPlotChart"
 import { RankingsTable } from "./RankingsTable"
 import { KillTimeTable } from "./KillTimeTable"
 import { ClassSpecFilter } from "./ClassSpecFilter"
+import { RankingsLoadingState } from "./RankingsLoadingState"
+import { getRankingsQueryEnablement } from "./rankingsQueryState"
+import {
+  defaultRankingBossNames,
+  rankingEncounterNames,
+  rankingEncounterSections,
+} from "./rankingsEncounterSelection"
 import {
   groupByParamForValue,
   parseGroupByClass,
@@ -68,26 +84,49 @@ export function InstanceView({ instanceName }: InstanceViewProps) {
   const isMobile = useIsMobile()
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
+  const isEmeraldSanctum = instanceName === EMERALD_SANCTUM_INSTANCE
+
   // ── API queries ───────────────────────────────────────────────────────
   const { data: encounterSummaries, isLoading: encountersLoading } = useRankingsEncounters(instanceName)
+  const { data: progressionBosses, isLoading: progressionBossesLoading } = useSupportedInstanceProgressionBosses()
   const { data: siteConfig } = useSiteConfig()
   const configuredCohortMode = siteConfig?.tenant?.parse_config?.cohort_mode
   const cohortMode: RankingsCohortMode =
     configuredCohortMode === "class" || configuredCohortMode === "disabled"
       ? configuredCohortMode
       : "spec"
-  const encounterNames = useMemo(
+  const recordedEncounterNames = useMemo(
     () => (encounterSummaries ?? []).map((e) => e.encounter_name),
     [encounterSummaries],
+  )
+  const recordedEncounterNameSet = useMemo(
+    () => new Set(recordedEncounterNames),
+    [recordedEncounterNames],
+  )
+  const encounterNames = useMemo(
+    () => rankingEncounterNames(instanceName, recordedEncounterNames, progressionBosses),
+    [instanceName, progressionBosses, recordedEncounterNames],
   )
   // We derive boss vs trash: "Trash" is the only trash encounter name by convention
   const bossNames = useMemo(
     () => new Set(encounterNames.filter((n) => n !== "Trash")),
     [encounterNames],
   )
+  const defaultBossNames = useMemo(
+    () => defaultRankingBossNames(instanceName, recordedEncounterNames, progressionBosses),
+    [instanceName, progressionBosses, recordedEncounterNames],
+  )
+  const progressionBossNames = useMemo(
+    () => progressionBosses?.get(instanceName) ?? bossNames,
+    [bossNames, instanceName, progressionBosses],
+  )
   const trashNames = useMemo(
     () => new Set<string>(encounterNames.filter((n) => n === "Trash")),
     [encounterNames],
+  )
+  const encounterSections = useMemo(
+    () => rankingEncounterSections(encounterNames, progressionBossNames),
+    [encounterNames, progressionBossNames],
   )
 
   // ── URL state ────────────────────────────────────────────────────────
@@ -104,8 +143,11 @@ export function InstanceView({ instanceName }: InstanceViewProps) {
 
   const dpsSubTab: DpsSubTab = params.get("tab") === "leaderboard" ? "leaderboard" : "boxplot"
   const killTimeSubTab: KillTimeSubTab = params.get("tab") === "leaderboard" ? "leaderboard" : "boxplot"
+  const usesMultiEncounterSelection =
+    isPlayerMetric || metric === "success" || (metric === "killtime" && killTimeSubTab === "boxplot")
   const filterClass = params.get("class") ?? undefined
   const filterSpec = params.get("spec") ?? undefined
+  const filterSubSpec = params.get("sub_spec") ?? undefined
   const filterRole = useMemo(() => params.get("role") || "", [params])  // "" = all roles
 
   const page = useMemo(() => {
@@ -163,12 +205,21 @@ export function InstanceView({ instanceName }: InstanceViewProps) {
     return new Set(raw.split(",").filter(Boolean))
   }, [params])
 
-  // Default (no URL param) = bosses only; trash is opt-in via ?encounters=.
+  const emeraldSanctumMode = parseEmeraldSanctumMode(params.get("es_mode"))
+
+  // Emerald Sanctum has mutually exclusive Normal and Hard Mode Solnius encounters.
+  // Other instances default to canonical progression bosses; optional bosses and trash are opt-in.
+  const defaultSelectedEncounters = useMemo(
+    () => isEmeraldSanctum
+      ? getEmeraldSanctumEncounterNames(emeraldSanctumMode, bossNames)
+      : new Set(defaultBossNames),
+    [bossNames, defaultBossNames, emeraldSanctumMode, isEmeraldSanctum],
+  )
   const selectedEncounters: Set<string> = useMemo(() => {
     const raw = params.get("encounters")
-    if (!raw) return new Set(bossNames)
+    if (!raw) return defaultSelectedEncounters
     return new Set(raw.split(",").filter(Boolean))
-  }, [params, bossNames])
+  }, [defaultSelectedEncounters, params])
 
   // ── Setters ──────────────────────────────────────────────────────────
 
@@ -184,6 +235,21 @@ export function InstanceView({ instanceName }: InstanceViewProps) {
     [setParams],
   )
 
+  const handleEmeraldSanctumModeChange = useCallback(
+    (mode: EmeraldSanctumMode) => {
+      setParams((prev) => {
+        const next = new URLSearchParams(prev)
+        const value = emeraldSanctumModeParamForValue(mode)
+        if (value === null) next.delete("es_mode")
+        else next.set("es_mode", value)
+        next.delete("encounters")
+        next.delete("page")
+        return next
+      })
+    },
+    [setParams],
+  )
+
   const handleBack = useCallback(() => {
     setParams((prev) => {
       const next = new URLSearchParams(prev)
@@ -193,6 +259,7 @@ export function InstanceView({ instanceName }: InstanceViewProps) {
       next.delete("encounters")
       next.delete("period")
       next.delete("diff")
+      next.delete("es_mode")
       next.delete("realms")
       next.delete("page")
       next.delete("class")
@@ -289,13 +356,15 @@ export function InstanceView({ instanceName }: InstanceViewProps) {
   )
 
   const handleBoxPlotRowClick = useCallback(
-    (playerClass: string, playerSpec: string) => {
+    (playerClass: string, playerSpec: string, playerSubSpec: string) => {
       setParams((prev) => {
         const next = new URLSearchParams(prev)
         next.set("tab", "leaderboard")
         next.set("class", playerClass)
         if (playerSpec) next.set("spec", playerSpec)
         else next.delete("spec")
+        if (playerSubSpec) next.set("sub_spec", playerSubSpec)
+        else next.delete("sub_spec")
         next.delete("page")
         return next
       })
@@ -310,6 +379,7 @@ export function InstanceView({ instanceName }: InstanceViewProps) {
         if (cls) next.set("class", cls)
         else next.delete("class")
         next.delete("spec")
+        next.delete("sub_spec")
         next.delete("page")
         return next
       })
@@ -323,6 +393,20 @@ export function InstanceView({ instanceName }: InstanceViewProps) {
         const next = new URLSearchParams(prev)
         if (spec) next.set("spec", spec)
         else next.delete("spec")
+        next.delete("sub_spec")
+        next.delete("page")
+        return next
+      })
+    },
+    [setParams],
+  )
+
+  const handleSubSpecSelect = useCallback(
+    (subSpec: string | null) => {
+      setParams((prev) => {
+        const next = new URLSearchParams(prev)
+        if (subSpec) next.set("sub_spec", subSpec)
+        else next.delete("sub_spec")
         next.delete("page")
         return next
       })
@@ -335,14 +419,16 @@ export function InstanceView({ instanceName }: InstanceViewProps) {
       setParams((prev) => {
         const next = new URLSearchParams(prev)
         const raw = prev.get("encounters")
-        const current = raw ? new Set(raw.split(",").filter(Boolean)) : new Set(bossNames)
+        const current = raw
+          ? new Set(raw.split(",").filter(Boolean))
+          : new Set(defaultSelectedEncounters)
 
         if (ctrlKey) {
           // Toggle individual
           if (current.has(name)) current.delete(name)
           else current.add(name)
         } else {
-          // Single-select: if already solo-selected, reset to default (bosses); otherwise select only this one
+          // Single-select: if already solo-selected, reset to the instance default; otherwise select only this one
           if (current.size === 1 && current.has(name)) {
             next.delete("encounters")
             return next
@@ -351,9 +437,10 @@ export function InstanceView({ instanceName }: InstanceViewProps) {
           current.add(name)
         }
 
-        // No param = default (bosses only). An empty selection also resets to default.
+        // No param = the instance default. An empty selection also resets to default.
         const isDefault =
-          current.size === bossNames.size && [...current].every((n) => bossNames.has(n))
+          current.size === defaultSelectedEncounters.size &&
+          [...current].every((name) => defaultSelectedEncounters.has(name))
         if (current.size === 0 || isDefault) {
           next.delete("encounters")
         } else {
@@ -362,24 +449,27 @@ export function InstanceView({ instanceName }: InstanceViewProps) {
         return next
       })
     },
-    [setParams, bossNames],
+    [defaultSelectedEncounters, setParams],
   )
 
   const handleQuickSelect = useCallback(
-    (mode: "all" | "bosses" | "trash") => {
+    (mode: "all" | "progression" | "trash") => {
       setParams((prev) => {
         const next = new URLSearchParams(prev)
-        if (mode === "bosses" || (mode === "all" && trashNames.size === 0)) {
-          // Bosses only is the default — no param needed.
+        if (mode === "progression") {
+          // Canonical progression bosses are the default — no param needed.
           next.delete("encounters")
         } else {
           const names = mode === "all" ? encounterNames : [...trashNames]
-          next.set("encounters", [...names].join(","))
+          const isDefault =
+            names.length === defaultBossNames.size && names.every((name) => defaultBossNames.has(name))
+          if (isDefault) next.delete("encounters")
+          else next.set("encounters", names.join(","))
         }
         return next
       })
     },
-    [setParams, encounterNames, trashNames],
+    [setParams, defaultBossNames, encounterNames, trashNames],
   )
 
   // ── API query params ─────────────────────────────────────────────────
@@ -403,7 +493,15 @@ export function InstanceView({ instanceName }: InstanceViewProps) {
     ? [...selectedRealms].join(",")
     : undefined
 
-  const { data: rawBoxPlotStats = [] } = useRankingsStats({
+  const queryEnablement = getRankingsQueryEnablement(
+    metric,
+    dpsSubTab,
+    encounterSummaries !== undefined && progressionBosses !== undefined,
+  )
+
+  const { data: filterOptions = [] } = useRankingsFilters(instanceName)
+
+  const { data: rawBoxPlotStats = [], isLoading: boxPlotLoading } = useRankingsStats({
     instance_names: instanceName,
     encounter_names: encounterNamesParam,
     difficulty_names: difficultyNamesParam,
@@ -412,14 +510,14 @@ export function InstanceView({ instanceName }: InstanceViewProps) {
     role: filterRole,
     metric: valueMetric,
     group_by_class: groupByClass,
-  })
+  }, queryEnablement.playerStats)
 
   const boxPlotStats = useMemo(() => {
     if (!hideUnknowns) return rawBoxPlotStats
     return rawBoxPlotStats.filter((s) => s.player_class !== "Unknown" && s.player_spec !== "Unknown")
   }, [rawBoxPlotStats, hideUnknowns])
 
-  const { data: leaderboardData } = useRankingsLeaderboard({
+  const { data: leaderboardData, isLoading: leaderboardLoading } = useRankingsLeaderboard({
     instance_names: instanceName,
     encounter_names: encounterNamesParam,
     difficulty_names: difficultyNamesParam,
@@ -427,12 +525,13 @@ export function InstanceView({ instanceName }: InstanceViewProps) {
     period: periodParam,
     class: filterClass,
     spec: filterSpec,
+    sub_spec: filterSubSpec,
     role: filterRole,
     hide_unknowns: hideUnknowns,
     metric: valueMetric,
     limit: PAGE_SIZE,
     offset: (page - 1) * PAGE_SIZE,
-  })
+  }, queryEnablement.playerLeaderboard)
 
   // Derive available difficulties from instance summaries (unaffected by difficulty filter)
   const { data: instanceSummaries } = useRankingsInstances()
@@ -515,16 +614,26 @@ export function InstanceView({ instanceName }: InstanceViewProps) {
     return entries.map((e, i) => ({ ...e, rank: offset + i + 1 }))
   }, [leaderboardData, page])
 
-  const { data: killTimeStats = [] } = useRankingsKillTimes(instanceName, periodParam)
+  const { data: rawKillTimeStats = [], isLoading: killTimeStatsLoading } = useRankingsKillTimes(
+    instanceName,
+    periodParam,
+    queryEnablement.killTimeStats,
+  )
+
+  const killTimeStats = useMemo(
+    () => rawKillTimeStats.filter((stat) => selectedEncounters.has(stat.encounter_name)),
+    [rawKillTimeStats, selectedEncounters],
+  )
 
   // Kill time leaderboard: always a single encounter (mixing bosses is meaningless).
   // Persisted via ?kt_enc= URL param; defaults to the first boss.
   const bossList = useMemo(() => [...bossNames].sort(), [bossNames])
+  const defaultBossList = useMemo(() => [...defaultBossNames].sort(), [defaultBossNames])
   const killTimeEncounter = useMemo(() => {
     const raw = params.get("kt_enc")
     if (raw && bossNames.has(raw)) return raw
-    return bossList[0] ?? ""
-  }, [params, bossNames, bossList])
+    return defaultBossList[0] ?? bossList[0] ?? ""
+  }, [params, bossNames, bossList, defaultBossList])
 
   const handleKillTimeEncounterChange = useCallback(
     (enc: string) => {
@@ -538,13 +647,13 @@ export function InstanceView({ instanceName }: InstanceViewProps) {
     [setParams],
   )
 
-  const { data: killTimeLeaderboardData } = useRankingsKillTimeLeaderboard({
+  const { data: killTimeLeaderboardData, isLoading: killTimeLeaderboardLoading } = useRankingsKillTimeLeaderboard({
     instance_name: instanceName,
     encounter_name: killTimeEncounter,
     period: periodParam,
     limit: PAGE_SIZE,
     offset: (page - 1) * PAGE_SIZE,
-  })
+  }, queryEnablement.killTimeLeaderboard)
 
   const killTimeTotalCount = killTimeLeaderboardData?.total_count ?? 0
   const killTimeTotalPages = Math.max(1, Math.ceil(killTimeTotalCount / PAGE_SIZE))
@@ -555,13 +664,17 @@ export function InstanceView({ instanceName }: InstanceViewProps) {
     return entries.map((e, i) => ({ ...e, rank: offset + i + 1 }))
   }, [killTimeLeaderboardData, page])
 
-  const { data: successRates = [] } = useRankingsSuccessRates(instanceName, periodParam, {
+  const { data: rawSuccessRates = [], isLoading: successRatesLoading } = useRankingsSuccessRates(instanceName, periodParam, {
     difficulty_names: difficultyNamesParam,
-  })
+  }, queryEnablement.successRates)
+  const successRates = useMemo(
+    () => rawSuccessRates.filter((rate) => selectedEncounters.has(rate.encounter_name)),
+    [rawSuccessRates, selectedEncounters],
+  )
 
   // ── Loading state ──────────────────────────────────────────────────
 
-  if (encountersLoading) {
+  if (encountersLoading || progressionBossesLoading) {
     return (
       <div className="flex items-center justify-center py-16">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -571,6 +684,18 @@ export function InstanceView({ instanceName }: InstanceViewProps) {
 
   const sidebarContent = (
     <>
+      {isEmeraldSanctum && (
+        <div className="mb-4">
+          <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+            Mode
+          </p>
+          <EmeraldSanctumModeSwitch
+            value={emeraldSanctumMode}
+            onChange={handleEmeraldSanctumModeChange}
+          />
+        </div>
+      )}
+
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
           Encounters
@@ -589,51 +714,66 @@ export function InstanceView({ instanceName }: InstanceViewProps) {
       </div>
 
       {/* Quick-select buttons */}
-      <div className="flex gap-1 mt-1.5">
-        <Button variant="outline" size="sm" className="h-5 px-1.5 text-xs" onClick={() => handleQuickSelect("all")} title="Select all encounters">All</Button>
-        <Button variant="outline" size="sm" className="h-5 px-1.5 text-xs" onClick={() => handleQuickSelect("bosses")} title="Select boss encounters only">Bosses</Button>
-        <Button variant="outline" size="sm" className="h-5 px-1.5 text-xs" onClick={() => handleQuickSelect("trash")} title="Select trash encounters only">Trash</Button>
-      </div>
+      {!isEmeraldSanctum && (
+        <div className="flex gap-1 mt-1.5">
+          <Button variant="outline" size="sm" className="h-5 px-1.5 text-xs" onClick={() => handleQuickSelect("all")} title="Select all encounters">All</Button>
+          <Button variant="outline" size="sm" className="h-5 px-1.5 text-xs" onClick={() => handleQuickSelect("progression")} title="Select progression bosses">Progression</Button>
+          <Button variant="outline" size="sm" className="h-5 px-1.5 text-xs" onClick={() => handleQuickSelect("trash")} title="Select trash encounters only">Trash</Button>
+        </div>
+      )}
 
       {/* Encounter list */}
-      <div className="mt-3 space-y-1">
-        {encounterNames.map((name) => {
-          const isSelected = selectedEncounters.has(name)
-          const isTrashEnc = trashNames.has(name)
-          return (
-            <div
-              role="button"
-              tabIndex={0}
-              key={name}
-              onClick={(e) => handleEncounterClick(name, e.ctrlKey || e.metaKey)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault()
-                  handleEncounterClick(name, e.ctrlKey || e.metaKey)
-                }
-              }}
-              className={cn(
-                "w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm text-left transition-all duration-150 cursor-pointer",
-                isSelected
-                  ? "bg-primary-darker text-primary-foreground border-l-3 border-l-primary-foreground/70 shadow-sm"
-                  : "hover:bg-accent/50 hover:translate-x-0.5",
-                !isSelected && isTrashEnc && "text-muted-foreground",
-                isTrashEnc && "mt-3 border-t border-white/5 pt-3",
-              )}
-              title={`${name} — Click to select, Ctrl+Click to toggle`}
-            >
-              <CheckCircle
-                className={cn(
-                  "h-4 w-4 shrink-0",
-                  isTrashEnc ? "text-green-500/60" : "text-green-500",
-                )}
-              />
-              <span className={cn("truncate flex-1", isTrashEnc && !isSelected && "italic")}>
-                {name}
-              </span>
+      <div className="mt-3 space-y-4">
+        {encounterSections.map((section) => (
+          <div key={section.kind}>
+            <h4 className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+              {section.label}
+            </h4>
+            <div className="space-y-1">
+              {section.names.map((name) => {
+                const isSelected = selectedEncounters.has(name)
+                const hasRankings = recordedEncounterNameSet.has(name)
+                const isSubdued = section.kind !== "boss" || !hasRankings
+                const EncounterIcon = hasRankings ? CheckCircle : CircleDashed
+                return (
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    key={name}
+                    onClick={(e) => handleEncounterClick(name, e.ctrlKey || e.metaKey)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault()
+                        handleEncounterClick(name, e.ctrlKey || e.metaKey)
+                      }
+                    }}
+                    className={cn(
+                      "w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm text-left transition-all duration-150 cursor-pointer",
+                      isSelected
+                        ? "bg-primary-darker text-primary-foreground border-l-3 border-l-primary-foreground/70 shadow-sm"
+                        : "hover:bg-accent/50 hover:translate-x-0.5",
+                      !isSelected && isSubdued && "text-muted-foreground",
+                    )}
+                    title={`${name}${hasRankings ? "" : " (no kills yet)"}. Click to select, Ctrl+Click to toggle`}
+                  >
+                    <EncounterIcon
+                      className={cn(
+                        "h-4 w-4 shrink-0",
+                        hasRankings ? (isSubdued ? "text-green-500/60" : "text-green-500") : "text-muted-foreground/50",
+                      )}
+                    />
+                    <span className={cn("truncate flex-1", section.kind === "trash" && !isSelected && "italic")}>
+                      {name}
+                    </span>
+                    {!hasRankings && (
+                      <span className="shrink-0 text-[10px] text-muted-foreground/60">No kills</span>
+                    )}
+                  </div>
+                )
+              })}
             </div>
-          )
-        })}
+          </div>
+        ))}
       </div>
 
       {/* Info hint */}
@@ -645,56 +785,57 @@ export function InstanceView({ instanceName }: InstanceViewProps) {
 
   return (
     <div className="flex">
-      {/* Mobile backdrop (DPS only) */}
-      {isPlayerMetric && isMobile && sidebarOpen && (
+      {/* Mobile encounter-filter backdrop */}
+      {usesMultiEncounterSelection && isMobile && sidebarOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/50"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      {/* Mobile FAB (DPS only) */}
-      {isPlayerMetric && isMobile && createPortal(
+      {/* Mobile encounter-filter button */}
+      {usesMultiEncounterSelection && isMobile && createPortal(
         <Button
           variant="default"
           size="icon"
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="fixed bottom-8 left-8 z-50 h-14 w-14 rounded-full shadow-lg"
+          className="fixed right-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-50 h-11 w-11 rounded-full border border-white/10 shadow-xl sm:right-6 sm:h-12 sm:w-12"
           title={sidebarOpen ? "Close encounters" : "Show encounters"}
+          aria-label={sidebarOpen ? "Close encounter filters" : "Show encounter filters"}
         >
           {sidebarOpen ? <X className="h-5 w-5" /> : <List className="h-5 w-5" />}
         </Button>,
         document.body,
       )}
 
-      {/* Sidebar — desktop: always present (empty when not DPS to preserve layout), mobile: overlay */}
+      {/* Encounter sidebar — desktop: always present, mobile: overlay */}
       {!isMobile && (
         <div className="pt-1 w-64 shrink-0 border-r pr-4 overflow-y-auto styled-scrollbar sticky top-4 max-h-[calc(100vh-2rem)]">
-          {isPlayerMetric && sidebarContent}
+          {usesMultiEncounterSelection && sidebarContent}
         </div>
       )}
-      {isPlayerMetric && isMobile && sidebarOpen && (
-        <div className="fixed inset-y-0 left-0 z-50 w-64 bg-background border-r shadow-lg pl-4 pt-4 overflow-y-auto styled-scrollbar">
+      {usesMultiEncounterSelection && isMobile && sidebarOpen && (
+        <div className="fixed inset-y-0 left-0 z-50 w-[min(20rem,88vw)] overflow-y-auto border-r bg-background px-4 pt-4 shadow-2xl styled-scrollbar">
           {sidebarContent}
         </div>
       )}
 
       {/* Main area */}
-      <div className={cn("min-w-0 flex-1 space-y-5", !isMobile && "pl-6")}>
+      <div className={cn("min-w-0 flex-1 space-y-4 sm:space-y-5", !isMobile && "pl-6")}>
         {/* Hero header with instance background */}
-        <div className="rounded-lg border relative overflow-hidden">
+        <div className="relative overflow-hidden rounded-xl border">
           {/* Background image */}
           <div className="absolute inset-0 z-0">
             <img
               src={getInstanceBackground(instanceName)}
               alt=""
-              className="h-full w-full object-cover opacity-70"
+              className="h-full w-full object-cover opacity-45 sm:opacity-70"
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-background/90 via-background/70 to-background/50" />
+            <div className="absolute inset-0 bg-gradient-to-b from-background/70 via-background/75 to-background/95 sm:bg-gradient-to-r sm:from-background/90 sm:via-background/70 sm:to-background/50" />
           </div>
 
           {/* Header content — two columns, both touch bottom */}
-          <div className="relative z-10 p-4 flex flex-col sm:flex-row gap-4">
+          <div className="relative z-10 flex flex-col gap-4 p-3 sm:flex-row sm:p-4">
             {/* Left: back, title, dropdowns */}
             <div className="flex-1 flex flex-col justify-between gap-2">
               <div>
@@ -705,18 +846,18 @@ export function InstanceView({ instanceName }: InstanceViewProps) {
                   <ArrowLeft className="h-3.5 w-3.5" />
                   Back to Rankings
                 </button>
-                <h1 className="text-2xl font-bold">
-                  {instanceName}
+                <h1 className="flex flex-wrap items-baseline gap-x-2 text-xl font-bold leading-tight sm:text-2xl">
+                  <span>{instanceName}</span>
                   {headerDifficulty && (
-                    <span className="ml-2 text-lg font-normal text-muted-foreground">{headerDifficulty}</span>
+                    <span className="text-sm font-normal text-muted-foreground sm:text-lg">{headerDifficulty}</span>
                   )}
                 </h1>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="grid grid-cols-2 items-center gap-2 sm:flex sm:flex-wrap">
                 <DropdownMenu modal={false}>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs min-w-[120px] justify-between">
+                    <Button variant="outline" size="sm" className="h-8 w-full min-w-0 justify-between gap-1.5 px-2 text-xs sm:h-7 sm:w-auto sm:min-w-[120px] sm:px-3">
                       {metric === "dps" ? "DPS Rankings" : metric === "hps" ? "HPS Rankings" : metric === "killtime" ? "Kill Time" : "Success Rate"}
                       <ChevronDown className="h-3 w-3 opacity-50" />
                     </Button>
@@ -734,7 +875,7 @@ export function InstanceView({ instanceName }: InstanceViewProps) {
                 {isPlayerMetric && (
                   <DropdownMenu modal={false}>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs min-w-[80px] justify-between">
+                      <Button variant="outline" size="sm" className="h-8 w-full min-w-0 justify-between gap-1.5 px-2 text-xs sm:h-7 sm:w-auto sm:min-w-[80px] sm:px-3">
                         {filterRole === "" ? "All Roles" : filterRole === "dps" ? "DPS" : filterRole === "heal" ? "Healer" : "Tank"}
                         <ChevronDown className="h-3 w-3 opacity-50" />
                       </Button>
@@ -753,7 +894,7 @@ export function InstanceView({ instanceName }: InstanceViewProps) {
                 {availableDifficulties.length > 1 && (
                   <DropdownMenu modal={false}>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs min-w-[130px] justify-between">
+                      <Button variant="outline" size="sm" className="h-8 w-full min-w-0 justify-between gap-1.5 px-2 text-xs sm:h-7 sm:w-auto sm:min-w-[130px] sm:px-3">
                         {selectedDifficulties.size === 0
                           ? "All Difficulties"
                           : selectedDifficulties.size === 1
@@ -786,7 +927,7 @@ export function InstanceView({ instanceName }: InstanceViewProps) {
                 {isPlayerMetric && availableRealms.length > 1 && (
                   <DropdownMenu modal={false}>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs min-w-[110px] justify-between">
+                      <Button variant="outline" size="sm" className="h-8 w-full min-w-0 justify-between gap-1.5 px-2 text-xs sm:h-7 sm:w-auto sm:min-w-[110px] sm:px-3">
                         {selectedRealms.size === 0
                           ? "All Realms"
                           : selectedRealms.size === 1
@@ -826,7 +967,7 @@ export function InstanceView({ instanceName }: InstanceViewProps) {
                   </DropdownMenu>
                 )}
 
-                <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer select-none">
+                <label className="flex min-h-8 items-center gap-2 rounded-md border border-white/5 bg-black/20 px-2 text-xs text-muted-foreground cursor-pointer select-none sm:min-h-0 sm:border-0 sm:bg-transparent sm:px-0">
                   <Checkbox
                     checked={hideUnknowns}
                     onCheckedChange={() => handleToggleUnknowns()}
@@ -836,7 +977,7 @@ export function InstanceView({ instanceName }: InstanceViewProps) {
                 </label>
 
                 {isPlayerMetric && dpsSubTab === "boxplot" && (
-                  <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer select-none">
+                  <label className="flex min-h-8 items-center gap-2 rounded-md border border-white/5 bg-black/20 px-2 text-xs text-muted-foreground cursor-pointer select-none sm:min-h-0 sm:border-0 sm:bg-transparent sm:px-0">
                     <Checkbox
                       checked={groupByClass}
                       onCheckedChange={() => handleToggleGroupByClass()}
@@ -849,9 +990,9 @@ export function InstanceView({ instanceName }: InstanceViewProps) {
             </div>
 
             {/* Right: sub-tabs + time period, bottom-aligned */}
-            <div className="flex flex-col justify-end items-end gap-2 shrink-0">
+            <div className="flex w-full shrink-0 flex-col justify-end gap-2 sm:w-auto sm:items-end">
               {(isPlayerMetric || metric === "killtime") && (
-                <div className="flex gap-1 rounded-lg border border-white/10 bg-black/20 p-1">
+                <div className="flex w-full gap-1 rounded-lg border border-white/10 bg-black/20 p-1 sm:w-auto">
                   {(["boxplot", "leaderboard"] as const).map((t) => (
                     <button
                       key={t}
@@ -861,7 +1002,7 @@ export function InstanceView({ instanceName }: InstanceViewProps) {
                           : handleKillTimeSubTabChange(t)
                       }
                       className={cn(
-                        "rounded-md px-2.5 py-0.5 text-[11px] font-medium transition-colors",
+                        "flex-1 rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors sm:flex-none sm:py-0.5",
                         (isPlayerMetric ? dpsSubTab : killTimeSubTab) === t
                           ? "bg-white/15 text-foreground"
                           : "text-muted-foreground hover:text-foreground",
@@ -873,7 +1014,7 @@ export function InstanceView({ instanceName }: InstanceViewProps) {
                 </div>
               )}
 
-              <div className="flex gap-1 rounded-lg border border-white/10 bg-black/30 p-1">
+              <div className="flex w-full gap-1 rounded-lg border border-white/10 bg-black/30 p-1 sm:w-auto">
                 {([
                   { value: "all" as const, label: "All Time" },
                   { value: "90d" as const, label: "90d" },
@@ -884,7 +1025,7 @@ export function InstanceView({ instanceName }: InstanceViewProps) {
                     key={opt.value}
                     onClick={() => handleTimePeriodChange(opt.value)}
                     className={cn(
-                      "rounded-md px-3 py-1 text-xs font-medium transition-colors",
+                      "flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors sm:flex-none sm:px-3 sm:py-1",
                       timePeriod === opt.value
                         ? "bg-[#5F8FA6] text-white"
                         : "text-muted-foreground hover:text-foreground",
@@ -900,7 +1041,7 @@ export function InstanceView({ instanceName }: InstanceViewProps) {
 
         {/* Multi-encounter notice */}
         {isPlayerMetric && selectedEncounters.size > 1 && (
-          <p className="text-xs text-muted-foreground/70 italic">
+          <p className="rounded-lg border border-white/5 bg-muted/20 px-3 py-2 text-[11px] leading-relaxed text-muted-foreground sm:border-0 sm:bg-transparent sm:px-0 sm:py-0 sm:text-xs sm:italic">
             Showing combined {valueMetric.toUpperCase()} across {selectedEncounters.size} encounters per run.
             Runs missing any selected encounter are excluded.
           </p>
@@ -911,8 +1052,11 @@ export function InstanceView({ instanceName }: InstanceViewProps) {
           dpsSubTab === "boxplot" ? (
             <BoxPlotChart
               stats={boxPlotStats}
+              loading={boxPlotLoading}
               title={`${valueMetric.toUpperCase()} Distribution by Class & Spec`}
-              subtitle={`${boxPlotStats.reduce((sum, s) => sum + s.count, 0).toLocaleString()} total runs`}
+              subtitle={boxPlotLoading
+                ? undefined
+                : `${boxPlotStats.reduce((sum, s) => sum + s.count, 0).toLocaleString()} total runs`}
               onRowClick={handleBoxPlotRowClick}
             />
           ) : (
@@ -920,10 +1064,17 @@ export function InstanceView({ instanceName }: InstanceViewProps) {
               <ClassSpecFilter
                 selectedClass={filterClass ?? null}
                 selectedSpec={filterSpec ?? null}
+                selectedSubSpec={filterSubSpec ?? null}
+                options={filterOptions}
                 onClassSelect={handleClassSelect}
                 onSpecSelect={handleSpecSelect}
+                onSubSpecSelect={handleSubSpecSelect}
               />
-              <RankingsTable entries={leaderboardEntries} metric={valueMetric} />
+              <RankingsTable
+                entries={leaderboardEntries}
+                loading={leaderboardLoading}
+                metric={valueMetric}
+              />
               {/* Pagination */}
               {totalPages > 1 && (
                 <div className="flex items-center justify-between pt-2">
@@ -961,7 +1112,7 @@ export function InstanceView({ instanceName }: InstanceViewProps) {
 
         {metric === "killtime" && (
           killTimeSubTab === "boxplot" ? (
-            <KillTimeContent stats={killTimeStats} />
+            <KillTimeContent stats={killTimeStats} loading={killTimeStatsLoading} />
           ) : (
             <>
               {/* Encounter selector — kill times only make sense per-boss */}
@@ -981,7 +1132,7 @@ export function InstanceView({ instanceName }: InstanceViewProps) {
                   </button>
                 ))}
               </div>
-              <KillTimeTable entries={killTimeEntries} />
+              <KillTimeTable entries={killTimeEntries} loading={killTimeLeaderboardLoading} />
               {/* Pagination */}
               {killTimeTotalPages > 1 && (
                 <div className="flex items-center justify-between pt-2">
@@ -1018,7 +1169,7 @@ export function InstanceView({ instanceName }: InstanceViewProps) {
         )}
 
         {metric === "success" && (
-          <SuccessRateContent rates={successRates} />
+          <SuccessRateContent rates={successRates} loading={successRatesLoading} />
         )}
       </div>
     </div>
@@ -1036,13 +1187,16 @@ function formatTime(seconds: number): string {
   return `${m}:${String(sWhole).padStart(2, "0")}${fracStr}`
 }
 
-function KillTimeContent({ stats }: { stats: RankingsKillTimeStats[] }) {
+function KillTimeContent({ stats, loading }: { stats: RankingsKillTimeStats[]; loading: boolean }) {
+  if (loading) return <RankingsLoadingState />
+
   const scaleMax = Math.max(...stats.map((s) => s.max_secs), 1)
   const step = scaleMax <= 300 ? 30 : 60
   const ticks: number[] = []
   for (let v = 0; v <= scaleMax; v += step) ticks.push(v)
   if (ticks[ticks.length - 1] < scaleMax) ticks.push(Math.ceil(scaleMax / step) * step)
   const axisMax = ticks[ticks.length - 1]
+  const mobileTicks = [0, axisMax / 2, axisMax]
 
   if (stats.length === 0) {
     return (
@@ -1053,10 +1207,10 @@ function KillTimeContent({ stats }: { stats: RankingsKillTimeStats[] }) {
   }
 
   return (
-    <div className="rounded-xl border bg-card p-5">
-      <h3 className="mb-5 text-sm font-medium text-muted-foreground">Kill Time by Encounter</h3>
+    <div className="rounded-xl border bg-card p-3 sm:p-5">
+      <h3 className="mb-3 text-sm font-medium text-muted-foreground sm:mb-5">Kill Time by Encounter</h3>
       {/* Column header */}
-      <div className="flex items-center gap-3 px-1 pb-1">
+      <div className="hidden items-center gap-3 px-1 pb-1 sm:flex">
         <div className="w-40 shrink-0" />
         <div className="flex-1" />
         <div className="w-28 shrink-0 text-right text-[10px] text-muted-foreground/60">Avg (sample count)</div>
@@ -1069,12 +1223,19 @@ function KillTimeContent({ stats }: { stats: RankingsKillTimeStats[] }) {
           return (
             <Tooltip key={s.encounter_name}>
               <TooltipTrigger asChild>
-                <div className="flex items-center gap-3 px-1 py-1.5 rounded-md hover:bg-muted/20 transition-colors cursor-default">
-                  {/* Label */}
-                  <div className="w-40 shrink-0 text-xs font-medium truncate">{s.encounter_name}</div>
+                <div className="relative h-10 rounded-md border-l-2 border-[#5F8FA6] pl-2 transition-colors hover:bg-muted/20 cursor-default sm:flex sm:h-auto sm:items-center sm:gap-3 sm:border-l-0 sm:px-1 sm:py-1.5">
+                  {/* Encounter name and mobile median overlap the top of the plot. */}
+                  <div className="absolute inset-x-2 top-0 z-10 flex items-center text-xs sm:static sm:w-40 sm:shrink-0">
+                    <span className="min-w-0 truncate bg-card/90 pr-2 font-medium backdrop-blur-[1px] sm:bg-transparent sm:pr-0 sm:backdrop-blur-none">
+                      {s.encounter_name}
+                    </span>
+                    <span className="ml-auto shrink-0 bg-card/90 pl-2 font-mono font-semibold tabular-nums text-foreground backdrop-blur-[1px] sm:hidden">
+                      {formatTime(s.median_secs)}
+                    </span>
+                  </div>
 
                   {/* Box plot */}
-                  <div className="relative flex-1 h-7">
+                  <div className="absolute inset-x-2 bottom-0 h-7 sm:relative sm:inset-auto sm:flex-1">
                     {/* Whisker */}
                     <div
                       className="absolute top-1/2 h-px -translate-y-1/2 bg-muted-foreground/30"
@@ -1095,8 +1256,8 @@ function KillTimeContent({ stats }: { stats: RankingsKillTimeStats[] }) {
                     />
                   </div>
 
-                  {/* Avg (sample count) */}
-                  <div className="w-28 shrink-0 text-right text-xs text-muted-foreground">
+                  {/* Desktop median (sample count) */}
+                  <div className="hidden w-28 shrink-0 text-right text-xs text-muted-foreground sm:block">
                     <span className="font-mono font-semibold text-foreground">{formatTime(s.median_secs)}</span>
                     {" "}
                     <span className="text-muted-foreground/60">({s.count})</span>
@@ -1129,20 +1290,31 @@ function KillTimeContent({ stats }: { stats: RankingsKillTimeStats[] }) {
         })}
 
         {/* X-axis */}
-        <div className="flex items-center gap-3 pt-2">
-          <div className="w-40 shrink-0" />
-          <div className="relative flex-1 h-5">
+        <div className="flex items-center gap-3 pt-2 sm:px-1">
+          <div className="hidden w-40 shrink-0 sm:block" />
+          <div className="relative h-5 flex-1">
+            {mobileTicks.map((v, i) => (
+              <span
+                key={`mobile-${v}`}
+                className={`absolute font-mono text-[10px] text-muted-foreground/60 sm:hidden ${
+                  i === 0 ? "" : i === mobileTicks.length - 1 ? "-translate-x-full" : "-translate-x-1/2"
+                }`}
+                style={{ left: `${(v / axisMax) * 100}%` }}
+              >
+                {formatTime(v)}
+              </span>
+            ))}
             {ticks.map((v) => (
               <span
                 key={v}
-                className="absolute -translate-x-1/2 text-[10px] text-muted-foreground/60 font-mono"
+                className="absolute hidden -translate-x-1/2 font-mono text-[10px] text-muted-foreground/60 sm:block"
                 style={{ left: `${(v / axisMax) * 100}%` }}
               >
                 {formatTime(v)}
               </span>
             ))}
           </div>
-          <div className="w-28 shrink-0" />
+          <div className="hidden w-28 shrink-0 sm:block" />
         </div>
       </div>
       </TooltipProvider>
@@ -1166,7 +1338,9 @@ function TimeStatLine({ label, desc, value, highlight }: { label: string; desc?:
 
 // ── Success Rate Content ─────────────────────────────────────────────────
 
-function SuccessRateContent({ rates }: { rates: RankingsSuccessRate[] }) {
+function SuccessRateContent({ rates, loading }: { rates: RankingsSuccessRate[]; loading: boolean }) {
+  if (loading) return <RankingsLoadingState />
+
   if (rates.length === 0) {
     return (
       <div className="rounded-xl border p-8 text-center text-muted-foreground">
@@ -1176,18 +1350,27 @@ function SuccessRateContent({ rates }: { rates: RankingsSuccessRate[] }) {
   }
 
   return (
-    <div className="rounded-xl border bg-card p-5">
-      <h3 className="mb-5 text-sm font-medium text-muted-foreground">Success Rate by Encounter</h3>
-      <div className="space-y-2">
+    <div className="rounded-xl border bg-card p-3 sm:p-5">
+      <h3 className="mb-3 text-sm font-medium text-muted-foreground sm:mb-5">Success Rate by Encounter</h3>
+      <div className="space-y-1.5 sm:space-y-2">
         {rates.map((r) => {
           const successPct = r.total > 0 ? Math.round((r.kills / r.total) * 100) : 0
           return (
-            <div key={r.encounter_name} className="flex items-center gap-3 px-1 py-1.5 rounded-md hover:bg-muted/20 transition-colors">
-              {/* Label */}
-              <div className="w-40 shrink-0 text-xs font-medium truncate">{r.encounter_name}</div>
+            <div key={r.encounter_name} className="relative h-10 rounded-md border-l-2 border-green-500/70 pl-2 transition-colors hover:bg-muted/20 sm:flex sm:h-auto sm:items-center sm:gap-3 sm:border-l-0 sm:px-1 sm:py-1.5">
+              {/* Encounter and mobile counts overlap the top of the bar. */}
+              <div className="absolute inset-x-2 top-0 z-10 flex items-center text-xs sm:static sm:w-40 sm:shrink-0">
+                <span className="min-w-0 truncate bg-card/90 pr-2 font-medium backdrop-blur-[1px] sm:bg-transparent sm:pr-0 sm:backdrop-blur-none">
+                  {r.encounter_name}
+                </span>
+                <span className="ml-auto shrink-0 bg-card/90 pl-2 text-[11px] backdrop-blur-[1px] sm:hidden">
+                  <span className="text-green-400">{r.kills}</span>
+                  {" / "}
+                  <span className="text-red-400">{r.wipes}</span>
+                </span>
+              </div>
 
               {/* Bar */}
-              <div className="relative flex-1 h-6 rounded-md bg-muted/20 overflow-hidden">
+              <div className="absolute inset-x-2 bottom-0 h-6 overflow-hidden rounded-md bg-muted/20 sm:relative sm:inset-auto sm:flex-1">
                 {/* Success portion */}
                 <div
                   className="absolute inset-y-0 left-0 rounded-md bg-green-500/70 transition-all duration-500"
@@ -1206,12 +1389,12 @@ function SuccessRateContent({ rates }: { rates: RankingsSuccessRate[] }) {
                 </div>
               </div>
 
-              {/* Counts */}
-              <div className="w-28 shrink-0 text-right text-xs text-muted-foreground">
+              {/* Desktop counts */}
+              <div className="hidden w-28 shrink-0 text-right text-xs text-muted-foreground sm:block">
                 <span className="text-green-400">{r.kills}</span>
                 {" / "}
                 <span className="text-red-400">{r.wipes}</span>
-                <span className="hidden sm:inline text-muted-foreground/60"> ({r.total})</span>
+                <span className="text-muted-foreground/60"> ({r.total})</span>
               </div>
             </div>
           )

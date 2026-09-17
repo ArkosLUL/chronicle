@@ -69,13 +69,50 @@ func TestVanillaPlusScarletMonasterySpeedrunRequirements(t *testing.T) {
 		{Name: "Brother Michael", EntryIDs: []uint32{25221}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
 		{Name: "Brigitte Abbendis", EntryIDs: []uint32{25229}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
 		{Name: "Fairbanks", EntryIDs: []uint32{25222}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
-		{Name: "Beltheris", EntryIDs: []uint32{25243}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
 		{Name: "Doan", EntryIDs: []uint32{25223}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
 		{Name: "Vishas", EntryIDs: []uint32{25224}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
 		{Name: "Herod", EntryIDs: []uint32{25226}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
 		{Name: "Sally Whitemane", EntryIDs: []uint32{25228}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
 		{Name: "Renault Mograine", EntryIDs: []uint32{25227}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
 	}, rules.Speedrun.Requirements)
+}
+
+func TestZulGurubOptionalBossesAreNotRequired(t *testing.T) {
+	t.Parallel()
+
+	flavor := database.WoWFlavor{database.FlavorVanillaPlus}
+	rules := ZulGurubFactory.FlavoredRankings(flavor)
+	require.NotNil(t, rules)
+	require.NotNil(t, rules.Speedrun)
+	for _, required := range []rankings.SpeedrunRequirement{
+		{Name: "Azus the Bloodseeker", EntryIDs: []uint32{25031}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "The Nameless Hermit", EntryIDs: []uint32{25030}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+	} {
+		require.Contains(t, rules.Speedrun.Requirements, required)
+	}
+
+	hostiles := ZulGurubHostiles(flavor).HostileEntries()
+	for _, entryID := range []uint32{15114, 15083, 15084, 15085, 15082} {
+		require.Contains(t, hostiles, entryID)
+		require.True(t, hostiles[entryID].Boss)
+		for _, requirement := range rules.Speedrun.Requirements {
+			require.NotContains(t, requirement.EntryIDs, entryID)
+		}
+	}
+}
+
+func TestEmeraldSanctumRankingsWithoutSpeedrun(t *testing.T) {
+	t.Parallel()
+
+	flavor := database.WoWFlavor{database.FlavorVanilla}
+	rules := EmeraldSanctumFactory.FlavoredRankings(flavor)
+	require.NotNil(t, rules)
+	require.Nil(t, rules.Speedrun)
+	require.Equal(t, []string{
+		"Erennius",
+		"Solnius",
+		"Solnius (Hard Mode)",
+	}, EmeraldSanctumFactory.ProgressionBosses(flavor))
 }
 
 func TestVanillaRaidLevel60Caps(t *testing.T) {

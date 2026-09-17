@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"net/http"
 	"strconv"
 	"time"
@@ -13,11 +14,14 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-// RecentInstances returns instances from the last 2 weeks.
+const recentInstancesCacheControl = "public, max-age=60, stale-while-revalidate=300"
+
+// RecentInstances returns instances from a configurable recent time window.
 // It delegates to InstancesByTimeRange with a preset time window.
-// @Summary List recent raid/dungeon instances (last 2 weeks)
+// @Summary List recent raid/dungeon instances
 // @Tags raidlogs
 // @Produce json
+// @Param days query int false "Number of days to look back (default 14, max 365)"
 // @Param instance_name query []string false "Filter by instance names"
 // @Param has_video query string false "Filter by video presence (true, false)"
 // @Param realm_id query string false "Filter by realm UUID"
@@ -26,17 +30,34 @@ import (
 // @Router /api/v1/raidlogs/recent [get]
 func (api *API) RecentInstances(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
+	now := time.Now()
 	if q.Get("start") == "" {
-		q.Set("start", time.Now().AddDate(0, 0, -365).UTC().Format(time.RFC3339))
+		q.Set("start", now.AddDate(0, 0, -recentWindowDays(q.Get("days"))).UTC().Format(time.RFC3339))
 	}
 	if q.Get("end") == "" {
-		q.Set("end", time.Now().Add(24*time.Hour).UTC().Format(time.RFC3339))
+		q.Set("end", now.Add(24*time.Hour).UTC().Format(time.RFC3339))
 	}
 	if q.Get("limit") == "" {
 		q.Set("limit", "25")
 	}
 	r.URL.RawQuery = q.Encode()
-	api.InstancesByTimeRange(w, r)
+	api.instancesByTimeRange(w, r, true)
+}
+
+func recentWindowDays(value string) int {
+	const (
+		defaultDays = 14
+		maxDays     = 365
+	)
+
+	days, err := strconv.Atoi(value)
+	if err != nil || days < 1 {
+		return defaultDays
+	}
+	if days > maxDays {
+		return maxDays
+	}
+	return days
 }
 
 // InstancesByTimeRange returns instances within a given time range.
@@ -54,6 +75,10 @@ func (api *API) RecentInstances(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} chroniclesdk.RecentInstancesResponse
 // @Router /api/v1/raidlogs/range [get]
 func (api *API) InstancesByTimeRange(w http.ResponseWriter, r *http.Request) {
+	api.instancesByTimeRange(w, r, false)
+}
+
+func (api *API) instancesByTimeRange(w http.ResponseWriter, r *http.Request, groupDuplicates bool) {
 	ctx := r.Context()
 
 	q := r.URL.Query()
@@ -115,6 +140,31 @@ func (api *API) InstancesByTimeRange(w http.ResponseWriter, r *http.Request) {
 		if parsed, err := strconv.Atoi(o); err == nil && parsed > 0 {
 			offsetCount = int32(parsed)
 		}
+	}
+
+	if groupDuplicates {
+		queryLimit := limitCount
+		if queryLimit > 0 {
+			queryLimit++
+		}
+
+		rows, err := api.Opts.Zed.ListRecentInstanceGroups(ctx, database.ListRecentInstanceGroupsParams{
+			StartTime:     pgtype.Timestamptz{Time: startTime, Valid: true},
+			EndTime:       pgtype.Timestamptz{Time: endTime, Valid: true},
+			InstanceNames: instanceNames,
+			HasVideo:      hasVideo,
+			RealmID:       realmID,
+			GuildID:       guildID,
+			PlayerGuid:    playerGUID,
+			LimitCount:    queryLimit,
+			OffsetCount:   offsetCount,
+		})
+		if err != nil {
+			writeRecentInstancesError(ctx, w, err)
+			return
+		}
+		api.writeRecentInstanceGroups(ctx, w, rows, limitCount)
+		return
 	}
 
 	rows, err := api.Opts.Zed.ListInstancesByTimeRange(ctx, database.ListInstancesByTimeRangeParams{
@@ -208,4 +258,112 @@ func (api *API) InstancesByTimeRange(w http.ResponseWriter, r *http.Request) {
 		HasMore:   false,
 	}
 	httpapi.Write(ctx, w, http.StatusOK, response)
+}
+
+func writeRecentInstancesError(ctx context.Context, w http.ResponseWriter, err error) {
+	httpapi.HandleResponseError(ctx, w, err, httpapi.APIError{
+		Response: chroniclesdk.Response{
+			Message: "Failed to fetch instances",
+			Detail:  err.Error(),
+		},
+		Status:  http.StatusInternalServerError,
+		Wrapped: err,
+	})
+}
+
+func (api *API) writeRecentInstanceGroups(ctx context.Context, w http.ResponseWriter, rows []database.ListRecentInstanceGroupsRow, limitCount int32) {
+	rows, hasMore := trimRecentInstanceGroups(rows, limitCount)
+
+	instanceIDs := make([]uuid.UUID, len(rows))
+	for i, row := range rows {
+		instanceIDs[i] = row.ID
+	}
+
+	encountersByInstance := make(map[uuid.UUID][]chroniclesdk.RecentEncounter)
+	if len(instanceIDs) > 0 {
+		allEncounters, err := api.Opts.Zed.GetEncounterSummariesByInstanceIDs(ctx, instanceIDs)
+		if err == nil {
+			for _, enc := range allEncounters {
+				encountersByInstance[enc.InstanceID] = append(encountersByInstance[enc.InstanceID], chroniclesdk.RecentEncounter{
+					Name:     enc.Name,
+					Boss:     enc.Boss,
+					KillType: chroniclesdk.KillType(enc.KillType),
+				})
+			}
+		}
+	}
+
+	instances := make([]chroniclesdk.RecentInstance, 0, len(rows))
+	for _, row := range rows {
+		inst := chroniclesdk.RecentInstance{
+			ID:                 row.ID,
+			Slug:               row.Slug.String,
+			Name:               row.Name,
+			RealmID:            row.RealmID,
+			RealmName:          row.RealmName,
+			UploaderID:         row.UploaderID,
+			UploaderName:       row.UploaderName,
+			UploadedAt:         row.UploadedAt.Time,
+			FirstEncounterTime: row.FirstEncounterTime.Time,
+			PlayerCount:        row.PlayerCount,
+			BossCount:          row.BossCount,
+			BossKills:          row.BossKills,
+			HasYoutubeVideo:    row.HasYoutubeVideo,
+			Encounters:         encountersByInstance[row.ID],
+			RecorderName:       row.RecorderName,
+			DifficultyName:     row.DifficultyName,
+			MaxPlayers:         int(row.MaxPlayers),
+			DynamicDifficulty:  int(row.DynamicDifficulty),
+		}
+		if row.DuplicateGroupID.Valid {
+			inst.DuplicateGroupID = &row.DuplicateGroupID.UUID
+		}
+		if row.DurationMs != 0 {
+			d := row.DurationMs
+			inst.DurationMs = &d
+		}
+		if row.CombatDurationMs.Valid {
+			c := row.CombatDurationMs.Int64
+			inst.CombatDurationMs = &c
+		}
+		if row.GuildID.Valid {
+			inst.GuildID = &row.GuildID.UUID
+		}
+		if row.GuildName.Valid {
+			inst.GuildName = &row.GuildName.String
+		}
+		instances = append(instances, inst)
+	}
+
+	w.Header().Set("Cache-Control", recentInstancesCacheControl)
+	httpapi.Write(ctx, w, http.StatusOK, chroniclesdk.RecentInstancesResponse{
+		Instances: instances,
+		HasMore:   hasMore,
+	})
+}
+
+func trimRecentInstanceGroups(rows []database.ListRecentInstanceGroupsRow, limitCount int32) ([]database.ListRecentInstanceGroupsRow, bool) {
+	if limitCount <= 0 {
+		return rows, false
+	}
+
+	var previousRunID uuid.UUID
+	runCount := int32(0)
+	for i, row := range rows {
+		runID := row.ID
+		if row.DuplicateGroupID.Valid {
+			runID = row.DuplicateGroupID.UUID
+		}
+		if i > 0 && runID == previousRunID {
+			continue
+		}
+
+		runCount++
+		if runCount > limitCount {
+			return rows[:i], true
+		}
+		previousRunID = runID
+	}
+
+	return rows, false
 }

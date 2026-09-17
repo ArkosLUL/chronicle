@@ -16,10 +16,25 @@ const (
 	InactivityTimeout = time.Second * 60
 )
 
+type TimeoutAsDeathCondition func(*Characters) bool
+
+// IfEntryAlive treats a timeout as a death while any creature with the given
+// entry is active.
+func IfEntryAlive(entry uint32) TimeoutAsDeathCondition {
+	return func(all *Characters) bool {
+		for _, character := range all.ByEntry[entry] {
+			if character.IsActive() {
+				return true
+			}
+		}
+		return false
+	}
+}
+
 type Common struct {
 	*Base[*period.InactivityPeriod]
-	timeout        time.Duration
-	timeoutAsDeath bool
+	timeout          time.Duration
+	timeoutAsDeathIf TimeoutAsDeathCondition
 }
 
 func NewCommonCharacter(id guid.GUID, all *Characters) *Common {
@@ -35,14 +50,18 @@ func (c *Common) WithTimeout(timeout time.Duration) *Common {
 }
 
 func (c *Common) WithTimeoutAsDeath() *Common {
-	c.timeoutAsDeath = true
+	return c.WithTimeoutAsDeathIf(func(*Characters) bool { return true })
+}
+
+func (c *Common) WithTimeoutAsDeathIf(condition TimeoutAsDeathCondition) *Common {
+	c.timeoutAsDeathIf = condition
 	return c
 }
 
 func (c *Common) Process(m messages.Message) error {
 	// Timeouts should be checked on every timestamp
 	cur, ok := c.Activity.Current()
-	if ok {
+	if ok && !c.Lookup().ExplicitEncounterActive() {
 		cur.HandleTimeout(m.Date())
 	}
 
@@ -50,10 +69,13 @@ func (c *Common) Process(m messages.Message) error {
 }
 
 func (c *Common) Start(reason string, m messages.Message) {
-	c.Activity.Start(
-		period.NewInactivityPeriod(c.ID(), c.timeout).WithTimeoutAsDeath(c.timeoutAsDeath),
-		reason, m,
-	)
+	activity := period.NewInactivityPeriod(c.ID(), c.timeout)
+	if c.timeoutAsDeathIf != nil {
+		activity.WithTimeoutAsDeathIf(func() bool {
+			return c.timeoutAsDeathIf(c.Lookup())
+		})
+	}
+	c.Activity.Start(activity, reason, m)
 }
 
 type CharacterBase interface {
@@ -70,7 +92,8 @@ type CharacterBase interface {
 	ContainsMe(ids ...guid.GUID) bool
 }
 
-func isImmobilizeCC(spellName string) bool {
+// IsImmobilizeCC reports whether a spell uses the generic crowd-control activity behavior.
+func IsImmobilizeCC(spellName string) bool {
 	switch spellName {
 	case "Polymorph", "Freezing Trap Effect", "Sap", "Hibernate", "Banish":
 		return true
@@ -88,13 +111,16 @@ func ProcessCommonActivity(c CharacterBase, m messages.Message) error {
 		if reason, ok := m.MarkHas(messages.MarkTypeBump, c.ID()); ok {
 			c.Bump(reason, m)
 		}
+		if _, ok := m.MarkHas(messages.MarkTypeIgnoreActivity, c.ID()); ok {
+			return nil
+		}
 		// Let the regular logic apply.
 	}
 
 	switch data := m.(type) {
 	case *messages.Cast:
 		if data.Target != nil && (*data.Target).Gid == c.ID() {
-			if data.Action == types.CastActionsCasts && isImmobilizeCC(data.Spell.Name) {
+			if data.Action == types.CastActionsCasts && IsImmobilizeCC(data.Spell.Name) {
 				c.Start(fmt.Sprintf("cc_%s", data.Spell.Name), m)
 			}
 		}
@@ -108,7 +134,7 @@ func ProcessCommonActivity(c CharacterBase, m messages.Message) error {
 		applied := data.Amount > 0
 		removed := data.Amount == 0
 
-		if isImmobilizeCC(data.SpellName) {
+		if IsImmobilizeCC(data.SpellName) {
 			if applied {
 				c.Start(fmt.Sprintf("cc_%s", data.SpellName), m)
 			} else if removed {

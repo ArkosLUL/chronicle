@@ -1,8 +1,10 @@
 package registry
 
 import (
+	"slices"
 	"testing"
 
+	"github.com/Emyrk/chronicle/combatlog/parser/common/instances"
 	"github.com/Emyrk/chronicle/database"
 	"github.com/stretchr/testify/require"
 )
@@ -20,6 +22,18 @@ func TestWrathRegistryReplacesClassicOnyxia(t *testing.T) {
 	require.NotNil(t, wrath.SpeedrunRules)
 	require.Nil(t, wrath.SpeedrunRules.LevelRange)
 	require.Equal(t, []uint32{10184}, wrath.SpeedrunRules.Requirements[0].EntryIDs)
+}
+
+func TestChromieCraftOnyxiaHasNoSpeedrunRules(t *testing.T) {
+	t.Parallel()
+
+	flavor := database.WoWFlavor{database.FlavorWrath, database.FlavorChromieCraft}
+	registry := RegistryForFlavor(nil, flavor)
+
+	onyxia := registry.EntryByName("Onyxia's Lair")
+	require.NotNil(t, onyxia)
+	require.Nil(t, onyxia.SpeedrunRules)
+	require.NotContains(t, registry.SpeedrunRules(), "Onyxia's Lair")
 }
 
 func TestProgressionOnyxiaHasSeparateSpeedrunRules(t *testing.T) {
@@ -93,6 +107,9 @@ func TestInstanceDetailsBossCount(t *testing.T) {
 		{name: "naxxramas groups multi-unit encounters", flavor: database.WoWFlavor{database.FlavorVanilla}, instance: "Naxxramas", bossCount: intPtr(15)},
 		{name: "gruul groups council members", flavor: database.WoWFlavor{database.FlavorTBC}, instance: "Gruul's Lair", bossCount: intPtr(2)},
 		{name: "utgarde keep groups skarvald and dalronn", flavor: database.WoWFlavor{database.FlavorWrath}, instance: "Utgarde Keep", bossCount: intPtr(3)},
+		{name: "vanilla plus scarlet monastery", flavor: database.WoWFlavor{database.FlavorVanilla, database.FlavorVanillaPlus}, instance: "Scarlet Monastery", bossCount: intPtr(8)},
+		{name: "vanilla plus blackwing lair", flavor: database.WoWFlavor{database.FlavorVanilla, database.FlavorVanillaPlus}, instance: "Blackwing Lair", bossCount: intPtr(8)},
+		{name: "ulduar excludes optional encounters", flavor: database.WoWFlavor{database.FlavorWrath}, instance: "Ulduar", bossCount: intPtr(14)},
 		{name: "instance without speedrun rules", flavor: database.WoWFlavor{database.FlavorVanilla}, instance: "Shadowfang Keep"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -110,6 +127,176 @@ func TestInstanceDetailsBossCount(t *testing.T) {
 	}
 }
 
+func TestUlduarProgressionBosses(t *testing.T) {
+	t.Parallel()
+
+	reg := RegistryForFlavor(nil, database.WoWFlavor{database.FlavorWrath})
+	for _, detail := range reg.AllInstanceDetails() {
+		if detail.Name != "Ulduar" {
+			continue
+		}
+		require.Equal(t, []string{
+			"Flame Leviathan",
+			"Ignis the Furnace Master",
+			"Razorscale",
+			"XT-002 Deconstructor",
+			"Assembly of Iron",
+			"Kologarn",
+			"Auriaya",
+			"Hodir",
+			"Thorim",
+			"Freya",
+			"Mimiron",
+			"General Vezax",
+			"Yogg-Saron",
+			"Algalon the Observer",
+		}, detail.ProgressionBosses)
+		require.NotContains(t, detail.ProgressionBosses, "Elder Brightleaf")
+		require.Equal(t, "Flame Leviathan", detail.RankedStartAfterRequirement)
+		return
+	}
+	t.Fatal("Ulduar not found")
+}
+
+func TestZulGurubProgressionBossesDependOnFlavor(t *testing.T) {
+	t.Parallel()
+
+	baseBosses := []string{
+		"High Priestess Jeklik",
+		"High Priest Venoxis",
+		"High Priestess Mar'li",
+		"Bloodlord Mandokir",
+		"High Priest Thekal",
+		"High Priestess Arlokk",
+		"Jin'do the Hexxer",
+		"Hakkar",
+	}
+
+	for _, tc := range []struct {
+		name     string
+		flavor   database.WoWFlavor
+		expected []string
+	}{
+		{name: "vanilla", flavor: database.WoWFlavor{database.FlavorVanilla}, expected: baseBosses},
+		{
+			name:   "vanilla plus",
+			flavor: database.WoWFlavor{database.FlavorVanillaPlus},
+			expected: append(slices.Clone(baseBosses),
+				"Azus the Bloodseeker",
+				"The Nameless Hermit",
+			),
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			reg := RegistryForFlavor(nil, tc.flavor)
+			detail := instanceDetailByName(t, reg, "Zul'Gurub")
+			require.Equal(t, tc.expected, detail.ProgressionBosses)
+			require.Equal(t, len(tc.expected), *detail.BossCount)
+			for _, optional := range []string{"Gahz'ranka", "Hazza'rah", "Renataki", "Wushoolay", "Gri'lek"} {
+				require.NotContains(t, detail.ProgressionBosses, optional)
+			}
+		})
+	}
+}
+
+func TestBlackwingLairProgressionBossesDependOnFlavor(t *testing.T) {
+	t.Parallel()
+
+	vanilla := instanceDetailByName(t,
+		RegistryForFlavor(nil, database.WoWFlavor{database.FlavorVanilla}),
+		"Blackwing Lair",
+	)
+	require.Contains(t, vanilla.ProgressionBosses, "Vaelastrasz the Corrupt")
+	require.Contains(t, vanilla.ProgressionBosses, "Ebonroc")
+	require.Contains(t, vanilla.ProgressionBosses, "Flamegor")
+
+	vanillaPlus := instanceDetailByName(t,
+		RegistryForFlavor(nil, database.WoWFlavor{database.FlavorVanilla, database.FlavorVanillaPlus}),
+		"Blackwing Lair",
+	)
+	require.Equal(t, []string{
+		"Razorgore the Untamed",
+		"Elementium Decapitator Mk III",
+		"Broodlord Lashlayer",
+		"Firemaw",
+		"Master Elemental Shaper Krixix",
+		"Flamegor & Ebonroc",
+		"Chromaggus",
+		"Nefarian",
+	}, vanillaPlus.ProgressionBosses)
+	require.Equal(t, len(vanillaPlus.ProgressionBosses), *vanillaPlus.BossCount)
+	require.NotContains(t, vanillaPlus.ProgressionBosses, "Vaelastrasz the Chained")
+	require.NotContains(t, vanillaPlus.ProgressionBosses, "Ebonroc")
+	require.NotContains(t, vanillaPlus.ProgressionBosses, "Flamegor")
+	require.NotContains(t, vanillaPlus.ProgressionBosses, "Vaelastrasz the Corrupt")
+}
+
+func TestProgressionBossesUseCanonicalEncounterNames(t *testing.T) {
+	t.Parallel()
+
+	reg := RegistryForFlavor(nil, database.WoWFlavor{database.FlavorWrath})
+	for _, detail := range reg.AllInstanceDetails() {
+		if detail.Name != "Naxxramas" {
+			continue
+		}
+		require.Len(t, detail.ProgressionBosses, 15)
+		require.Contains(t, detail.ProgressionBosses, "Four Horsemen")
+		require.NotContains(t, detail.ProgressionBosses, "Four Horsemen: Baron Rivendare")
+		return
+	}
+	t.Fatal("Naxxramas not found")
+}
+
+func TestInstanceDetailsCategories(t *testing.T) {
+	t.Parallel()
+
+	for _, flavor := range []database.WoWFlavor{
+		{database.FlavorVanilla},
+		{database.FlavorVanilla, database.FlavorVanillaPlus},
+		{database.FlavorNightmareOfUrsol},
+		{database.FlavorTBC},
+		{database.FlavorWrath},
+	} {
+		for _, detail := range RegistryForFlavor(nil, flavor).AllInstanceDetails() {
+			require.Truef(t, detail.Category.Valid(), "instance %q has invalid category %q for flavor %v", detail.Name, detail.Category, flavor)
+		}
+	}
+
+	categoryFor := func(flavor database.WoWFlavor, name string) instances.InstanceCategory {
+		for _, detail := range RegistryForFlavor(nil, flavor).AllInstanceDetails() {
+			if detail.Name == name {
+				return detail.Category
+			}
+		}
+		t.Fatalf("instance %q not found for flavor %v", name, flavor)
+		return ""
+	}
+
+	tower := RegistryForFlavor(nil, database.WoWFlavor{database.FlavorNightmareOfUrsol}).EntryByName("Tower of Karazhan")
+	require.NotNil(t, tower)
+	require.ElementsMatch(t, []string{"Lower Tower of Karazhan", "Upper Tower of Karazhan"}, tower.DerivedNames)
+
+	require.Equal(t, instances.InstanceCategoryDungeon, categoryFor(database.WoWFlavor{database.FlavorVanilla}, "Scarlet Monastery"))
+	require.Equal(t, instances.InstanceCategoryRaid, categoryFor(database.WoWFlavor{database.FlavorVanilla, database.FlavorVanillaPlus}, "Scarlet Monastery"))
+}
+
+func instanceDetailByName(t *testing.T, reg *Registry, name string) InstanceDetail {
+	t.Helper()
+	for _, detail := range reg.AllInstanceDetails() {
+		if detail.Name == name {
+			return detail
+		}
+	}
+	t.Fatalf("instance %q not found", name)
+	return InstanceDetail{}
+}
+
+func intPtr(value int) *int {
+	return &value
+}
+
 // Multi-unit fights must share one EncounterName, otherwise every unit opens
 // its own encounter and the log reports more bosses than the instance has.
 func TestWrathMultiUnitEncountersShareOneName(t *testing.T) {
@@ -125,8 +312,6 @@ func TestWrathMultiUnitEncountersShareOneName(t *testing.T) {
 		{instance: "Trial of the Crusader", encounter: "Northrend Beasts", unitEntry: 34796, otherEntry: 34797},
 		{instance: "Trial of the Crusader", encounter: "Twin Val'kyr", unitEntry: 34496, otherEntry: 34497},
 		{instance: "Ulduar", encounter: "Assembly of Iron", unitEntry: 32857, otherEntry: 32867},
-		{instance: "Ulduar", encounter: "Freya", unitEntry: 32906, otherEntry: 32913},
-		{instance: "Ulduar", encounter: "Mimiron", unitEntry: 33244, otherEntry: 33432},
 	} {
 		t.Run(tc.encounter, func(t *testing.T) {
 			t.Parallel()
@@ -142,23 +327,4 @@ func TestWrathMultiUnitEncountersShareOneName(t *testing.T) {
 			}
 		})
 	}
-}
-
-// Scripted triggers have no health and are never killed, so counting them as
-// bosses leaves an encounter that can never complete.
-func TestUlduarTriggersAreNotBosses(t *testing.T) {
-	t.Parallel()
-
-	entry := RegistryForFlavor(nil, database.WoWFlavor{database.FlavorWrath}).EntryByName("Ulduar")
-	require.NotNil(t, entry)
-
-	for _, entryID := range []uint32{32892, 33054, 33725, 33264, 33378} {
-		identity, ok := entry.HostileEntries[entryID]
-		require.True(t, ok, "entry %d missing", entryID)
-		require.False(t, identity.Boss, "entry %d (%s) should not be a boss", entryID, identity.Name)
-	}
-}
-
-func intPtr(value int) *int {
-	return &value
 }

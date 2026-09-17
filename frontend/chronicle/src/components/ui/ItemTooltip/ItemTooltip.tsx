@@ -4,6 +4,7 @@ import { iconUrl as buildIconUrl } from "@/config/iconUrl";
 import { useIconBaseUrl } from "@/hooks/useDatasetId";
 import { useQueries } from "@tanstack/react-query";
 import type { ItemTooltip as ItemTooltipData, ItemSpell } from "@/api/typesGenerated";
+import { fetchGemTooltip } from "@/api/gamedata";
 import { useSpell } from "@/api/queries";
 import {
   type WoWSpell,
@@ -12,6 +13,12 @@ import {
   resolveSpellDescription,
 } from "@/api/wowdb";
 import { cn } from "@/lib/utils";
+import {
+  equippedItemSetSlotCount,
+  isItemSetSlotEquipped,
+  itemSetDisplayPieces,
+} from "./itemSetDisplay";
+import { isSocketBonusFulfilled } from "./socketBonus";
 
 // WoW item quality colors
 const QUALITY_COLORS: Record<number, string> = {
@@ -137,6 +144,8 @@ interface ItemTooltipProps {
   /** When true, spell names link to /wowdb/spell/{id} */
   includeReferenceLinks?: boolean;
   showItemLevel?: boolean;
+  /** Gem enchantment IDs from the item link, by socket position. Zero means empty. */
+  gemEnchantIds?: readonly number[];
   /** Set of item entry IDs the player has equipped (for set piece highlighting). */
   equippedItemIds?: ReadonlySet<number>;
   /** If the item is transmogrified, the name of the transmog appearance. */
@@ -148,9 +157,23 @@ interface ItemTooltipProps {
  * Renders a full item tooltip with stats, damage, set bonuses, etc.
  * Designed to match the in-game tooltip appearance.
  */
-export function ItemTooltip({ item, className, includeReferenceLinks = false, showItemLevel = false, equippedItemIds, transmogName }: ItemTooltipProps) {
+export function ItemTooltip({ item, className, includeReferenceLinks = false, showItemLevel = false, gemEnchantIds = [], equippedItemIds, transmogName }: ItemTooltipProps) {
   const iconBaseUrl = useIconBaseUrl();
+  const gemQueries = useQueries({
+    queries: gemEnchantIds.map((enchantId) => ({
+      queryKey: ["gem-tooltip", enchantId],
+      queryFn: () => fetchGemTooltip(enchantId),
+      enabled: enchantId > 0,
+      staleTime: 5 * 60 * 1000,
+      retry: false,
+    })),
+  });
   const qualityColor = QUALITY_COLORS[item.quality] ?? "text-white";
+  const socketBonusFulfilled = isSocketBonusFulfilled(
+    item.sockets,
+    gemEnchantIds,
+    gemQueries.map((query) => query.data),
+  );
   const iconUrl = buildIconUrl(item.icon, iconBaseUrl);
   const slotText = INVENTORY_TYPE_TEXT[item.inventory_type] ?? "";
   const subtypeText = ITEM_CLASS_TEXT[`${item.item_class}-${item.item_subclass}`] ?? "";
@@ -254,8 +277,18 @@ export function ItemTooltip({ item, className, includeReferenceLinks = false, sh
         ))}
 
         {/* Gem Sockets */}
-        {item.sockets?.map((socket, i) => {
-          const info = SOCKET_INFO[socket.color];
+        {Array.from({ length: Math.max(item.sockets?.length ?? 0, gemEnchantIds.length) }, (_, i) => {
+          const socket = item.sockets?.[i];
+          const info = socket ? SOCKET_INFO[socket.color] : undefined;
+          const gem = gemQueries[i]?.data;
+          if (gem) {
+            return (
+              <div key={i} className="flex items-center gap-1.5 text-white">
+                <img src={buildIconUrl(gem.icon, iconBaseUrl)} alt="" width={12} height={12} className="inline-block rounded-sm" />
+                {gem.enchantment ?? gem.name}
+              </div>
+            );
+          }
           return info ? (
             <div key={i} className="flex items-center gap-1.5 text-gray-400">
               <img src={info.image} alt="" width={12} height={12} className="inline-block" />
@@ -264,7 +297,9 @@ export function ItemTooltip({ item, className, includeReferenceLinks = false, sh
           ) : null;
         })}
         {item.socket_bonus && (
-          <SocketBonusLine spellId={item.socket_bonus.spell_id} />
+          <div className={socketBonusFulfilled ? "text-quality-uncommon" : "text-gray-500"}>
+            Socket Bonus: {item.socket_bonus.name}
+          </div>
         )}
 
         {/* Enchantment (green text) */}
@@ -308,7 +343,14 @@ export function ItemTooltip({ item, className, includeReferenceLinks = false, sh
         )}
 
         {/* Item Set */}
-        {item.set && <ItemSetSection set={item.set} includeReferenceLinks={includeReferenceLinks} equippedItemIds={equippedItemIds} />}
+        {item.set && (
+          <ItemSetSection
+            set={item.set}
+            currentItemId={item.entry}
+            includeReferenceLinks={includeReferenceLinks}
+            equippedItemIds={equippedItemIds}
+          />
+        )}
       </div>
     </div>
   );
@@ -393,22 +435,32 @@ function SpellLine({ spell, includeReferenceLinks }: { spell: ItemSpell; include
   );
 }
 
-function ItemSetSection({ set, includeReferenceLinks, equippedItemIds }: { set: NonNullable<ItemTooltipData["set"]>; includeReferenceLinks: boolean; equippedItemIds?: ReadonlySet<number> }) {
-  const items = set.items ?? [];
+function ItemSetSection({
+  set,
+  currentItemId,
+  includeReferenceLinks,
+  equippedItemIds,
+}: {
+  set: NonNullable<ItemTooltipData["set"]>;
+  currentItemId: number;
+  includeReferenceLinks: boolean;
+  equippedItemIds?: ReadonlySet<number>;
+}) {
+  const items = itemSetDisplayPieces(set, currentItemId);
   // Count equipped from eligible_items (cross-tier: a Furious piece counts toward Wrathful set).
   const eligible = set.eligible_items ?? [];
-  const equippedCount = equippedItemIds
-    ? eligible.filter((p) => equippedItemIds.has(p.entry)).length
-    : 0;
+  const equippedCount = equippedItemSetSlotCount(eligible, equippedItemIds);
 
   return (
     <div className="mt-2 pt-2 border-t border-[#4a4a6a]">
       <div className="text-yellow-400 font-medium">{set.name} ({equippedCount}/{items.length})</div>
       {items.map((piece) => {
-        // Check if this piece OR a cross-tier equivalent (same inventory_type) is equipped.
-        const isEquipped = equippedItemIds
-          ? equippedItemIds.has(piece.entry) || eligible.some((e) => e.inventory_type === piece.inventory_type && equippedItemIds.has(e.entry))
-          : false;
+        // Check if this piece or a cross-tier equivalent for the same slot is equipped.
+        const isEquipped = isItemSetSlotEquipped(
+          piece,
+          eligible,
+          equippedItemIds,
+        );
         return (
           <div key={piece.entry} className={cn("ml-2", isEquipped ? "text-item-set-active" : "text-gray-500")}>
             {includeReferenceLinks ? (
@@ -454,13 +506,6 @@ function SetBonusLine({ threshold, spellId, includeReferenceLinks, active = fals
         text
       )}
     </div>
-  );
-}
-
-function SocketBonusLine({ spellId }: { spellId: number }) {
-  const text = useResolvedSpellText(spellId);
-  return (
-    <div className="text-gray-500">Socket Bonus: {text}</div>
   );
 }
 

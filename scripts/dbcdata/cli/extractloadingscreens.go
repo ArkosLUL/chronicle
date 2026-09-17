@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 
@@ -124,6 +123,11 @@ func extractLoadingScreens(wc *dbcdb.WoWClient, clientPath, outDir string, stdou
 	return nil
 }
 
+func webpOutputName(blpPath string) string {
+	name := filepath.Base(strings.ReplaceAll(blpPath, `\`, "/"))
+	return strings.TrimSuffix(strings.ToLower(name), ".blp") + ".webp"
+}
+
 // extractBLPToWebP reads a BLP file, decodes it, and writes a WebP file to
 // outDir. Returns true on success, false if skipped.
 func extractBLPToWebP(readFile func(string) ([]byte, error), blpPath, outDir string, stdout io.Writer) bool {
@@ -139,13 +143,7 @@ func extractBLPToWebP(readFile func(string) ([]byte, error), blpPath, outDir str
 		return false
 	}
 
-	// MPQ paths use Windows separators, and filepath.Base won't split those on Linux.
-	normalized := strings.ReplaceAll(blpPath, `\`, "/")
-	name := strings.TrimPrefix(normalized, `Interface/Glues/LoadingScreens/`)
-	if name == normalized {
-		name = path.Base(normalized)
-	}
-	name = strings.TrimSuffix(strings.ToLower(name), ".blp") + ".webp"
+	name := webpOutputName(blpPath)
 	outPath := filepath.Join(outDir, name)
 
 	out, err := os.Create(outPath)

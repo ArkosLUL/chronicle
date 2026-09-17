@@ -84,7 +84,6 @@ func VanillaPlusScarletMonasterySpeedrunRequirements() *rankings.Rankings {
 				{Name: "Brother Michael", EntryIDs: []uint32{25221}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
 				{Name: "Brigitte Abbendis", EntryIDs: []uint32{25229}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
 				{Name: "Fairbanks", EntryIDs: []uint32{25222}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
-				{Name: "Beltheris", EntryIDs: []uint32{25243}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
 				{Name: "Doan", EntryIDs: []uint32{25223}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
 				{Name: "Vishas", EntryIDs: []uint32{25224}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
 				{Name: "Herod", EntryIDs: []uint32{25226}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
@@ -110,7 +109,7 @@ func MoltenCoreSpeedrunRequirements(fl database.WoWFlavor) []rankings.SpeedrunRe
 		{Name: "Ragnaros", EntryIDs: []uint32{11502}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
 
 		// Trash Requirements
-		{Name: "Firesworn", EntryIDs: []uint32{12099}, Count: 8, Category: rankings.SpeedrunCategoryTrash},
+		//{Name: "Firesworn", EntryIDs: []uint32{12099}, Count: 8, Category: rankings.SpeedrunCategoryTrash},
 		// {Name: "Molten Destroyer/Giants", EntryIDs: []uint32{11659, 11658}, Count: 10, Category: rankings.SpeedrunCategoryTrash},
 		// {Name: "Firelords/Lava Annihilators", EntryIDs: []uint32{11668, 11665}, Count: 21, Category: rankings.SpeedrunCategoryTrash},
 		// {Name: "Ancient Core Hounds", EntryIDs: []uint32{11673}, Count: 13, Category: rankings.SpeedrunCategoryTrash},
@@ -135,6 +134,25 @@ func MoltenCoreSpeedrunRequirements(fl database.WoWFlavor) []rankings.SpeedrunRe
 	}
 
 	return mc
+}
+
+// BlackwingLairProgressionBosses returns the ordered boss encounters used for
+// progression. Vanilla+ adds the Decapitator and Krixix, combines Ebonroc with
+// Flamegor, and records Vaelastrasz as part of the Nefarian encounter.
+func BlackwingLairProgressionBosses(flavor database.WoWFlavor) []string {
+	if !flavor.Has(database.FlavorVanillaPlus) {
+		return nil
+	}
+	return []string{
+		"Razorgore the Untamed",
+		"Elementium Decapitator Mk III",
+		"Broodlord Lashlayer",
+		"Firemaw",
+		"Master Elemental Shaper Krixix",
+		"Flamegor & Ebonroc",
+		"Chromaggus",
+		"Nefarian",
+	}
 }
 
 // BlackwingLairSpeedrunRequirements returns the boss kills required for a
@@ -226,6 +244,25 @@ func NaxxramasSpeedrunRequirements() []rankings.SpeedrunRequirement {
 	}
 }
 
+// ZulGurubProgressionBosses returns the ordered boss encounters used for
+// progression. Summoned bosses remain available as encounters but are optional.
+func ZulGurubProgressionBosses(flavor database.WoWFlavor) []string {
+	bosses := []string{
+		"High Priestess Jeklik",
+		"High Priest Venoxis",
+		"High Priestess Mar'li",
+		"Bloodlord Mandokir",
+		"High Priest Thekal",
+		"High Priestess Arlokk",
+		"Jin'do the Hexxer",
+		"Hakkar",
+	}
+	if flavor.Has(database.FlavorVanillaPlus) {
+		bosses = append(bosses, "Azus the Bloodseeker", "The Nameless Hermit")
+	}
+	return bosses
+}
+
 // ZulGurubSpeedrunRequirements returns the boss kills required for a
 // valid Zul'Gurub speedrun.
 func ZulGurubSpeedrunRequirements(flavor database.WoWFlavor) []rankings.SpeedrunRequirement {
@@ -238,8 +275,6 @@ func ZulGurubSpeedrunRequirements(flavor database.WoWFlavor) []rankings.Speedrun
 		{Name: "High Priestess Arlokk", EntryIDs: []uint32{14515}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
 		{Name: "Jin'do the Hexxer", EntryIDs: []uint32{11380}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
 		{Name: "Hakkar", EntryIDs: []uint32{14834}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
-		{Name: "Gahz'ranka", EntryIDs: []uint32{15114}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
-		{Name: "Edge of Madness", EntryIDs: []uint32{15083, 15084, 15085, 15082}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
 	}
 
 	if flavor.Has(database.FlavorVanillaPlus) {

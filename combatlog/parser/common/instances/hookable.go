@@ -24,7 +24,10 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/common/parsectx"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/parseerrors"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/participants"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/phases"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/raidgroups"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/unitdb"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/vehicles"
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/realm"
@@ -36,6 +39,7 @@ import (
 )
 
 const (
+	timingsPreprocessors              = "preprocessors"
 	timingsProcessCharacters          = "process_characters"
 	timingsProcessFightDetection      = "process_fight_detection"
 	timingsProcessOngoingFightProcess = "ongoing_fight_process_events"
@@ -49,6 +53,7 @@ const (
 type Hookable struct {
 	name        string
 	derivedName *MultiInstanceZone
+	Category    InstanceCategory
 	timings     *timings.Accumulator
 	logger      *slog.Logger
 	units       *unitdb.Units
@@ -58,9 +63,10 @@ type Hookable struct {
 	CurrentZone  zone.Zone
 	*identifier.Identifier
 	verbose           bool
-	realm             *realm.Info         // mostly static
-	versions          map[string]string   // addon/dependency versions from HEADER
-	recorderGUID      *guid.GUID          // recording player GUID from HEADER
+	realm             *realm.Info       // mostly static
+	versions          map[string]string // addon/dependency versions from HEADER
+	recorderGUID      *guid.GUID        // recording player GUID from HEADER
+	preprocessors     []instancehook.Preprocessor
 	hooks             []instancehook.Hook // TODO: unroll?
 	engagementTracker *rankings.EngagementTracker
 	overviewTracker   *overviewmetrics.Tracker
@@ -75,15 +81,16 @@ type Hookable struct {
 	derivedRankingRules     map[string]*rankings.Rankings
 
 	// Live tracking data
-	Auras           *auras.Tracking
-	Characters      *characters.Characters
-	currentFight    *ongoingFight
-	events          *encounterevents.Events
-	lastActivity    time.Time
-	completedFights []encounter.Fight
-	lastProcessedAt time.Time
-	finalizing      bool
-	finalized       bool
+	Auras             *auras.Tracking
+	Characters        *characters.Characters
+	currentFight      *ongoingFight
+	events            *encounterevents.Events
+	lastActivity      time.Time
+	completedFights   []encounter.Fight
+	explicitEncounter *messages.EncounterBoundary
+	lastProcessedAt   time.Time
+	finalizing        bool
+	finalized         bool
 
 	// fightFloor is the most recent authoritative encounter boundary. Set only
 	// for logs whose source reports boundaries itself; nil means fights are
@@ -92,22 +99,26 @@ type Hookable struct {
 
 	// pendingClose holds a closing boundary that has not been acted on yet, and
 	// the timestamp at which it stops waiting. See encounterEndGrace.
-	pendingClose   *messages.EncounterBoundary
+	pendingClose   *messages.ChronicleEncounterBoundary
 	pendingCloseAt time.Time
 	lastMessage    messages.Message
 
 	// finalized references
-	g            *armory.Tracker
-	p            *participants.Tracker
-	lootTracking *loot.LootTracker
+	g                *armory.Tracker
+	p                *participants.Tracker
+	lootTracking     *loot.LootTracker
+	vehicleTracker   *vehicles.Tracker
+	raidGroupTracker *raidgroups.Tracker
 }
 
 type InstanceParams struct {
-	Name        string
-	MatchesZone func(z zone.Zone) bool
-	Idf         *identifier.Identifier
-	Rankings    *rankings.Rankings
-	ExtraHooks  []instancehook.Hook
+	Name          string
+	Category      InstanceCategory
+	MatchesZone   func(z zone.Zone) bool
+	Idf           *identifier.Identifier
+	Rankings      *rankings.Rankings
+	Preprocessors []instancehook.Preprocessor
+	ExtraHooks    []instancehook.Hook
 }
 
 func (f *CommonFactory) NewHookable(ctx context.Context, logger *slog.Logger, db *unitdb.Units, z zone.Zone, flavor database.WoWFlavor) *Hookable {
@@ -119,11 +130,17 @@ func (f *CommonFactory) NewHookable(ctx context.Context, logger *slog.Logger, db
 	if f.NameFromZone != nil {
 		name = f.NameFromZone(ctx, z, flavor)
 	}
+	var preprocessors []instancehook.Preprocessor
+	if f.Preprocessors != nil {
+		preprocessors = f.Preprocessors()
+	}
 	return NewHookable(ctx, logger, db, z, InstanceParams{
-		Name:        name,
-		MatchesZone: f.MatchZone,
-		Idf:         f.Hostiles(flavor),
-		Rankings:    r,
+		Name:          name,
+		Category:      f.Category,
+		MatchesZone:   f.MatchZone,
+		Idf:           f.Hostiles(flavor),
+		Rankings:      r,
+		Preprocessors: preprocessors,
 	})
 }
 
@@ -141,9 +158,11 @@ func NewHookable(ctx context.Context, logger *slog.Logger, db *unitdb.Units, z z
 
 	// Select character factories based on flavor + format.
 	var cres []characters.CharacterFactory
-	switch {
-	case flavor.Has(database.FlavorAzerothcore) && format == database.LogFormatAzerothcoreMod:
-		// Server-side mod: minimal factories, emit all players.
+	switch format {
+	case database.LogFormatAzerothcoreMod:
+		// Server-side mod: minimal factories, emit all players. The transport
+		// format, not the realm flavor, determines whether CHRONICLE_UNIT_INFO
+		// supplies authoritative unit metadata.
 		cres = wotlkcreatures.AzerothServersideCoreCharacterFactories()
 		combatantStrategy = EmitAllPlayers
 	default:
@@ -193,9 +212,9 @@ func NewHookable(ctx context.Context, logger *slog.Logger, db *unitdb.Units, z z
 		overviewTracker,
 	}...)
 	switch format {
-	case database.LogFormat112aCcAddon, database.LogFormat112aSuperwowAddon:
-		// 1.12 does not record overheals in the logs, so this hook derives
-		// msg.Overheal from tracked health deficits. It MUST run before any
+	case database.LogFormat112aCcAddon, database.LogFormat112aSuperwowAddon, database.LogFormat243CcAddon:
+		// 1.12 and 2.4.3 do not record overheals in the logs, so this hook
+		// derives msg.Overheal from tracked health deficits. It MUST run before any
 		// hook that reads Overheal (e.g. the DPS tracker's effective-healing
 		// accumulation): hooks execute in slice order, and mutating hooks
 		// registered after a reader leave the reader seeing Overheal == 0,
@@ -214,8 +233,10 @@ func NewHookable(ctx context.Context, logger *slog.Logger, db *unitdb.Units, z z
 
 	c := &Hookable{
 		name:              ip.Name,
+		Category:          ip.Category,
 		logger:            logger,
 		units:             db,
+		preprocessors:     ip.Preprocessors,
 		CurrentZone:       z,
 		MatchesZoneF:      ip.MatchesZone,
 		Characters:        chrs,
@@ -258,6 +279,30 @@ func NewHookable(ctx context.Context, logger *slog.Logger, db *unitdb.Units, z z
 
 func (h *Hookable) AddHook(hook instancehook.Hook) {
 	h.hooks = append(h.hooks, hook)
+}
+
+func (h *Hookable) AttachVehicleTracker(tracker *vehicles.Tracker) {
+	h.vehicleTracker = tracker
+}
+
+func (h *Hookable) AttachRaidGroupTracker(tracker *raidgroups.Tracker) {
+	h.raidGroupTracker = tracker
+}
+
+func (h *Hookable) ObserveMetadataAt(at time.Time) {
+	if at.After(h.lastProcessedAt) {
+		h.lastProcessedAt = at
+	}
+}
+
+// ProcessRaidGroupMetadata keeps instance timing current and records composition
+// changes in the active encounter without running normal combat hooks.
+func (h *Hookable) ProcessRaidGroupMetadata(msg *messages.RaidGroup) error {
+	h.ObserveMetadataAt(msg.Date())
+	if h.currentFight == nil || !h.currentFight.active() {
+		return nil
+	}
+	return h.currentFight.Events.Process(msg)
 }
 
 // AttachAuraProjection creates and registers an aura projection adapter that
@@ -340,9 +385,20 @@ func (h *Hookable) SetRealm(r *realm.Info) {
 	h.realm = r
 }
 
+func (h *Hookable) HasExplicitEncounter(encounterID int32) bool {
+	return h.explicitEncounter != nil && h.explicitEncounter.EncounterID == encounterID
+}
+
 func (h *Hookable) SetVersions(versions map[string]string, player *guid.GUID) {
 	h.versions = versions
 	h.recorderGUID = player
+}
+
+func (h *Hookable) SetVersionsIfUnset(versions map[string]string, player *guid.GUID) {
+	if h.versions != nil {
+		return
+	}
+	h.SetVersions(versions, player)
 }
 
 // MatchesZone
@@ -395,6 +451,31 @@ func (h *Hookable) completedSpeedrunBoundary() (time.Time, time.Duration, bool) 
 	return completedAt, gap, !completedAt.IsZero()
 }
 
+// ShouldSplitDerived reports whether m starts activity in a different derived
+// sub-instance after this segment has already completed a fight.
+func (h *Hookable) ShouldSplitDerived(m messages.Message) bool {
+	if h.derivedName == nil || h.FightActive() || len(h.completedFights) == 0 {
+		return false
+	}
+
+	damage, ok := m.(*messages.Damage)
+	if !ok || !damage.RequiresActive() || damage.HitType.Has(types.HitTypeImmune) || damage.HitType.Has(types.HitTypeEvade) {
+		return false
+	}
+
+	currentName, ok := h.derivedName.Name(h.completedFights)
+	if !ok {
+		return false
+	}
+	incomingName, ok := h.derivedName.NameForGUIDs(m.Affects())
+	return ok && incomingName != currentName
+}
+
+// FightActive reports whether this instance currently has an active encounter.
+func (h *Hookable) FightActive() bool {
+	return h.currentFight != nil && h.currentFight.active()
+}
+
 func (h *Hookable) Process(m messages.Message) error {
 	if h.finalizing || h.finalized {
 		return fmt.Errorf("cannot process message after instance finalization started")
@@ -406,6 +487,20 @@ func (h *Hookable) Process(m messages.Message) error {
 }
 
 func (h *Hookable) process(m messages.Message) (finalError error) {
+	if len(h.preprocessors) > 0 {
+		err := timings.Do1(h.timings, timingsPreprocessors, func() error {
+			for _, preprocessor := range h.preprocessors {
+				if err := preprocessor.ProcessMessage(m); err != nil {
+					return fmt.Errorf("preprocessor: %w", err)
+				}
+			}
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+	}
+
 	err := h.units.ProcessMessage(m)
 	if err != nil {
 		return fmt.Errorf("processing unit message: %w", err)
@@ -416,6 +511,29 @@ func (h *Hookable) process(m messages.Message) (finalError error) {
 	}
 
 	switch msg := m.(type) {
+	case *messages.EncounterBoundary:
+		if msg.Active {
+			if h.currentFight != nil && h.currentFight.active() {
+				lead := msg.Date().Sub(h.currentFight.Start.Timestamp.Date())
+				if lead >= 0 && lead <= time.Second {
+					msg.PreserveActivity = true
+				}
+			}
+			boundary := *msg
+			h.explicitEncounter = &boundary
+			if h.currentFight != nil && (!h.currentFight.active() || msg.PreserveActivity) {
+				h.currentFight.AuthoritativeStart = h.explicitEncounter
+				h.currentFight.AuthoritativeName = h.explicitEncounter.Name
+				if msg.PreserveActivity {
+					h.currentFight.Start = &period.Moment{Timestamp: msg, Reason: "encounter start"}
+				}
+			}
+		} else {
+			if h.currentFight != nil && h.currentFight.AuthoritativeName != "" {
+				h.currentFight.AuthoritativeSuccess = msg.Success
+			}
+			h.explicitEncounter = nil
+		}
 	case *messages.Versions:
 		h.SetVersions(msg.Versions, msg.Player)
 	case *messages.Realm:
@@ -425,7 +543,7 @@ func (h *Hookable) process(m messages.Message) (finalError error) {
 			}
 		}
 		h.SetRealm(&msg.Info)
-	case *messages.EncounterBoundary:
+	case *messages.ChronicleEncounterBoundary:
 		// Cut here before the message reaches activity tracking, so whatever is
 		// still in combat lands in the next fight rather than extending this one.
 		if err := h.applyEncounterBoundary(msg); err != nil {
@@ -501,6 +619,10 @@ func (h *Hookable) FightDetectionHandler(m messages.Message) (func() error, erro
 			End:            nil,
 			Floor:          h.fightFloor,
 		}
+		if h.explicitEncounter != nil {
+			h.currentFight.AuthoritativeStart = h.explicitEncounter
+			h.currentFight.AuthoritativeName = h.explicitEncounter.Name
+		}
 	}
 
 	wasActive := h.currentFight.active()
@@ -521,7 +643,14 @@ func (h *Hookable) FightDetectionHandler(m messages.Message) (func() error, erro
 			// If the character is active, update the fight start time if needed.
 			activeTotal++
 			h.currentFight.ActiveHostiles[char.ID()] = struct{}{}
-			h.currentFight.Begin(pd.Start)
+			if h.currentFight.AuthoritativeStart != nil {
+				h.currentFight.Begin(&period.Moment{
+					Timestamp: h.currentFight.AuthoritativeStart,
+					Reason:    "encounter start",
+				})
+			} else {
+				h.currentFight.Begin(pd.Start)
+			}
 		}
 
 		if !pd.IsActive() {
@@ -543,12 +672,59 @@ func (h *Hookable) FightDetectionHandler(m messages.Message) (func() error, erro
 	}
 
 	if !wasActive && h.currentFight.active() {
+		// Install the callback as soon as the fight starts. If the phased
+		// character has not joined yet, keep transitions on the fight until its
+		// provider is discovered later in the same or a subsequent message.
+		fight := h.currentFight
+		h.Characters.SetPhaseTransitionCallback(func(t phases.Transition) {
+			if fight.Phases == nil {
+				fight.StagedPhaseTransitions = append(fight.StagedPhaseTransitions, t)
+				return
+			}
+			fight.Phases.transition(t)
+		})
+		fight.StagedPhaseTransitions = append(
+			fight.StagedPhaseTransitions,
+			h.Characters.DrainStagedTransitions()...,
+		)
+	}
+
+	// A phase provider may become active after other enemies started the fight.
+	// Initialize it retroactively at fight.Start, then apply transitions emitted
+	// by the triggering message before later hooks process that message.
+	if h.currentFight.active() && h.currentFight.Phases == nil {
+		h.initPhaseTracker()
+	}
+	if h.currentFight.Phases != nil && len(h.currentFight.StagedPhaseTransitions) > 0 {
+		for _, staged := range h.currentFight.StagedPhaseTransitions {
+			h.currentFight.Phases.transition(staged)
+		}
+		h.currentFight.StagedPhaseTransitions = nil
+	}
+
+	if !wasActive && h.currentFight.active() {
+		if h.raidGroupTracker != nil {
+			start := h.currentFight.Start.Timestamp.Date()
+			if observation, ok := h.raidGroupTracker.LatestBetween(h.CurrentZone.Seen, start); ok {
+				snapshot := &messages.RaidGroup{
+					MessageBase: messages.Base(start, messages.WithSynthetic()),
+					Groups:      [messages.RaidGroupCount][messages.RaidGroupSize]guid.GUID(observation.Composition),
+				}
+				if err := h.currentFight.Events.Process(snapshot); err != nil {
+					return nil, fmt.Errorf("processing encounter-start raid group: %w", err)
+				}
+			}
+		}
 		for _, hook := range h.hooks {
 			hook.FightStarted(h.currentFight.EncounterID, m)
 		}
 	}
 
-	if activeTotal == 0 && h.currentFight.active() {
+	boundaryStart := false
+	if boundary, ok := m.(*messages.EncounterBoundary); ok {
+		boundaryStart = boundary.Active
+	}
+	if activeTotal == 0 && h.currentFight.active() && (!h.Characters.ExplicitEncounterActive() || boundaryStart) {
 		return func() error {
 			for _, hook := range h.hooks {
 				hook.FightEnded(h.currentFight.EncounterID, m)
@@ -578,7 +754,7 @@ const encounterEndGrace = 500 * time.Millisecond
 // already being fought becomes its own fight, and the closing one so trash
 // pulled during the fight, or adds left alive afterwards, do not extend it. The
 // opening cut is immediate; the closing cut waits out encounterEndGrace.
-func (h *Hookable) applyEncounterBoundary(msg *messages.EncounterBoundary) error {
+func (h *Hookable) applyEncounterBoundary(msg *messages.ChronicleEncounterBoundary) error {
 	if !msg.Start {
 		h.pendingClose = msg
 		h.pendingCloseAt = msg.Date().Add(encounterEndGrace)
@@ -609,7 +785,7 @@ func (h *Hookable) settlePendingClose(m messages.Message) error {
 // that boundary as the floor for the next fight. When endAt is set the fight
 // ends there instead of on the boundary itself, which keeps events that trail
 // the boundary — a boss dying just after kill credit — inside the fight.
-func (h *Hookable) cutFight(boundary *messages.EncounterBoundary, endAt messages.Message) error {
+func (h *Hookable) cutFight(boundary *messages.ChronicleEncounterBoundary, endAt messages.Message) error {
 	h.pendingClose = nil
 
 	at := &period.Moment{
@@ -683,12 +859,20 @@ func periodsWithin(periods []period.Period, start, end time.Time, openEnd *perio
 }
 
 func (h *Hookable) finalizeFight() error {
+	// Close the live phase tracker at fight end. The final phase's kill type
+	// is not yet known; fightEncounter assigns it after computing the outcome.
+	h.currentFight.Phases.close(*h.currentFight.End, "")
+
 	fight := encounter.Fight{
-		Hostiles:     map[guid.GUID]encounter.CharacterFight{},
-		Start:        h.currentFight.Start.Timestamp.Date(),
-		End:          h.currentFight.End.Timestamp.Date(),
-		EncounterID:  h.currentFight.EncounterID,
-		PlayerDeaths: h.currentFight.PlayerDeaths,
+		Hostiles:             map[guid.GUID]encounter.CharacterFight{},
+		Start:                h.currentFight.Start.Timestamp.Date(),
+		End:                  h.currentFight.End.Timestamp.Date(),
+		EncounterID:          h.currentFight.EncounterID,
+		PlayerDeaths:         h.currentFight.PlayerDeaths,
+		Phases:               h.currentFight.Phases.materialized(),
+		PhaseEncounterName:   h.currentFight.Phases.encounterName(),
+		AuthoritativeName:    h.currentFight.AuthoritativeName,
+		AuthoritativeSuccess: h.currentFight.AuthoritativeSuccess,
 	}
 
 	for id := range h.currentFight.ActiveHostiles {
@@ -699,6 +883,9 @@ func (h *Hookable) finalizeFight() error {
 
 		during := periodsWithin(char.Periods(), fight.Start, fight.End, h.currentFight.End)
 
+		if len(during) == 0 {
+			continue
+		}
 		fight.Hostiles[id] = encounter.CharacterFight{
 			ID:       id,
 			Activity: during,
@@ -710,7 +897,8 @@ func (h *Hookable) finalizeFight() error {
 		return fmt.Errorf("finalizing encounter messages: %w", err)
 	}
 
-	// End the fight
+	// End the fight and clear the phase transition callback.
+	h.Characters.SetPhaseTransitionCallback(nil)
 	h.currentFight = nil
 	h.completedFights = append(h.completedFights, fight)
 	return nil
@@ -802,14 +990,62 @@ func (h *Hookable) fightEncounter(fight encounter.Fight) (encounter.Encounter, e
 		}
 	}
 
-	return encounter.Encounter{
+	enc := encounter.Encounter{
 		Name:      encName.Name(),
 		Type:      encName.Type(),
 		Combat:    fight,
 		KillType:  killType,
 		Remaining: rr.Timeouts,
 		Boss:      encName.IsBossFight(),
-	}, nil
+	}
+	if fight.AuthoritativeName != "" {
+		enc.Name = fight.AuthoritativeName
+		enc.Type = types.EncounterTypeBOSS
+		enc.Boss = true
+		if fight.AuthoritativeSuccess != nil {
+			if *fight.AuthoritativeSuccess {
+				enc.KillType = encounter.KillTypeClean
+				enc.Remaining = []guid.GUID{}
+			} else {
+				enc.KillType = encounter.KillTypeWipe
+			}
+		}
+	}
+
+	// Copy already-materialized phases. The final phase's kill type was left
+	// empty at finalization; assign it now that the outcome is known.
+	if fight.PhaseEncounterName == enc.Name {
+		enc.Phases = fight.Phases
+		if len(enc.Phases) > 0 {
+			enc.Phases[len(enc.Phases)-1].KillType = killType
+		}
+	}
+
+	return enc, nil
+}
+
+// initPhaseTracker searches participating hostiles for a PhaseProvider and
+// initializes the live phase tracker on the current fight. Must be called
+// after the fight becomes active (Start is set).
+func (h *Hookable) initPhaseTracker() {
+	if h.Characters == nil || h.currentFight == nil || h.currentFight.Start == nil {
+		return
+	}
+	for hostileID := range h.currentFight.ActiveHostiles {
+		char, ok := h.Characters.Get(hostileID)
+		if !ok {
+			continue
+		}
+		pp, ok := char.(phases.PhaseProvider)
+		if !ok {
+			continue
+		}
+		defs := pp.PhaseDefinitions()
+		if defs != nil {
+			h.currentFight.Phases = newPhaseTracker(defs, hostileID, *h.currentFight.Start)
+			return
+		}
+	}
 }
 
 func (h *Hookable) drainOpenFight(ctx context.Context) error {
@@ -928,19 +1164,81 @@ func (h *Hookable) Finalize(ctx context.Context) (*FinalizedInstance, error) {
 	}
 	overview := overviewmetrics.Summarize(encounters, deadliestAbilities, speedrunResult)
 
+	var raidGroupSnapshots []raidgroups.InstanceSnapshot
+	if h.raidGroupTracker != nil && len(encounters) > 0 {
+		for _, enc := range encounters {
+			if !enc.Boss || enc.KillType != encounter.KillTypeClean {
+				continue
+			}
+			if observation, ok := h.raidGroupTracker.LatestBetween(h.CurrentZone.Seen, enc.Combat.End); ok {
+				encounterID := enc.Combat.EncounterID
+				raidGroupSnapshots = append(raidGroupSnapshots, raidgroups.InstanceSnapshot{
+					EncounterID: &encounterID, ObservedAt: observation.At, Composition: observation.Composition,
+				})
+			}
+		}
+		if observation, ok := h.raidGroupTracker.LatestBetween(h.CurrentZone.Seen, h.lastProcessedAt); ok {
+			raidGroupSnapshots = append(raidGroupSnapshots, raidgroups.InstanceSnapshot{
+				ObservedAt: observation.At, Composition: observation.Composition,
+			})
+		}
+	}
+
+	var vehicleMetadata vehicles.Metadata
+	if h.vehicleTracker != nil && len(encounters) > 0 {
+		instanceStart := encounters[0].Combat.Start
+		instanceEnd := encounters[0].Combat.End
+		for _, enc := range encounters[1:] {
+			if enc.Combat.Start.Before(instanceStart) {
+				instanceStart = enc.Combat.Start
+			}
+			if enc.Combat.End.After(instanceEnd) {
+				instanceEnd = enc.Combat.End
+			}
+		}
+		vehicleMetadata = h.vehicleTracker.MetadataForRange(instanceStart, instanceEnd)
+	}
+
+	persistedUnitSet := make(map[guid.GUID]struct{})
+	if h.Characters != nil {
+		_ = h.Characters.All.ForEach(func(char characters.Character) error {
+			persist, ok := char.(characters.InstanceUnitPersister)
+			if ok && persist.PersistInInstance() {
+				persistedUnitSet[char.ID()] = struct{}{}
+			}
+			return nil
+		})
+	}
+	// UNIT_INFO pets should be available to metadata consumers such as Unit
+	// Lookup regardless of whether their Character implementation became active.
+	// This intentionally does not alter character factory selection or activity.
+	for id := range h.units.Info {
+		if id.IsPet() {
+			persistedUnitSet[id] = struct{}{}
+		}
+	}
+	persistedUnits := make([]guid.GUID, 0, len(persistedUnitSet))
+	for id := range persistedUnitSet {
+		persistedUnits = append(persistedUnits, id)
+	}
+	slices.Sort(persistedUnits)
+
 	return &FinalizedInstance{
 		Realm:        h.realm,
 		Versions:     h.versions,
 		RecorderGUID: h.recorderGUID,
 		Encounters:   encounters,
 		// TODO: Break off guild and spellbook
-		Guilds:       h.g,
-		Loot:         h.lootTracking,
-		Participants: h.p,
-		Rankings:     rankingsResult,
-		Overview:     overview,
-		RankingRules: activeRankingRules,
-		UnknownUnits: h.resolveUnknownUnits(),
+		Guilds:             h.g,
+		Loot:               h.lootTracking,
+		Participants:       h.p,
+		Rankings:           rankingsResult,
+		Overview:           overview,
+		RankingRules:       activeRankingRules,
+		UnknownUnits:       h.resolveUnknownUnits(),
+		PersistedUnits:     persistedUnits,
+		VehicleMetadata:    vehicleMetadata,
+		RaidGroupSnapshots: raidGroupSnapshots,
 
 		//SpellBook:  c.SpellBook,
 	}, nil

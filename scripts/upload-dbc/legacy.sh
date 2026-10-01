@@ -15,4 +15,8 @@ TARGETS=(
   "lunatic|https://legacy.chronicleclassic.com/|53f9c96d-2b9a-43d9-8244-ffc6c0bf4ce6"
 )
 
+WOWDATA_TARGETS=(
+  "wow-forever|/home/steven/.steam/steam/steamapps/compatdata/3492500670/pfx/drive_c/Program Files (x86)/World of Warcraft|https://legacy.chronicleclassic.com/|b69b601c-d247-44c6-9cb6-3f71053fd052|wow_classic_beta|1.60.1.69913"
+)
+
 source "$SCRIPT_DIR/run.sh"

@@ -8,6 +8,8 @@ export interface TalentEntry {
   name: string;
   tierID: number;
   columnIndex: number;
+  /** Progression axis override for trees that unlock left-to-right. */
+  progressionIndex?: number;
   maxRank: number;
   tabIndex: number;
   spellRanks: number[];
@@ -38,13 +40,68 @@ export interface ClassTalentData {
   tabs: TalentTabData[];
 }
 
+export interface LegacyTalentEntry {
+  id: number;
+  name: string;
+  columnIndex: number;
+  rowIndex: number;
+  maxRank: number;
+  tabIndex: number;
+  spellRanks: number[];
+  iconTexture: string;
+  prereqTalent?: number[];
+  prereqAnyTalent?: number[];
+  visualPrereqTalent?: number[];
+}
+
+export interface LegacyTalentTreeData {
+  id: number;
+  name: string;
+  orderIndex: number;
+  talents: LegacyTalentEntry[];
+}
+
 export interface TalentTreeJSON {
   classes: Record<string, ClassTalentData>;
   pets?: Record<string, ClassTalentData>;
+  legacyTrees?: LegacyTalentTreeData[];
+  legacyMaxPoints?: number;
+  legacyPointsPerColumn?: number;
   /** Resolved dataset for this data (tenant-aware). */
   dataset_id?: string;
   /** Icon CDN base for the resolved dataset. */
   icon_base_url?: string;
+}
+
+export function legacyTreesToTalentData(trees: LegacyTalentTreeData[]): ClassTalentData {
+  return {
+    id: 0,
+    name: "Legacy",
+    tabs: [...trees]
+      .sort((a, b) => a.orderIndex - b.orderIndex)
+      .map((tree) => ({
+        id: tree.id,
+        name: tree.name,
+        backgroundFile: "",
+        orderIndex: tree.orderIndex,
+        iconTexture: tree.talents[0]?.iconTexture ?? "inv_misc_questionmark",
+        talents: tree.talents.map((talent) => ({
+          id: talent.id,
+          name: talent.name,
+          // Legacy trees keep their client layout and unlock left-to-right.
+          tierID: talent.rowIndex,
+          columnIndex: talent.columnIndex,
+          progressionIndex: talent.columnIndex,
+          maxRank: talent.maxRank,
+          tabIndex: talent.tabIndex,
+          spellRanks: talent.spellRanks,
+          iconTexture: talent.iconTexture,
+          prereqTalent: talent.prereqTalent,
+          prereqAnyTalent: talent.prereqAnyTalent,
+          visualPrereqTalent: talent.visualPrereqTalent,
+        })),
+      })),
+  };
 }
 
 export type TalentRanks = Record<number, number>;
@@ -124,13 +181,17 @@ export function prerequisiteArrows(talents: TalentEntry[]): TalentPrereqArrow[] 
 
 // ─── Talent point requirements ────────────────────────────────────
 
-export function rowPointRequirement(talent: Pick<TalentEntry, "tierID">, pointsPerRow = 5) {
-  return talent.tierID * pointsPerRow;
+function talentProgressionIndex(talent: Pick<TalentEntry, "tierID" | "progressionIndex">) {
+  return talent.progressionIndex ?? talent.tierID;
 }
 
-function pointsSpentBeforeRow(talents: TalentEntry[], ranks: TalentRanks, tierID: number) {
+export function rowPointRequirement(talent: Pick<TalentEntry, "tierID" | "progressionIndex">, pointsPerRow = 5) {
+  return talentProgressionIndex(talent) * pointsPerRow;
+}
+
+function pointsSpentBeforeRow(talents: TalentEntry[], ranks: TalentRanks, progressionIndex: number) {
   return talents.reduce((sum, talent) => {
-    if (talent.tierID >= tierID) return sum;
+    if (talentProgressionIndex(talent) >= progressionIndex) return sum;
     return sum + (ranks[talent.id] ?? 0);
   }, 0);
 }
@@ -153,7 +214,7 @@ function prerequisitesMet(talent: TalentEntry, talents: TalentEntry[], ranks: Ta
 }
 
 export function canUseTalent(talent: TalentEntry, talents: TalentEntry[], ranks: TalentRanks, pointsPerRow = 5) {
-  return pointsSpentBeforeRow(talents, ranks, talent.tierID) >= rowPointRequirement(talent, pointsPerRow) && prerequisitesMet(talent, talents, ranks);
+  return pointsSpentBeforeRow(talents, ranks, talentProgressionIndex(talent)) >= rowPointRequirement(talent, pointsPerRow) && prerequisitesMet(talent, talents, ranks);
 }
 
 function spentTalentsStillValid(talents: TalentEntry[], ranks: TalentRanks, pointsPerRow: number) {

@@ -2032,3 +2032,33 @@ func MaraudonHostiles() map[uint32]Identity {
 	})
 	return hostile
 }
+
+func ExcavationSiteWetlandsHostiles() map[uint32]Identity {
+	hostile := make(map[uint32]Identity)
+	LoadAdds(hostile, map[uint32]string{
+		260796: "Marsh Crocolisk",
+		260797: "Elder Crocolisk",
+		260798: "Young Crocolisk",
+		260799: "Young Riptooth",
+		260800: "Thicket Lurker",
+		260801: "Thicket Hunter",
+		260802: "Thicket Matriarch",
+		260803: "Highland Spider",
+		260804: "Highland Lurker",
+		260810: "Highland Snapper",
+		261603: "Dwarf Excavator",
+		271732: "Thicket Stalker",
+		274715: "Marsh Skulker",
+		275044: "Dragonmaw Warder",
+		275045: "Dragonmaw Saboteur",
+		275046: "Dragonmaw Thaumaturgist",
+		275049: "Captive Fire Elemental",
+	})
+
+	LoadBosses(hostile, map[uint32]string{
+		260322: "Saltspine",
+		260325: "Shadetooth",
+		260326: "Relic Guardian",
+	})
+	return hostile
+}

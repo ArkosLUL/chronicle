@@ -30,6 +30,10 @@ func RegisterVanillaPlus(r *Registry) {
 	r.RegisterEntry(FromCommonFactory(instances.ScarletMonasteryArmoryVPRaid))
 }
 
+func RegisterWoWForever(r *Registry) {
+	r.RegisterEntry(FromCommonFactory(instances.ExcavationSiteWetlandsFactory))
+}
+
 func RegisterClassicEncounters(r *Registry) {
 	// Register instances here as you add them
 	// 5 man

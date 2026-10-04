@@ -141,6 +141,10 @@ func RegistryForFlavor(logger *slog.Logger, flavor database.WoWFlavor) *Registry
 	if flavor.Has(database.FlavorWrath) {
 		RegisterWrath(r)
 	}
+
+	if flavor.Has(database.FlavorWoWForever) {
+		RegisterWoWForever(r)
+	}
 	return r
 }
 

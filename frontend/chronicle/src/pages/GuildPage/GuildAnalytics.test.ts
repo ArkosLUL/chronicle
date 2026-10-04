@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { GuildResourceAnalyticsDay } from "@/api/typesGenerated";
-import { buildSummary } from "./guildAnalytics";
+import { buildSummary } from "./guildAnalytics.utils";
 
 function row(overrides: Partial<GuildResourceAnalyticsDay>): GuildResourceAnalyticsDay {
   return {

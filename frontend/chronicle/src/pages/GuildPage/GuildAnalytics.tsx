@@ -15,7 +15,7 @@ import {
 import { useGuildPage, useGuildResourceAnalytics } from "@/api/queries";
 import { cn } from "@/lib/utils";
 import { GuildActionsMenu, GuildPageHeader } from "./components";
-import { buildSummary, metricValue, METRIC_UNIT, type Metric } from "./guildAnalytics";
+import { buildSummary, metricValue, METRIC_UNIT, type Metric } from "./guildAnalytics.utils";
 
 const numberFormatter = new Intl.NumberFormat();
 const compactFormatter = new Intl.NumberFormat(undefined, { notation: "compact", maximumFractionDigits: 1 });

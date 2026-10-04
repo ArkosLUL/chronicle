@@ -66,6 +66,11 @@ type Service struct {
 	RepairDispatchWorker *WorkerDispatchParseScoreRepairs
 	// RepairParseScoresWorker dispatches bounded repair jobs for one tenant.
 	RepairParseScoresWorker *WorkerRepairParseScores
+
+	// RankingRunRefreshWorker rebuilds persisted logical-run representatives.
+	RankingRunRefreshWorker *WorkerRefreshRankingRuns
+	// RankingRunRepairWorker discovers missed or stale representative rows.
+	RankingRunRepairWorker *WorkerRepairRankingRuns
 }
 
 func New(broker *services.Services) *Service {
@@ -143,6 +148,14 @@ func (s *Service) Start(_ context.Context) error {
 		Logger: namedLogger,
 		// Queue is set by serviceriver after queue creation.
 	}
+	s.RankingRunRefreshWorker = &WorkerRefreshRankingRuns{
+		Store:  store,
+		Logger: namedLogger,
+	}
+	s.RankingRunRepairWorker = &WorkerRepairRankingRuns{
+		Store:  store,
+		Logger: namedLogger,
+	}
 
 	s.router = chi.NewRouter()
 	s.setupRoutes()
@@ -160,12 +173,14 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Service) setupRoutes() {
-	// All rankings/leaderboard data is public and changes infrequently.
-	// Cache for 5 minutes to reduce load on repeat visits.
+	// All rankings/leaderboard data is public and changes infrequently. Browsers
+	// may reuse responses for 5 minutes, while Cloudflare can share common URLs
+	// across visitors for 15 minutes and serve stale data during revalidation.
 	s.router.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.Method == http.MethodGet {
 				w.Header().Set("Cache-Control", "public, max-age=300")
+				w.Header().Set("Cloudflare-CDN-Cache-Control", "public, max-age=900, stale-while-revalidate=60")
 			}
 			next.ServeHTTP(w, r)
 		})
@@ -186,7 +201,8 @@ func (s *Service) setupRoutes() {
 	s.router.Get("/instances/{instanceID}/parses", s.handleInstanceParses)
 	s.router.Get("/instances/{instanceID}/time-parses", s.handleInstanceTimeParses)
 
-	// Character parse history
+	// Character performance and parse history
+	s.router.Get("/characters/{playerGUID}/performance", s.handleCharacterPerformance)
 	s.router.Get("/characters/{playerGUID}/parses", s.handleCharacterParseHistory)
 	s.router.Get("/characters/{playerGUID}/encounters", s.handleCharacterEncounterStats)
 
@@ -374,6 +390,14 @@ func (s *Service) handleLeaderboard(w http.ResponseWriter, r *http.Request) {
 		if row.AvgIlvl > 0 {
 			v := row.AvgIlvl
 			entry.AvgIlvl = &v
+		}
+		if row.AlivePercentage >= 0 {
+			value := row.AlivePercentage
+			entry.AlivePercentage = &value
+		}
+		if row.PlayerDeaths >= 0 {
+			value := row.PlayerDeaths
+			entry.PlayerDeaths = &value
 		}
 		if row.PlayerSubSpec != "" {
 			entry.SubSpec = &row.PlayerSubSpec

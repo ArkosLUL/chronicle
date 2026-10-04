@@ -23,6 +23,7 @@ const KNOWN_ICON_CDNS = [
   { url: "https://icons.chronicleclassic.com/octowow", label: "OctoWoW" },
   { url: "https://icons.chronicleclassic.com/vanillaplus", label: "VanillaPlus" },
   { url: "https://icons.chronicleclassic.com/ascension", label: "Ascension" },
+  { url: "https://icons.chronicleclassic.com/forever", label: "WoW Forever" },
 ] as const;
 
 /** Known WoW client versions and their build numbers (suggestions only — any
@@ -32,6 +33,7 @@ const KNOWN_VERSIONS: { wow: string; build: number; label: string }[] = [
   { wow: "1.12.2", build: 6005, label: "Vanilla 1.12.2" },
   { wow: "2.4.3", build: 8606, label: "TBC 2.4.3" },
   { wow: "3.3.5a", build: 12340, label: "WotLK 3.3.5a" },
+  { wow: "1.60.1", build: 69913, label: "WoW Forever 1.60.1 (beta)" },
 ];
 
 /** Data types tracked per dataset with their summary field names. */

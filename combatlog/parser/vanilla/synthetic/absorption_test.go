@@ -10,6 +10,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/database/gamedb/chrondbc"
 	"github.com/Emyrk/chronicle/database/gamedb/chrondbc/dbcmem"
+	"github.com/Emyrk/chronicle/internal/ptr"
 	"github.com/Gophercraft/core/i18n"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -34,11 +35,8 @@ func auraCastAbsorbWithDuration(ts time.Time, spell *chrondbc.Spell, caster guid
 
 func makeAbsorbSpell(name string, basePoints int32, schoolMask int32) *chrondbc.Spell {
 	return &chrondbc.Spell{
-		Name_lang:        i18n.Text{i18n.English: name},
-		EffectAura:       [3]chrondbc.AuraEffect{chrondbc.AuraEffectSchoolAbsorb},
-		EffectBasePoints: [3]int32{basePoints},
-		EffectDieSides:   [3]int32{1},
-		EffectMiscValue:  [3]int32{schoolMask},
+		Name_lang: i18n.Text{i18n.English: name},
+		Effects:   []chrondbc.SpellEffect{{EffectIndex: 0, EffectAura: chrondbc.AuraEffectSchoolAbsorb, EffectBasePoints: basePoints, EffectDieSides: 1, EffectMiscValue: []int32{schoolMask}}},
 	}
 }
 
@@ -440,6 +438,54 @@ func TestAbsorption_WotlkDBCFallback(t *testing.T) {
 		"school mask should be backfilled from DBC EffectMiscValue")
 }
 
+func TestAbsorption_WotlkDBCFallbackUsesDefaultDifficultyEffect(t *testing.T) {
+	t.Parallel()
+
+	a := NewAbsorption(slog.Default())
+	now := time.UnixMilli(1000)
+	priestGUID := mustGUID("0x0000000000000001")
+	tankGUID := mustGUID("0x0000000000000002")
+	bossGUID := mustGUID("0x0030000000000003")
+
+	spell := &chrondbc.Spell{
+		Effects: []chrondbc.SpellEffect{
+			{
+				DifficultyID:      198,
+				EffectIndex:       4,
+				EffectAura:        chrondbc.AuraEffectSchoolAbsorb,
+				EffectBasePointsF: ptr.Ref(float32(500)),
+				EffectMiscValue:   []int32{int32(types.FireSchool)},
+			},
+			{
+				DifficultyID:      0,
+				EffectIndex:       4,
+				EffectAura:        chrondbc.AuraEffectSchoolAbsorb,
+				EffectBasePointsF: ptr.Ref(float32(75)),
+				EffectMiscValue:   []int32{int32(types.FrostSchool), int32(types.FireSchool)},
+			},
+		},
+	}
+
+	result := a.ProcessMessages([]messages.Message{
+		auraCastWotlk(now, spell, priestGUID, tankGUID),
+		&messages.Damage{
+			MessageBase: messages.Base(now.Add(time.Second)),
+			Caster:      &bossGUID,
+			Target:      tankGUID,
+			Amount:      100,
+			HitType:     types.HitTypeHit | types.HitTypePartialAbsorb,
+			School:      types.FrostSchool,
+			Trailer:     trailAbsorbed(50),
+		},
+	})
+
+	require.Len(t, result, 3)
+	absorbed, ok := result[2].(*messages.Absorbed)
+	require.True(t, ok)
+	assert.Equal(t, types.FrostSchool, absorbed.AbsorbSchool)
+	require.Len(t, spell.Effects, 2, "synthesis must preserve canonical effect rows")
+}
+
 func TestAbsorption_WotlkDBCFallbackDuration(t *testing.T) {
 	t.Parallel()
 
@@ -588,8 +634,8 @@ func TestAbsorption_NonAbsorbAuraCastIgnored(t *testing.T) {
 	bossGUID := mustGUID("0x0030000000000003")
 
 	nonAbsorbSpell := &chrondbc.Spell{
-		Name_lang:  i18n.Text{i18n.English: "Renew"},
-		EffectAura: [3]chrondbc.AuraEffect{chrondbc.AuraEffectPeriodicHeal},
+		Name_lang: i18n.Text{i18n.English: "Renew"},
+		Effects:   []chrondbc.SpellEffect{{EffectIndex: 0, EffectAura: chrondbc.AuraEffectPeriodicHeal}},
 	}
 
 	msgs := []messages.Message{

@@ -184,9 +184,11 @@ func (api *API) Routes() chi.Router {
 		r.Group(func(r chi.Router) {
 
 			r.Use(
-				httpmw.BrowserOnly(api.Opts.AccessURL),
+				httpmw.BrowserOnly(api.Opts.AccessURL, discordInstallCallbackPath),
 				api.Auth.AuthenticationMiddleware,
 			)
+
+			r.Get("/discord-integration/callback", api.CompleteGuildDiscordInstall)
 
 			r.Group(func(r chi.Router) {
 				r.Use(
@@ -194,10 +196,15 @@ func (api *API) Routes() chi.Router {
 				)
 				r.Get("/whoami", api.WhoAmI)
 				r.Get("/whoami/dump", api.DumpToken)
-				r.Get("/discord-integration/callback", api.CompleteGuildDiscordInstall)
 				r.Post("/authcheck", api.checkAuthorization)
 				r.Get("/me/storage", api.GetMyStorage)
 				r.Patch("/me/preferences", api.UpdateMyPreferences)
+
+				r.Get("/me/favorites", api.ListMyFavorites)
+				r.Put("/me/favorites/guilds/{guildID}", api.AddMyFavoriteGuild)
+				r.Delete("/me/favorites/guilds/{guildID}", api.DeleteMyFavoriteGuild)
+				r.Put("/me/favorites/players/{realmID}/{characterGUID}", api.AddMyFavoritePlayer)
+				r.Delete("/me/favorites/players/{realmID}/{characterGUID}", api.DeleteMyFavoritePlayer)
 
 				r.Get("/me/talent-builds", api.ListMyTalentBuilds)
 				r.Post("/me/talent-builds", api.CreateMyTalentBuild)

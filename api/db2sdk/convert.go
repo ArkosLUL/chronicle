@@ -91,6 +91,7 @@ func WoWLogGroupRow[T database.GetWoWLogGroupsByOwnerRow | database.GetWoWLogGro
 		out := chroniclesdk.WoWLogGroup{
 			ID:        g.WoWLogGroup.ID,
 			Owner:     g.WoWLogGroup.Owner,
+			OwnerName: g.OwnerName,
 			CreatedAt: g.WoWLogGroup.CreatedAt,
 			UpdatedAt: g.WoWLogGroup.UpdatedAt,
 			LogType:   string(g.WoWLogGroup.LogType),
@@ -301,25 +302,37 @@ func InstanceRankingRecords(rows []database.EncounterDpsRanking) []chroniclesdk.
 			id := row.EncounterID.UUID
 			encounterID = &id
 		}
+		var alivePercentage *float64
+		if row.AlivePercentage.Valid {
+			value := row.AlivePercentage.Float64
+			alivePercentage = &value
+		}
+		var playerDeaths *int32
+		if row.PlayerDeaths.Valid {
+			value := row.PlayerDeaths.Int32
+			playerDeaths = &value
+		}
 		result = append(result, chroniclesdk.InstanceRankingRecord{
-			ID:            row.ID,
-			EncounterID:   encounterID,
-			EncounterName: row.EncounterName,
-			PlayerGUID:    row.PlayerGuid,
-			PlayerName:    row.PlayerName,
-			PlayerClass:   row.PlayerClass,
-			PlayerSpec:    row.PlayerSpec,
-			PlayerSubSpec: row.PlayerSubSpec,
-			PlayerRole:    row.PlayerRole,
-			PlayerLevel:   row.PlayerLevel,
-			DamageDone:    row.DamageDone,
-			HealingDone:   row.HealingDone,
-			AbsorbedDone:  row.AbsorbedDone,
-			DurationSecs:  row.DurationSecs,
-			DPS:           row.Dps,
-			HPS:           row.Hps,
-			LogHashedSlug: row.LogHashedSlug,
-			KilledAt:      row.KilledAt.Time,
+			ID:              row.ID,
+			EncounterID:     encounterID,
+			EncounterName:   row.EncounterName,
+			PlayerGUID:      row.PlayerGuid,
+			PlayerName:      row.PlayerName,
+			PlayerClass:     row.PlayerClass,
+			PlayerSpec:      row.PlayerSpec,
+			PlayerSubSpec:   row.PlayerSubSpec,
+			PlayerRole:      row.PlayerRole,
+			PlayerLevel:     row.PlayerLevel,
+			DamageDone:      row.DamageDone,
+			HealingDone:     row.HealingDone,
+			AbsorbedDone:    row.AbsorbedDone,
+			AlivePercentage: alivePercentage,
+			PlayerDeaths:    playerDeaths,
+			DurationSecs:    row.DurationSecs,
+			DPS:             row.Dps,
+			HPS:             row.Hps,
+			LogHashedSlug:   row.LogHashedSlug,
+			KilledAt:        row.KilledAt.Time,
 		})
 	}
 	return result

@@ -260,16 +260,53 @@ func TestHasDiscordAnnouncementPermissions(t *testing.T) {
 
 	required := int64(discordgo.PermissionViewChannel |
 		discordgo.PermissionSendMessages |
-		discordgo.PermissionEmbedLinks |
-		discordgo.PermissionCreatePublicThreads |
-		discordgo.PermissionSendMessagesInThreads)
+		discordgo.PermissionEmbedLinks)
 	require.True(t, hasDiscordAnnouncementPermissions(required))
 	for _, permission := range []int64{
+		discordgo.PermissionViewChannel,
+		discordgo.PermissionSendMessages,
 		discordgo.PermissionEmbedLinks,
-		discordgo.PermissionCreatePublicThreads,
-		discordgo.PermissionSendMessagesInThreads,
 	} {
 		require.False(t, hasDiscordAnnouncementPermissions(required&^permission))
+	}
+	require.True(t, hasDiscordAnnouncementPermissions(required|
+		discordgo.PermissionCreatePublicThreads|
+		discordgo.PermissionSendMessagesInThreads))
+}
+
+func TestMissingDiscordAnnouncementPermissions(t *testing.T) {
+	t.Parallel()
+
+	permissions := int64(discordgo.PermissionViewChannel |
+		discordgo.PermissionCreatePublicThreads |
+		discordgo.PermissionSendMessagesInThreads)
+	require.Equal(t, []string{
+		"Missing Send Messages permission",
+		"Missing Embed Links permission",
+	}, missingDiscordAnnouncementPermissions(permissions))
+}
+
+func TestDiscordAnnouncementChannelTypeReason(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name        string
+		channelType discordgo.ChannelType
+		wantReason  string
+		wantInclude bool
+	}{
+		{name: "text", channelType: discordgo.ChannelTypeGuildText, wantInclude: true},
+		{name: "announcement", channelType: discordgo.ChannelTypeGuildNews, wantReason: "Announcement channels are not supported", wantInclude: true},
+		{name: "forum", channelType: discordgo.ChannelTypeGuildForum, wantReason: "Forum channels are not supported", wantInclude: true},
+		{name: "voice", channelType: discordgo.ChannelTypeGuildVoice},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			reason, include := discordAnnouncementChannelTypeReason(test.channelType)
+			require.Equal(t, test.wantReason, reason)
+			require.Equal(t, test.wantInclude, include)
+		})
 	}
 }
 

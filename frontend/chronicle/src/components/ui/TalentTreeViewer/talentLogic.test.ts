@@ -1,3 +1,4 @@
+import { resolveSpellDescription } from "@emyrk/wow-tooltip-renderer";
 import { describe, expect, it } from "vitest";
 import type { TalentEntry } from "./talentLogic";
 import {
@@ -13,6 +14,7 @@ import {
   encodeTalentBuild,
   isTalentBackgroundVisible,
   isTalentBuildLocked,
+  legacyTreesToTalentData,
   lockedTalentReasons,
   mergeTalentRankDescriptions,
   normalizeTalentRanks,
@@ -28,6 +30,7 @@ import {
   searchParamsWithTalentBuild,
   searchParamsWithTalentLock,
   searchParamsWithTalentPopularity,
+  spellForTalentRank,
   talentBuildExportName,
   talentPopularitySelection,
   talentTabPoints,
@@ -47,6 +50,97 @@ function talent(partial: Partial<TalentEntry> & Pick<TalentEntry, "id" | "tierID
     ...partial,
   };
 }
+
+describe("Forever Legacy talent trees", () => {
+  it("uses the standard viewer while preserving left-to-right progression", () => {
+    const data = legacyTreesToTalentData([
+      {
+        id: 1187,
+        name: "Professions",
+        orderIndex: 0,
+        talents: [
+          {
+            id: 100,
+            name: "Working Overtime",
+            columnIndex: 0,
+            rowIndex: 1,
+            maxRank: 5,
+            tabIndex: 0,
+            spellRanks: [100, 100, 100, 100, 100],
+            iconTexture: "trade_engineering",
+          },
+          {
+            id: 101,
+            name: "Bartering",
+            columnIndex: 1,
+            rowIndex: 1,
+            maxRank: 2,
+            tabIndex: 1,
+            spellRanks: [101, 101],
+            iconTexture: "trade_engineering",
+            prereqAnyTalent: [100],
+          },
+        ],
+      },
+    ]);
+
+    expect(data.name).toBe("Legacy");
+    expect(data.tabs).toHaveLength(1);
+    expect(data.tabs[0].talents[0]).toMatchObject({ tierID: 1, columnIndex: 0, progressionIndex: 0 });
+    expect(data.tabs[0].talents[1]).toMatchObject({ tierID: 1, columnIndex: 1, progressionIndex: 1, prereqAnyTalent: [100] });
+    expect(canUseTalent(data.tabs[0].talents[1], data.tabs[0].talents, { 100: 4 }, 5)).toBe(false);
+    expect(canUseTalent(data.tabs[0].talents[1], data.tabs[0].talents, { 100: 5 }, 5)).toBe(true);
+  });
+});
+
+describe("modern Trait rank spell scaling", () => {
+  it("scales a shared max-rank spell for each talent rank", () => {
+    const sharedSpellTalent = talent({
+      id: 17003,
+      tierID: 0,
+      columnIndex: 0,
+      maxRank: 5,
+      spellRanks: [17003, 17003, 17003, 17003, 17003],
+    });
+    const spell = {
+      spell_level: 0,
+      base_level: 0,
+      max_level: 0,
+      effects: [
+        { effect_index: 0, effect_base_points: 0, effect_base_points_f: 10, effect_real_points_per_level: 5 },
+        { effect_index: 1, effect_base_points: 0, effect_base_points_f: 20 },
+        { effect_index: 2, effect_base_points: 0, effect_base_points_f: 10 },
+      ],
+      effect_base_points: [10, 20, 10],
+      effect_base_points_f: [10, 20, 10],
+      effect_real_points_per_level: [5, 0, 0],
+    } as Parameters<typeof spellForTalentRank>[1];
+
+    const rankOne = spellForTalentRank(sharedSpellTalent, spell, 1);
+    const rankFive = spellForTalentRank(sharedSpellTalent, spell, 5);
+
+    expect(rankOne.effects?.map((effect) => effect.effect_base_points_f)).toEqual([2, 4, 2]);
+    expect(rankOne.effects?.[0].effect_real_points_per_level).toBe(1);
+    expect(rankOne.effect_base_points_f).toEqual([2, 4, 2]);
+    expect(resolveSpellDescription(rankOne, "Intellect $s1%, Stamina $s2%, Strength $s3%.")).toBe(
+      "Intellect 2%, Stamina 4%, Strength 2%.",
+    );
+    expect(rankFive).toBe(spell);
+    expect(spell.effects?.map((effect) => effect.effect_base_points_f)).toEqual([10, 20, 10]);
+  });
+
+  it("does not scale classic talents with distinct rank spell IDs", () => {
+    const classicTalent = talent({
+      id: 1,
+      tierID: 0,
+      columnIndex: 0,
+      maxRank: 2,
+      spellRanks: [100, 101],
+    });
+    const spell = { effects: [], effect_base_points: [], effect_real_points_per_level: [] } as unknown as Parameters<typeof spellForTalentRank>[1];
+    expect(spellForTalentRank(classicTalent, spell, 1)).toBe(spell);
+  });
+});
 
 describe("TalentTreeViewer required player level", () => {
   it("derives level from max level, max talent points, and current spend", () => {
@@ -111,6 +205,18 @@ describe("TalentTreeViewer talent locking", () => {
 
     expect(canUseTalent(target, tabTalents, { 10: 2, 12: 5 })).toBe(false);
     expect(canUseTalent(target, tabTalents, { 10: 3, 12: 5 })).toBe(true);
+  });
+
+  it("allows any sufficient prerequisite to unlock a target", () => {
+    const first = talent({ id: 13, tierID: 0, columnIndex: 0, maxRank: 2 });
+    const second = talent({ id: 14, tierID: 0, columnIndex: 1, maxRank: 3 });
+    const filler = talent({ id: 15, tierID: 0, columnIndex: 2, maxRank: 5 });
+    const target = talent({ id: 16, tierID: 1, columnIndex: 1, prereqAnyTalent: [13, 14] });
+    const tabTalents = [first, second, filler, target];
+
+    expect(canUseTalent(target, tabTalents, { 13: 1, 14: 2, 15: 5 })).toBe(false);
+    expect(canUseTalent(target, tabTalents, { 13: 2, 15: 5 })).toBe(true);
+    expect(canUseTalent(target, tabTalents, { 14: 3, 15: 5 })).toBe(true);
   });
 
   it("does not add points to locked talents", () => {
@@ -584,6 +690,23 @@ describe("TalentTreeViewer prerequisite arrows", () => {
 
     expect(prerequisiteArrows([source, target])).toEqual([
       { from: source, to: target, requiredRank: 2 },
+    ]);
+  });
+
+  it("maps sufficient and visual-only Trait edges into arrows", () => {
+    const sufficient = talent({ id: 3, tierID: 0, columnIndex: 0, maxRank: 2 });
+    const visual = talent({ id: 4, tierID: 0, columnIndex: 2, maxRank: 3 });
+    const target = talent({
+      id: 5,
+      tierID: 1,
+      columnIndex: 1,
+      prereqAnyTalent: [3],
+      visualPrereqTalent: [4],
+    });
+
+    expect(prerequisiteArrows([sufficient, visual, target])).toEqual([
+      { from: sufficient, to: target, requiredRank: 2 },
+      { from: visual, to: target, requiredRank: 0 },
     ]);
   });
 

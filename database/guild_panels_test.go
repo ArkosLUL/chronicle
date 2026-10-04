@@ -13,6 +13,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/internal/testutil"
+	"github.com/Emyrk/chronicle/internal/timeparsepolicy"
 )
 
 // guildPanelsFixture wires up the rows the guild panel queries join against:
@@ -158,9 +159,14 @@ func TestGuildCharacterRoster(t *testing.T) {
 	f.insertGamePlayer(t, guildPanelPlayer{guid: testGUID(3), name: "Idleguy", class: "MAGE", guildID: f.guildID, level: 60, updatedAt: now.Add(-100 * 24 * time.Hour)})
 	f.insertGamePlayer(t, guildPanelPlayer{guid: testGUID(4), name: "Outsider", class: "ROGUE", guildID: otherGuildID, level: 60, updatedAt: now})
 
-	// Activeguy (dps): two encounters at 80 and 60 -> avg 70. The hps row must
-	// not contribute because his role is dps.
-	f.insertParse(t, guildPanelParse{runID: runID, playerGUID: testGUID(1), playerName: "Activeguy", playerRole: "dps", metric: "dps", encounter: "Ragnaros", score: 80, killedAt: now.Add(-24 * time.Hour)})
+	// Activeguy (dps): Ragnaros uses the best 3 of four runs
+	// (100+90+80)/3 = 90, while Golemagg is 60, producing an Armory-matching
+	// score of (90+60)/2 = 75. The hps row must not contribute because his role
+	// is dps.
+	f.insertParse(t, guildPanelParse{runID: runID, playerGUID: testGUID(1), playerName: "Activeguy", playerRole: "dps", metric: "dps", encounter: "Ragnaros", score: 100, killedAt: now.Add(-24 * time.Hour)})
+	f.insertParse(t, guildPanelParse{runID: uuid.New(), playerGUID: testGUID(1), playerName: "Activeguy", playerRole: "dps", metric: "dps", encounter: "Ragnaros", score: 90, killedAt: now.Add(-48 * time.Hour)})
+	f.insertParse(t, guildPanelParse{runID: uuid.New(), playerGUID: testGUID(1), playerName: "Activeguy", playerRole: "dps", metric: "dps", encounter: "Ragnaros", score: 80, killedAt: now.Add(-72 * time.Hour)})
+	f.insertParse(t, guildPanelParse{runID: uuid.New(), playerGUID: testGUID(1), playerName: "Activeguy", playerRole: "dps", metric: "dps", encounter: "Ragnaros", score: 10, killedAt: now.Add(-96 * time.Hour)})
 	f.insertParse(t, guildPanelParse{runID: runID, playerGUID: testGUID(1), playerName: "Activeguy", playerRole: "dps", metric: "dps", encounter: "Golemagg", score: 60, killedAt: now.Add(-24 * time.Hour)})
 	f.insertParse(t, guildPanelParse{runID: runID, playerGUID: testGUID(1), playerName: "Activeguy", playerRole: "dps", metric: "hps", encounter: "Ragnaros", score: 99, killedAt: now.Add(-24 * time.Hour)})
 	// Healgirl (heal): detect her role from the hps result even when no usable
@@ -181,7 +187,7 @@ func TestGuildCharacterRoster(t *testing.T) {
 	for _, row := range rows {
 		byName[row.Name] = row
 	}
-	require.InDelta(t, 70, byName["Activeguy"].AvgParse, 0.01)
+	require.InDelta(t, 75, byName["Activeguy"].AvgParse, 0.01)
 	require.Equal(t, "dps", byName["Activeguy"].PlayerRole)
 	require.InDelta(t, 90, byName["Healgirl"].AvgParse, 0.01)
 	require.Equal(t, "heal", byName["Healgirl"].PlayerRole)
@@ -446,11 +452,46 @@ func TestGuildBestRuns(t *testing.T) {
 		return id
 	}
 
-	// Molten Core: run A is slower but parses higher; run B is faster.
+	insertTimeParseSnapshot := func(cutoff time.Time, durations ...time.Duration) {
+		t.Helper()
+
+		snapshot, err := f.store.InsertTimeParseSnapshot(ctx, database.InsertTimeParseSnapshotParams{
+			TenantID:          uuid.Nil,
+			Cutoff:            database.Timestamptz(cutoff),
+			LookbackDays:      90,
+			PolicyVersion:     int16(timeparsepolicy.PolicyVersion),
+			QueryVersion:      timeparsepolicy.SnapshotQueryVersion,
+			SourceRowCount:    int64(len(durations)),
+			SourceFingerprint: int64(len(durations)),
+		})
+		require.NoError(t, err)
+
+		for _, duration := range durations {
+			_, err = f.pool.Exec(ctx, `
+				INSERT INTO time_parse_clear_time_members (
+					snapshot_id, instance_id, run_id, instance_name,
+					difficulty_name, max_players, duration_ms, start_time
+				) VALUES ($1, $2, $3, 'Molten Core', 'Normal', 40, $4, $5)
+			`, snapshot.ID, uuid.New(), uuid.New(), duration.Milliseconds(), cutoff.Add(-time.Hour))
+			require.NoError(t, err)
+		}
+
+		_, err = f.store.PublishTimeParseSnapshot(ctx, snapshot.ID)
+		require.NoError(t, err)
+	}
+
+	// Molten Core: run A is slower but had a 100 clear-time parse against its
+	// historical cohort; run B is faster but had a 20 clear-time parse.
 	runA := insertClear("Molten Core", now.Add(-30*24*time.Hour), 70*time.Minute, uuid.Nil)
 	runB := insertClear("Molten Core", now.Add(-20*24*time.Hour), 50*time.Minute, uuid.Nil)
-	f.insertParse(t, guildPanelParse{runID: runA, playerGUID: testGUID(1), playerName: "Aleph", playerRole: "dps", metric: "dps", encounter: "Ragnaros", score: 95, killedAt: now.Add(-30 * 24 * time.Hour)})
-	f.insertParse(t, guildPanelParse{runID: runB, playerGUID: testGUID(1), playerName: "Aleph", playerRole: "dps", metric: "dps", encounter: "Ragnaros", score: 60, killedAt: now.Add(-20 * 24 * time.Hour)})
+	insertTimeParseSnapshot(now.Add(-31*24*time.Hour),
+		80*time.Minute, 85*time.Minute, 90*time.Minute, 95*time.Minute, 100*time.Minute)
+	insertTimeParseSnapshot(now.Add(-21*24*time.Hour),
+		30*time.Minute, 35*time.Minute, 40*time.Minute, 45*time.Minute, 50*time.Minute)
+	// Player parses are intentionally opposite to the time parses. They must not
+	// influence which run wins parse mode.
+	f.insertParse(t, guildPanelParse{runID: runA, playerGUID: testGUID(1), playerName: "Aleph", playerRole: "dps", metric: "dps", encounter: "Ragnaros", score: 60, killedAt: now.Add(-30 * 24 * time.Hour)})
+	f.insertParse(t, guildPanelParse{runID: runB, playerGUID: testGUID(1), playerName: "Aleph", playerRole: "dps", metric: "dps", encounter: "Ragnaros", score: 95, killedAt: now.Add(-20 * 24 * time.Hour)})
 	// A slower re-upload of run B collapses into the same run.
 	insertClear("Molten Core", now.Add(-20*24*time.Hour), 55*time.Minute, runB)
 	// Onyxia: single clear, no parses.
@@ -468,29 +509,37 @@ func TestGuildBestRuns(t *testing.T) {
 	}
 
 	// Fastest within 90 days: run B wins Molten Core.
-	rows, err := f.store.GuildBestRuns(ctx, database.GuildBestRunsParams{
-		TenantID: uuid.Nil, GuildID: f.guildID, SinceDays: 90, ByParse: false,
-	})
+	params := database.GuildBestRunsParams{
+		TenantID:       uuid.Nil,
+		GuildID:        f.guildID,
+		SinceDays:      90,
+		LookbackDays:   90,
+		PolicyVersion:  int16(timeparsepolicy.PolicyVersion),
+		QueryVersion:   timeparsepolicy.SnapshotQueryVersion,
+		MinParseSample: timeparsepolicy.MinSampleForParse,
+	}
+	rows, err := f.store.GuildBestRuns(ctx, params)
 	require.NoError(t, err)
 	require.Len(t, rows, 2)
 	m := byInstance(rows)
 	require.Equal(t, runB, m["Molten Core"].RunID)
 	require.EqualValues(t, 50*time.Minute/time.Millisecond, m["Molten Core"].DurationMs)
-	require.InDelta(t, -1, m["Onyxia's Lair"].AvgParse, 0.01)
+	require.InDelta(t, -1, m["Onyxia's Lair"].ClearTimeParse, 0.01)
 
-	// Best parse within 90 days: run A wins Molten Core despite being slower.
-	rows, err = f.store.GuildBestRuns(ctx, database.GuildBestRunsParams{
-		TenantID: uuid.Nil, GuildID: f.guildID, SinceDays: 90, ByParse: true,
-	})
+	// Best parse within 90 days: run A wins Molten Core despite being slower and
+	// having worse player parses.
+	params.ByParse = true
+	rows, err = f.store.GuildBestRuns(ctx, params)
 	require.NoError(t, err)
 	m = byInstance(rows)
 	require.Equal(t, runA, m["Molten Core"].RunID)
-	require.InDelta(t, 95, m["Molten Core"].AvgParse, 0.01)
+	require.InDelta(t, 100, m["Molten Core"].ClearTimeParse, 0.01)
+	require.EqualValues(t, 5, m["Molten Core"].ParseSampleSize)
 
 	// No window includes the ancient clear.
-	rows, err = f.store.GuildBestRuns(ctx, database.GuildBestRunsParams{
-		TenantID: uuid.Nil, GuildID: f.guildID, SinceDays: 0, ByParse: false,
-	})
+	params.ByParse = false
+	params.SinceDays = 0
+	rows, err = f.store.GuildBestRuns(ctx, params)
 	require.NoError(t, err)
 	m = byInstance(rows)
 	require.Equal(t, old, m["Molten Core"].RunID)

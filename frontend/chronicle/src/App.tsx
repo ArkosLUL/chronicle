@@ -73,7 +73,7 @@ import {
   LayoutLabSettings,
 } from "./pages/Settings"
 import { GuildAnalytics, GuildPage, GuildPageEditor, GuildRoster, GuildSettings } from "./pages/GuildPage"
-import { ArmoryPage } from "./pages/ArmoryPage"
+import { ArmoryAnalysisRedirect, ArmoryPage, PerformanceComparisonPage } from "./pages/ArmoryPage"
 import { ArmorySearchPage } from "./pages/ArmorySearch"
 import { GuildSearchPage } from "./pages/GuildSearch"
 import { ApplyPage } from "./pages/Apply/ApplyPage"
@@ -132,12 +132,12 @@ function App() {
         <Route path="/s/:code" element={<SharedViewRedirect />} />
         <Route path="/guilds" element={<GuildSearchPage />} />
         <Route path="/armory" element={<ArmorySearchPage />} />
+        <Route path="/performance-history" element={<PerformanceComparisonPage />} />
+        <Route path="/armory/:realmName/:playerIdentifier/analysis" element={<ArmoryAnalysisRedirect />} />
         <Route path="/armory/:realmName/:playerIdentifier" element={<ArmoryPage />} />
         <Route path="/sim" element={<SimPage />} />
-        <Route path="/talents" element={<TalentCalculatorPage />} />
         {/* Unlinked while in development — reachable by URL only. */}
         <Route path="/raidplanner" element={<RaidPlannerPage />} />
-        <Route path="/talents/:classSlug" element={<TalentCalculatorPage />} />
         <Route path="/leaderboards" element={<LeaderboardsPage />} />
         <Route path="/leaderboard" element={<LeaderboardRedirect />} />
         <Route path="/rankings" element={<RankingsRedirect />} />
@@ -167,6 +167,8 @@ function App() {
           <Route path="retention" element={<RetentionPage />} />
         </Route>
         <Route element={<TenantDatasetLayout />}>
+          <Route path="/talents" element={<TalentCalculatorPage />} />
+          <Route path="/talents/:classSlug" element={<TalentCalculatorPage />} />
           <Route path="/wowdb" element={<WoWDBLayout />}>
             <Route index element={<ItemExplorerPage />} />
             <Route path="items" element={<ItemExplorerPage />} />

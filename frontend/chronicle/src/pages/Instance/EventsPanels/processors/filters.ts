@@ -14,6 +14,7 @@ export type PanelFilterType =
   | "ability_hittype"
   | "source_type"
   | "target_type"
+  | "shield_caster"
   | "time_range"
   | "event_value"
   | "event_type";
@@ -62,8 +63,8 @@ function getEventAbilityId(event: ProcessorEvent): number | null {
   return null;
 }
 
-function getEventSchool(event: ProcessorEvent): number | null {
-  if ("school" in event && typeof event.school === "number") return event.school;
+function getEventSchools(event: ProcessorEvent): number[] | null {
+  if ("schools" in event && Array.isArray(event.schools)) return event.schools;
   return null;
 }
 
@@ -177,7 +178,7 @@ function compileEntityFilter(
 /** Known toggle option keys for source_type / target_type filters */
 const ENTITY_TYPE_OPTION_KEYS = new Set([
   "selected_players", "selected_enemies", "custom",
-  "player", "pet", "enemy_pet", "enemy", "object", "none",
+  "player", "pet", "enemy_pet", "enemy", "vehicle", "object", "none",
 ]);
 
 /**
@@ -200,6 +201,7 @@ function compileEntityTypeFilter(
   const wantPet = rawValues.has("pet");           // friendly pet (player-owned)
   const wantEnemyPet = rawValues.has("enemy_pet"); // enemy pet (non-player-owned)
   const wantEnemy = rawValues.has("enemy");
+  const wantVehicle = rawValues.has("vehicle");
   const wantObject = rawValues.has("object");
   const wantNone = rawValues.has("none");
 
@@ -290,6 +292,7 @@ function compileEntityTypeFilter(
       if (wantEnemyPet && hasOwner && !ownerIsPlayer) return true;
       if (wantEnemy && !hasOwner) return true;
     }
+    if (wantVehicle && (us ? us.getCachedGuid(guid).isVehicle() : getCachedGuid(guidCache, guid).isVehicle())) return true;
     if (wantObject && (us ? us.getCachedGuid(guid).isObject() : getCachedGuid(guidCache, guid).isObject())) return true;
     return false;
   };
@@ -346,9 +349,9 @@ const FILTER_COMPILERS: Record<PanelFilterType, FilterCompiler> = {
     }, 0);
     if (mask === 0) return () => false;
     return (event) => {
-      const school = getEventSchool(event);
-      if (school === null) return false;
-      return (normalizeDamageSchoolToBitmask(school) & mask) !== 0;
+      const schools = getEventSchools(event);
+      if (schools === null) return false;
+      return schools.some((school) => (normalizeDamageSchoolToBitmask(school) & mask) !== 0);
     };
   },
 
@@ -373,6 +376,11 @@ const FILTER_COMPILERS: Record<PanelFilterType, FilterCompiler> = {
 
   target_type: (value, context) =>
     compileEntityTypeFilter(value, context, "target"),
+
+  shield_caster: (value, context) => {
+    const matchesCaster = compileEntityTypeFilter(value, context, "caster");
+    return (event) => event.type === "absorbed" && matchesCaster(event);
+  },
 
   time_range: (value) => {
     const raw = typeof value === "string" ? value : (value[0] ?? "");

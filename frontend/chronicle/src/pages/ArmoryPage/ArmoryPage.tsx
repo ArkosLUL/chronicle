@@ -1,10 +1,18 @@
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { Shield, Calendar, Sparkles, LayoutDashboard, Hammer } from "lucide-react";
 import type { ArmoryPlayer } from "@/api/typesGenerated";
-import { useArmoryLoot, useArmoryPlayer } from "@/api/queries";
+import {
+  useArmoryLoot,
+  useArmoryPlayer,
+  useMyFavorites,
+  useToggleFavoritePlayer,
+} from "@/api/queries";
 import { useCharacterParses } from "@/api/rankingsQueries";
 import { Button } from "@/components/ui/button";
+import { FavoriteButton } from "@/components/Favorites";
+import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent } from "@/components/ui/Card/Card";
 import { DatasetProvider } from "@/hooks/useDatasetId";
 import { AdminLinkControls } from "./AdminLinkControls";
@@ -95,6 +103,12 @@ function ArmoryPageContent({ player }: { player: ArmoryPlayer }) {
   const mode: OverviewMode =
     searchParams.get("mode") === "performance" ? "performance" : "journey";
   const [metric, setMetric] = useState<ParseMetric>(() => defaultMetric(player));
+  const { isAuthenticated } = useAuth();
+  const favorites = useMyFavorites({ enabled: isAuthenticated });
+  const toggleFavorite = useToggleFavoritePlayer();
+  const isFavorite = favorites.data?.players.some(
+    (favorite) => favorite.realm_id === player.realm_id && favorite.id === player.id,
+  ) ?? false;
 
   const isOverview = activeTab === "overview";
   const activity = useRecentActivity(player, isOverview);
@@ -130,13 +144,41 @@ function ArmoryPageContent({ player }: { player: ArmoryPlayer }) {
     setSearchParams(next);
   };
 
+  const favoriteButton = isAuthenticated ? (
+    <FavoriteButton
+      isFavorite={isFavorite}
+      isPending={toggleFavorite.isPending || favorites.isLoading}
+      label={player.name}
+      iconOnly
+      onToggle={() => {
+        const favorite = !isFavorite;
+        toggleFavorite.mutate(
+          {
+            realmID: player.realm_id,
+            characterGUID: player.id,
+            favorite,
+          },
+          {
+            onSuccess: () => toast.success(
+              favorite
+                ? `${player.name} added to favorites`
+                : `${player.name} removed from favorites`,
+            ),
+            onError: (mutationError) => toast.error(mutationError.message),
+          },
+        );
+      }}
+    />
+  ) : undefined;
+
   const modeSelector = activeTab === "overview" ? (
-    <div className="flex items-center gap-2">
+    <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center">
       {MODES.map(([key, label]) => (
         <Button
           key={key}
           variant={mode === key ? "secondary" : "outline"}
           size="sm"
+          className="w-full sm:w-auto"
           onClick={() => setMode(key)}
         >
           {label}
@@ -146,7 +188,7 @@ function ArmoryPageContent({ player }: { player: ArmoryPlayer }) {
   ) : undefined;
 
   return (
-    <div className="w-full py-8 px-4 grid gap-x-4 grid-cols-[1fr_minmax(0,72rem)_1fr]">
+    <div className="grid w-full grid-cols-[1fr_minmax(0,72rem)_1fr] px-1 py-8 sm:gap-x-4 sm:px-4">
       {/* Left placeholder column */}
       <div />
 
@@ -155,14 +197,14 @@ function ArmoryPageContent({ player }: { player: ArmoryPlayer }) {
         <AdminLinkControls player={player} />
 
         {/* Tab navigation */}
-        <div className="flex gap-1 border-b border-border">
+        <div className="grid grid-cols-4 border-b border-border sm:flex sm:gap-1">
           {TABS.map(({ key, label, icon: Icon }) => (
             <button
               key={key}
               onClick={() => openTab(key)}
               className={`
-                flex items-center gap-1.5 px-4 py-2 text-sm font-medium transition-colors
-                border-b-2 -mb-px
+                flex min-w-0 items-center justify-center gap-1 px-1 py-2 text-xs font-medium transition-colors
+                border-b-2 -mb-px sm:justify-start sm:gap-1.5 sm:px-4 sm:text-sm
                 ${activeTab === key
                   ? "border-primary text-primary"
                   : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
@@ -177,8 +219,8 @@ function ArmoryPageContent({ player }: { player: ArmoryPlayer }) {
 
         {/* Keep one identity header mounted while its tab-specific controls change. */}
         <div className="mt-8">
-          <IdentityHeader player={player} actions={modeSelector}>
-            <div className="lg:w-[480px]">
+          <IdentityHeader player={player} titleAction={favoriteButton} actions={modeSelector}>
+            <div className="w-full lg:w-[480px]">
               {activeTab === "overview" && mode === "performance" && (
                 <ScoreCard
                   score={parsesQuery.data?.score}
@@ -209,7 +251,7 @@ function ArmoryPageContent({ player }: { player: ArmoryPlayer }) {
 
         {/* Tab content: overview, gear, and talents stay in center column. */}
         {activeTab === "overview" && (
-          <div className="mt-6">
+          <div className="mt-4">
             <OverviewTab player={player} onOpenTab={openTab} metric={metric} />
           </div>
         )}

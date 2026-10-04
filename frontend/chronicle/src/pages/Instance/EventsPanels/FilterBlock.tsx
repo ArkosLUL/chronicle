@@ -16,6 +16,7 @@ const FILTER_TYPES: { value: PanelFilterType; label: string }[] = [
   { value: "ability_hittype", label: "Hit Type" },
   { value: "source_type", label: "Source" },
   { value: "target_type", label: "Target" },
+  { value: "shield_caster", label: "Shield Caster" },
   { value: "time_range", label: "Time Range" },
   { value: "event_value", label: "Event Value" },
   { value: "event_type", label: "Event Type" },
@@ -64,6 +65,7 @@ const SOURCE_TYPE_TYPE_OPTIONS = [
   { label: "Pet", value: "pet" },
   { label: "Enemy Pet", value: "enemy_pet" },
   { label: "Enemy", value: "enemy" },
+  { label: "Vehicle", value: "vehicle" },
   { label: "Object", value: "object" },
   { label: "None", value: "none" },
 ] as const;
@@ -94,7 +96,7 @@ const APPLY_TO_OPTIONS = [
 
 /** Filter types that show the "applies to" event type selector */
 const TYPES_WITH_APPLY_TO = new Set<PanelFilterType>([
-  "source_type", "target_type",
+  "source_type", "target_type", "shield_caster",
   "ability_name", "ability_id", "ability_school", "ability_hittype",
   "time_range",
   "event_value",
@@ -420,7 +422,7 @@ function EntityTypeEditor({ filter, onChange }: { filter: PanelFilter; onChange:
     if (!entry || arrayValues.includes(entry)) return;
     onChange({ ...filter, value: [...arrayValues, entry] });
     setCustomInput("");
-  }, [arrayValues, filter, onChange]);
+  }, [arrayValues, filter, onChange, setCustomInput]);
 
   const removeCustomEntry = useCallback((entry: string) => {
     onChange({ ...filter, value: arrayValues.filter((v) => v !== entry) });
@@ -680,6 +682,7 @@ function ValueEditor({ filter, onChange }: { filter: PanelFilter; onChange: (nex
       return <SegmentedToggle options={HITTYPE_OPTIONS} values={arrayValues} onToggle={toggleValue} />;
     case "source_type":
     case "target_type":
+    case "shield_caster":
       return <EntityTypeEditor filter={filter} onChange={onChange} />;
     case "ability_id":
       return <AbilityIdEditor filter={filter} onChange={onChange} />;

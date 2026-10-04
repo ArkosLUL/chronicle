@@ -565,6 +565,43 @@ export interface CharacterParseHistoryResponse {
 
 // From chroniclesdk/parse_scores.go
 /**
+ * CharacterPerformanceResponse contains canonical ranking runs for one selected
+ * instance variant and boss set.
+ */
+export interface CharacterPerformanceResponse {
+    readonly player_guid: string;
+    readonly metric: string;
+    readonly runs: readonly CharacterPerformanceRun[];
+}
+
+// From chroniclesdk/parse_scores.go
+/**
+ * CharacterPerformanceRun aggregates all selected encounters from one persisted
+ * canonical ranking run. AverageParse is nil when any selected encounter lacks
+ * a usable cached parse.
+ */
+export interface CharacterPerformanceRun {
+    readonly run_id: string;
+    readonly representative_instance_id: string;
+    readonly started_at: string;
+    readonly killed_at: string;
+    readonly player_name: string;
+    readonly player_class: string;
+    readonly player_spec: string;
+    readonly player_sub_spec?: string;
+    readonly encounter_count: number;
+    readonly damage_done: number;
+    readonly healing_done: number;
+    readonly absorbed_done: number;
+    readonly duration_secs: number;
+    readonly dps: number;
+    readonly hps: number;
+    readonly log_hashed_slug: string;
+    readonly average_parse?: number;
+}
+
+// From chroniclesdk/parse_scores.go
+/**
  * CharacterScore is the derived Score from best 3 parse scores per
  * (instance_name, encounter_name) group, averaged per group, then averaged
  * across groups.
@@ -933,6 +970,8 @@ export const DeviceVisibilitys: DeviceVisibility[] = ["all", "desktop", "mobile"
 export interface DiscordChannel {
     readonly id: string;
     readonly name: string;
+    readonly eligible: boolean;
+    readonly ineligibility_reasons?: readonly string[];
 }
 
 // From chroniclesdk/discovery.go
@@ -1078,6 +1117,29 @@ export interface ExternalVerificationPublic {
      * card, e.g. "Linking is only supported for members of the guild Zug Zug".
      */
     readonly callout?: string;
+}
+
+// From chroniclesdk/favorites.go
+export interface FavoriteGuild {
+    readonly id: string;
+    readonly name: string;
+    readonly realm_id: string;
+    readonly realm_name: string;
+    readonly logo_url?: string;
+}
+
+// From chroniclesdk/favorites.go
+export interface FavoritePlayer {
+    readonly id: string;
+    readonly realm_id: string;
+    readonly realm_name: string;
+    readonly name: string;
+    readonly class: string;
+    readonly race: string;
+    readonly gender: string;
+    readonly level: number;
+    readonly guild_id?: string;
+    readonly guild_name?: string;
 }
 
 // From chroniclesdk/log.go
@@ -1334,8 +1396,8 @@ export interface Guild {
 // From chroniclesdk/guild_page.go
 /**
  * GuildBestRun is the guild's best full clear of one instance within the
- * requested window — fastest, or highest average parse when ranked by parse.
- * AvgParse is -1 when the run has no parses.
+ * requested window, fastest or highest historical clear-time parse.
+ * ClearTimeParse is -1 when no eligible time-parse snapshot is available.
  */
 export interface GuildBestRun {
     readonly run_id: string;
@@ -1346,8 +1408,8 @@ export interface GuildBestRun {
     readonly max_players: number;
     readonly duration_ms: number;
     readonly completed_at: string;
-    readonly avg_parse: number;
-    readonly parse_count: number;
+    readonly clear_time_parse: number;
+    readonly parse_sample_size: number;
 }
 
 // From chroniclesdk/guild_page.go
@@ -1889,6 +1951,8 @@ export interface InstanceRankingRecord {
     readonly damage_done: number;
     readonly healing_done: number;
     readonly absorbed_done: number;
+    readonly alive_percentage?: number;
+    readonly player_deaths?: number;
     readonly duration_secs: number;
     readonly dps: number;
     readonly hps: number;
@@ -2648,6 +2712,8 @@ export interface RankingsEntry {
     readonly damage_done: number;
     readonly healing_done: number;
     readonly absorbed_done: number;
+    readonly alive_percentage?: number;
+    readonly player_deaths?: number;
     readonly duration_secs: number;
     readonly dps: number;
     readonly hps: number;
@@ -3887,6 +3953,12 @@ export interface User {
     readonly raw_log_retention_hours: number | null;
 }
 
+// From chroniclesdk/favorites.go
+export interface UserFavoritesResponse {
+    readonly guilds: readonly FavoriteGuild[];
+    readonly players: readonly FavoritePlayer[];
+}
+
 // From chroniclesdk/panel_layout.go
 export interface UserPanelLayout {
     readonly id: string;
@@ -4216,6 +4288,7 @@ export interface WoWLogFile {
 export interface WoWLogGroup {
     readonly id: string;
     readonly owner: string;
+    readonly owner_name?: string;
     readonly created_at: string;
     readonly updated_at: string;
     readonly log_type: string;

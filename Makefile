@@ -16,6 +16,10 @@ database/querier.go: database/sqlc.yaml database/dump.sql $(wildcard database/qu
 test:
 	gotestsum --format testname -- -tags $(SERVER) -race $$(go list -tags $(SERVER) ./...)
 
+.PHONY: update-spell-goldens
+update-spell-goldens:
+	go test ./database/gamedb/chrondbc -run '^TestLegacySpellGoldenParity$$' -update
+
 .PHONY: lint
 lint:
 	golangci-lint run --build-tags $(SERVER)
@@ -195,9 +199,28 @@ icons/upload: icons/manifest
 	$(call run-imagecache,./upload-r2.sh)
 	$(call run-imagecache,./upload-icon-list-r2.sh)
 
+.PHONY: icons/wowdata-extract
+icons/wowdata-extract:
+	go run ./scripts/dbcdata extract-wowdata-icons \
+		--server=$(SERVER) \
+		--out=frontend/imagecache/$(SERVER)/icons \
+		$(if $(WOW_CLIENT_PATH),--dbc="$(WOW_CLIENT_PATH)") \
+		$(if $(WOWDATA_BIN),--wowdata="$(WOWDATA_BIN)") \
+		$(if $(WOWDATA_CACHE),--cache="$(WOWDATA_CACHE)")
+
+.PHONY: icons/wowdata
+icons/wowdata: icons/wowdata-extract
+	go run ./scripts/dbstaticgen --icons-dir=frontend/imagecache/$(SERVER)/icons --out=frontend/imagecache/$(SERVER)/icon-list.json
+	$(call run-imagecache,./upload-r2.sh)
+	$(call run-imagecache,./upload-icon-list-r2.sh)
+
 # Full pipeline: extract → convert → manifest → upload
 .PHONY: icons
+ifeq ($(SERVER),forever)
+icons: icons/wowdata
+else
 icons: icons/upload
+endif
 .PHONY: icons/talents-extract
 icons/talents-extract:
 	go run ./scripts/dbcdata extract-talent-backgrounds --server=$(SERVER) --out=frontend/imagecache/$(SERVER)/talent-backgrounds

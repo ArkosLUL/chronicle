@@ -36,6 +36,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: "index.html",
+        selfHosting: "self-hosting/index.html",
         support: "support/index.html",
       },
     },

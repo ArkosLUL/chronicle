@@ -62,17 +62,18 @@ type Hookable struct {
 	MatchesZoneF func(z zone.Zone) bool
 	CurrentZone  zone.Zone
 	*identifier.Identifier
-	verbose           bool
-	realm             *realm.Info       // mostly static
-	versions          map[string]string // addon/dependency versions from HEADER
-	recorderGUID      *guid.GUID        // recording player GUID from HEADER
-	preprocessors     []instancehook.Preprocessor
-	hooks             []instancehook.Hook // TODO: unroll?
-	engagementTracker *rankings.EngagementTracker
-	overviewTracker   *overviewmetrics.Tracker
-	speedrunTracker   *rankings.SpeedrunTracker
-	dpsTracker        *rankings.DPSTracker
-	rankingRules      *rankings.Rankings
+	verbose              bool
+	realm                *realm.Info       // mostly static
+	versions             map[string]string // addon/dependency versions from HEADER
+	recorderGUID         *guid.GUID        // recording player GUID from HEADER
+	preprocessors        []instancehook.Preprocessor
+	hooks                []instancehook.Hook // TODO: unroll?
+	engagementTracker    *rankings.EngagementTracker
+	overviewTracker      *overviewmetrics.Tracker
+	speedrunTracker      *rankings.SpeedrunTracker
+	survivabilityTracker *rankings.SurvivabilityTracker
+	dpsTracker           *rankings.DPSTracker
+	rankingRules         *rankings.Rankings
 
 	// derivedSpeedrunTrackers holds per-sub-instance speedrun trackers when
 	// DerivedRankings is configured. At finalization the tracker matching the
@@ -178,6 +179,7 @@ func NewHookable(ctx context.Context, logger *slog.Logger, db *unitdb.Units, z z
 	ce := &ClassificationEmitter{
 		units:      db,
 		characters: chrs,
+		identifier: ip.Idf,
 	}
 	chrs.RegisterHook(ce)
 
@@ -192,9 +194,11 @@ func NewHookable(ctx context.Context, logger *slog.Logger, db *unitdb.Units, z z
 	overviewTracker := overviewmetrics.NewTracker(db)
 
 	var dpsTracker *rankings.DPSTracker
+	var survivabilityTracker *rankings.SurvivabilityTracker
 	var speedrunTracker *rankings.SpeedrunTracker
 	if ip.Rankings != nil {
 		dpsTracker = rankings.NewDPSTracker(db)
+		survivabilityTracker = rankings.NewSurvivabilityTracker()
 		if ip.Rankings.Speedrun != nil {
 			speedrunTracker = rankings.NewSpeedrunTracker(*ip.Rankings.Speedrun, db, engagementTracker)
 			chrs.RegisterHook(speedrunTracker)
@@ -227,33 +231,37 @@ func NewHookable(ctx context.Context, logger *slog.Logger, db *unitdb.Units, z z
 	if dpsTracker != nil {
 		hooks = append(hooks, dpsTracker)
 	}
+	if survivabilityTracker != nil {
+		hooks = append(hooks, survivabilityTracker)
+	}
 	if speedrunTracker != nil {
 		hooks = append(hooks, speedrunTracker)
 	}
 
 	c := &Hookable{
-		name:              ip.Name,
-		Category:          ip.Category,
-		logger:            logger,
-		units:             db,
-		preprocessors:     ip.Preprocessors,
-		CurrentZone:       z,
-		MatchesZoneF:      ip.MatchesZone,
-		Characters:        chrs,
-		Identifier:        ip.Idf,
-		events:            encounterevents.NewEvents(),
-		g:                 g,
-		p:                 p,
-		lootTracking:      lootTracking,
-		hooks:             hooks,
-		engagementTracker: engagementTracker,
-		overviewTracker:   overviewTracker,
-		speedrunTracker:   speedrunTracker,
-		dpsTracker:        dpsTracker,
-		rankingRules:      ip.Rankings,
-		verbose:           parseoptions.IsVerbose(ctx),
-		timings:           timings.New(),
-		completedFights:   make([]encounter.Fight, 0),
+		name:                 ip.Name,
+		Category:             ip.Category,
+		logger:               logger,
+		units:                db,
+		preprocessors:        ip.Preprocessors,
+		CurrentZone:          z,
+		MatchesZoneF:         ip.MatchesZone,
+		Characters:           chrs,
+		Identifier:           ip.Idf,
+		events:               encounterevents.NewEvents(),
+		g:                    g,
+		p:                    p,
+		lootTracking:         lootTracking,
+		hooks:                hooks,
+		engagementTracker:    engagementTracker,
+		overviewTracker:      overviewTracker,
+		speedrunTracker:      speedrunTracker,
+		survivabilityTracker: survivabilityTracker,
+		dpsTracker:           dpsTracker,
+		rankingRules:         ip.Rankings,
+		verbose:              parseoptions.IsVerbose(ctx),
+		timings:              timings.New(),
+		completedFights:      make([]encounter.Fight, 0),
 	}
 
 	cie.emit = func(evt *messages.Combatant) {
@@ -352,6 +360,10 @@ func (h *Hookable) initDerivedRankings(flavor database.WoWFlavor, derivedRanking
 	if h.dpsTracker == nil {
 		h.dpsTracker = rankings.NewDPSTracker(h.units)
 		h.hooks = append(h.hooks, h.dpsTracker)
+	}
+	if h.survivabilityTracker == nil {
+		h.survivabilityTracker = rankings.NewSurvivabilityTracker()
+		h.hooks = append(h.hooks, h.survivabilityTracker)
 	}
 
 	for name, rankingsFn := range derivedRankings {
@@ -603,10 +615,48 @@ func (h *Hookable) process(m messages.Message) (finalError error) {
 	return nil
 }
 
+func (h *Hookable) splitFightOnCharacterStart(m messages.Message) error {
+	if h.currentFight == nil || !h.currentFight.active() {
+		return nil
+	}
+
+	for id, activity := range m.Activity() {
+		if activity != messages.ActivityStart {
+			continue
+		}
+		if _, alreadyInFight := h.currentFight.ActiveHostiles[id]; alreadyInFight {
+			continue
+		}
+		char, ok := h.Characters.Get(id)
+		if !ok {
+			continue
+		}
+		if _, ok := char.(characters.FightStartSplitter); !ok {
+			continue
+		}
+
+		for _, hook := range h.hooks {
+			hook.FightEnded(h.currentFight.EncounterID, m)
+		}
+		h.currentFight.End = &period.Moment{
+			Timestamp: m,
+			Reason:    "new fight started",
+		}
+		return timings.Do1(h.timings, timingsFinalizeFight, func() error {
+			return h.finalizeFight()
+		})
+	}
+	return nil
+}
+
 // FightDetectionHandler manages the life of "currentFight".
 // Updates live fight state based on character activity changes.
 // Call this after Characters.Process returns true (activity changed).
 func (h *Hookable) FightDetectionHandler(m messages.Message) (func() error, error) {
+	if err := h.splitFightOnCharacterStart(m); err != nil {
+		return nil, fmt.Errorf("splitting fight on character start: %w", err)
+	}
+
 	if h.currentFight == nil {
 		// this is the only place a new fight should be instantiated.
 		// The ongoingFight struct can handle itself. Make sure it exists.
@@ -863,10 +913,18 @@ func (h *Hookable) finalizeFight() error {
 	// is not yet known; fightEncounter assigns it after computing the outcome.
 	h.currentFight.Phases.close(*h.currentFight.End, "")
 
+	start := h.currentFight.Start.Timestamp.Date()
+	end := h.currentFight.End.Timestamp.Date()
+	for _, hook := range h.hooks {
+		if finalizedHook, ok := hook.(instancehook.FightFinalizedHook); ok {
+			finalizedHook.FightFinalized(h.currentFight.EncounterID, start, end)
+		}
+	}
+
 	fight := encounter.Fight{
 		Hostiles:             map[guid.GUID]encounter.CharacterFight{},
-		Start:                h.currentFight.Start.Timestamp.Date(),
-		End:                  h.currentFight.End.Timestamp.Date(),
+		Start:                start,
+		End:                  end,
 		EncounterID:          h.currentFight.EncounterID,
 		PlayerDeaths:         h.currentFight.PlayerDeaths,
 		Phases:               h.currentFight.Phases.materialized(),
@@ -1144,10 +1202,13 @@ func (h *Hookable) Finalize(ctx context.Context) (*FinalizedInstance, error) {
 	}
 
 	var rankingsResult *rankings.RankingsResult
-	if h.dpsTracker != nil || activeSpeedrunTracker != nil {
+	if h.dpsTracker != nil || h.survivabilityTracker != nil || activeSpeedrunTracker != nil {
 		rankingsResult = &rankings.RankingsResult{}
 		if h.dpsTracker != nil {
 			rankingsResult.DPS = h.dpsTracker.Result()
+		}
+		if h.survivabilityTracker != nil {
+			rankingsResult.Survivability = h.survivabilityTracker.Result()
 		}
 		if activeSpeedrunTracker != nil {
 			rankingsResult.Speedrun = activeSpeedrunTracker.Result()

@@ -7,6 +7,8 @@ import { CryptoTipModal } from "./CryptoTipModal";
 const DISCORD_URL = "https://discord.gg/gz97ABFVAj";
 const PATREON_URL = "https://www.patreon.com/cw/ChronicleClassic";
 const BUY_ME_A_COFFEE_URL = "https://buymeacoffee.com/chronicleclassic";
+const SUPPORT_URL = "https://chronicleclassic.com/support/";
+const SELF_HOSTING_URL = "https://chronicleclassic.com/self-hosting/";
 const PATREON_TOOLTIP =
   "Financial contributions are greatly appreciated, but never required. Visit the patreon link to learn more!";
 
@@ -34,6 +36,14 @@ export function Footer() {
                   GitHub
                 </a>
               </li>
+              <li>
+                <a
+                  href={SELF_HOSTING_URL}
+                  className="hover:text-foreground transition-colors"
+                >
+                  Self Hosted Requirements
+                </a>
+              </li>
             </ul>
           </div>
 
@@ -53,7 +63,14 @@ export function Footer() {
                 </a>
               </li>
               <li className="pt-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground/80">
-                Contribute Support
+                <a
+                  href={SUPPORT_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-foreground transition-colors"
+                >
+                  Contribute Support
+                </a>
               </li>
               <li>
                 <a
@@ -105,7 +122,7 @@ export function Footer() {
           <div className="text-sm text-muted-foreground">
             <p>© {new Date().getFullYear()} Chronicle</p>
             <p className="text-xs mt-2">
-              Open-source raid log analysis for Classic World of Warcraft.
+              Source-available raid log analysis for Classic World of Warcraft.
               Per-server privacy and terms are on each server's Chronicle.
             </p>
           </div>

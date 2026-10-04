@@ -11,15 +11,21 @@ ORDER BY instance_name, difficulty_name, max_players;
 -- (instance, difficulty, max_players, tenant) combo.
 -- The caller sets tenant context so RLS on encounter_dps_rankings
 -- scopes to the correct realms automatically.
-WITH representative_instances AS (
+WITH fallback_representative_instances AS (
     SELECT DISTINCT ON (COALESCE(li.duplicate_group_id, li.id))
         li.id,
         COALESCE(li.duplicate_group_id, li.id) AS run_id
     FROM log_instances li
     JOIN wow_server_realms tenant_realm ON tenant_realm.id = li.realm_id
+    WHERE NOT EXISTS (
+        SELECT 1
+        FROM ranking_runs rr
+        JOIN log_instances representative
+          ON representative.id = rr.representative_instance_id
+         AND COALESCE(representative.duplicate_group_id, representative.id) = rr.run_id
+        WHERE rr.run_id = COALESCE(li.duplicate_group_id, li.id)
+    )
     ORDER BY COALESCE(li.duplicate_group_id, li.id),
-        -- Prefer the upload with the broadest boss-ranking coverage. The group
-        -- anchor is the first upload, but it may be truncated before the final boss.
         (SELECT COUNT(DISTINCT coverage.encounter_name)
          FROM encounter_dps_rankings coverage
          WHERE coverage.instance_id = li.id
@@ -27,6 +33,19 @@ WITH representative_instances AS (
         (li.id = li.duplicate_group_id) DESC NULLS LAST,
         li.start_time ASC,
         li.id ASC
+),
+representative_instances AS (
+    SELECT rr.representative_instance_id AS id, rr.run_id
+    FROM ranking_runs rr
+    JOIN log_instances representative
+      ON representative.id = rr.representative_instance_id
+     AND COALESCE(representative.duplicate_group_id, representative.id) = rr.run_id
+    JOIN wow_server_realms tenant_realm ON tenant_realm.id = rr.realm_id
+    WHERE rr.instance_name = @instance_name
+      AND rr.difficulty_name = @difficulty_name
+      AND rr.max_players = @max_players
+    UNION ALL
+    SELECT id, run_id FROM fallback_representative_instances
 ),
 deduped AS (
     SELECT DISTINCT ON (edr.player_guid, edr.encounter_name, ri.run_id)
@@ -160,15 +179,21 @@ WHERE tenant_id = @tenant_id;
 
 -- name: RankingsEncounterList :many
 -- Returns encounters available in rankings for a given instance.
-WITH representative_instances AS (
+WITH fallback_representative_instances AS (
     SELECT DISTINCT ON (COALESCE(li.duplicate_group_id, li.id))
         li.id,
         COALESCE(li.duplicate_group_id, li.id) AS run_id
     FROM log_instances li
     JOIN wow_server_realms tenant_realm ON tenant_realm.id = li.realm_id
+    WHERE NOT EXISTS (
+        SELECT 1
+        FROM ranking_runs rr
+        JOIN log_instances representative
+          ON representative.id = rr.representative_instance_id
+         AND COALESCE(representative.duplicate_group_id, representative.id) = rr.run_id
+        WHERE rr.run_id = COALESCE(li.duplicate_group_id, li.id)
+    )
     ORDER BY COALESCE(li.duplicate_group_id, li.id),
-        -- Prefer the upload with the broadest boss-ranking coverage. The group
-        -- anchor is the first upload, but it may be truncated before the final boss.
         (SELECT COUNT(DISTINCT coverage.encounter_name)
          FROM encounter_dps_rankings coverage
          WHERE coverage.instance_id = li.id
@@ -176,6 +201,17 @@ WITH representative_instances AS (
         (li.id = li.duplicate_group_id) DESC NULLS LAST,
         li.start_time ASC,
         li.id ASC
+),
+representative_instances AS (
+    SELECT rr.representative_instance_id AS id, rr.run_id
+    FROM ranking_runs rr
+    JOIN log_instances representative
+      ON representative.id = rr.representative_instance_id
+     AND COALESCE(representative.duplicate_group_id, representative.id) = rr.run_id
+    JOIN wow_server_realms tenant_realm ON tenant_realm.id = rr.realm_id
+    WHERE rr.instance_name = @instance_name
+    UNION ALL
+    SELECT id, run_id FROM fallback_representative_instances
 ),
 deduped AS (
     SELECT DISTINCT ON (edr.player_guid, edr.encounter_name, ri.run_id)
@@ -215,7 +251,7 @@ WITH candidate_runs AS (
       AND (@sub_spec :: text = '' OR candidate.player_sub_spec = @sub_spec)
       AND (@role :: text = '' OR candidate.player_role = @role)
 ),
-representative_instances AS (
+fallback_representative_instances AS (
     SELECT DISTINCT ON (COALESCE(li.duplicate_group_id, li.id))
         li.id,
         COALESCE(li.duplicate_group_id, li.id) AS run_id
@@ -228,6 +264,14 @@ representative_instances AS (
            OR li.name = ANY(@instance_names :: text[]))
       AND ((@class :: text = '' AND @spec :: text = '' AND @sub_spec :: text = '' AND @role :: text = '')
            OR COALESCE(li.duplicate_group_id, li.id) IN (SELECT run_id FROM candidate_runs))
+      AND NOT EXISTS (
+          SELECT 1
+          FROM ranking_runs rr
+          JOIN log_instances representative
+            ON representative.id = rr.representative_instance_id
+           AND COALESCE(representative.duplicate_group_id, representative.id) = rr.run_id
+          WHERE rr.run_id = COALESCE(li.duplicate_group_id, li.id)
+      )
     ORDER BY COALESCE(li.duplicate_group_id, li.id),
         -- Prefer the upload with the broadest boss-ranking coverage. The group
         -- anchor is the first upload, but it may be truncated before the final boss.
@@ -238,6 +282,20 @@ representative_instances AS (
         (li.id = li.duplicate_group_id) DESC NULLS LAST,
         li.start_time ASC,
         li.id ASC
+),
+representative_instances AS (
+    SELECT rr.representative_instance_id AS id, rr.run_id
+    FROM ranking_runs rr
+    JOIN log_instances representative
+      ON representative.id = rr.representative_instance_id
+     AND COALESCE(representative.duplicate_group_id, representative.id) = rr.run_id
+    JOIN wow_server_realms tenant_realm ON tenant_realm.id = rr.realm_id
+    WHERE (cardinality(@instance_names :: text[]) = 0
+           OR rr.instance_name = ANY(@instance_names :: text[]))
+      AND ((@class :: text = '' AND @spec :: text = '' AND @sub_spec :: text = '' AND @role :: text = '')
+           OR rr.run_id IN (SELECT run_id FROM candidate_runs))
+    UNION ALL
+    SELECT id, run_id FROM fallback_representative_instances
 ),
 deduped AS (
     SELECT DISTINCT ON (edr.player_guid, edr.encounter_name, ri.run_id)
@@ -258,6 +316,8 @@ deduped AS (
         edr.damage_done,
         edr.healing_done,
         edr.absorbed_done,
+        edr.alive_percentage,
+        edr.player_deaths,
         edr.duration_secs,
         edr.avg_ilvl,
         edr.log_hashed_slug,
@@ -346,6 +406,15 @@ per_run AS (
         SUM(d.damage_done)::bigint AS damage_done,
         SUM(d.healing_done)::bigint AS healing_done,
         SUM(d.absorbed_done)::bigint AS absorbed_done,
+        COALESCE((CASE
+            WHEN COUNT(d.alive_percentage) = COUNT(*) THEN
+                SUM(d.duration_secs * d.alive_percentage) / NULLIF(SUM(d.duration_secs), 0)
+            ELSE NULL
+        END), -1)::double precision AS alive_percentage,
+        COALESCE((CASE
+            WHEN COUNT(d.player_deaths) = COUNT(*) THEN SUM(d.player_deaths)
+            ELSE NULL
+        END), -1)::integer AS player_deaths,
         SUM(d.duration_secs)::double precision AS duration_secs,
         (SUM(d.damage_done)::double precision / NULLIF(SUM(d.duration_secs), 0))::double precision AS dps,
         (SUM(d.healing_done + d.absorbed_done)::double precision / NULLIF(SUM(d.duration_secs), 0))::double precision AS hps,
@@ -380,6 +449,8 @@ aggregated AS (
         pr.damage_done,
         pr.healing_done,
         pr.absorbed_done,
+        pr.alive_percentage,
+        pr.player_deaths,
         pr.duration_secs,
         pr.dps,
         pr.hps,
@@ -417,7 +488,7 @@ ORDER BY edr.player_class, edr.player_spec, edr.player_sub_spec;
 -- Returns box plot statistics (min, q1, median, q3, max, count) per class/spec.
 -- DPS is aggregated per run (sum damage / sum duration across encounters in one
 -- instance run), so each run is one data point. Matches leaderboard aggregation.
-WITH representative_instances AS (
+WITH fallback_representative_instances AS (
     SELECT DISTINCT ON (COALESCE(li.duplicate_group_id, li.id))
         li.id,
         COALESCE(li.duplicate_group_id, li.id) AS run_id
@@ -428,6 +499,14 @@ WITH representative_instances AS (
     -- duplicate uploads that will only be discarded later.
     WHERE (cardinality(@instance_names :: text[]) = 0
            OR li.name = ANY(@instance_names :: text[]))
+      AND NOT EXISTS (
+          SELECT 1
+          FROM ranking_runs rr
+          JOIN log_instances representative
+            ON representative.id = rr.representative_instance_id
+           AND COALESCE(representative.duplicate_group_id, representative.id) = rr.run_id
+          WHERE rr.run_id = COALESCE(li.duplicate_group_id, li.id)
+      )
     ORDER BY COALESCE(li.duplicate_group_id, li.id),
         -- Prefer the upload with the broadest boss-ranking coverage. The group
         -- anchor is the first upload, but it may be truncated before the final boss.
@@ -438,6 +517,18 @@ WITH representative_instances AS (
         (li.id = li.duplicate_group_id) DESC NULLS LAST,
         li.start_time ASC,
         li.id ASC
+),
+representative_instances AS (
+    SELECT rr.representative_instance_id AS id, rr.run_id
+    FROM ranking_runs rr
+    JOIN log_instances representative
+      ON representative.id = rr.representative_instance_id
+     AND COALESCE(representative.duplicate_group_id, representative.id) = rr.run_id
+    JOIN wow_server_realms tenant_realm ON tenant_realm.id = rr.realm_id
+    WHERE (cardinality(@instance_names :: text[]) = 0
+           OR rr.instance_name = ANY(@instance_names :: text[]))
+    UNION ALL
+    SELECT id, run_id FROM fallback_representative_instances
 ),
 deduped AS (
     SELECT DISTINCT ON (edr.player_guid, edr.encounter_name, ri.run_id)
@@ -582,6 +673,94 @@ WHERE edr.player_guid = @player_guid
 GROUP BY edr.instance_name, edr.encounter_name, edr.difficulty_name, edr.max_players
 ORDER BY edr.instance_name, edr.encounter_name;
 
+-- name: GetCharacterPerformanceRuns :many
+-- Return complete canonical runs for one character and a selected boss set.
+-- Raw DPS/HPS is aggregated from the persisted representative upload. Cached
+-- per-boss parses are averaged when every selected encounter has a usable
+-- score. parse_count tells the caller whether the cached average is complete.
+WITH selected_encounters AS MATERIALIZED (
+    SELECT DISTINCT unnest(@encounter_names::text[]) AS encounter_name
+),
+raw_rows AS MATERIALIZED (
+    SELECT DISTINCT ON (rr.run_id, edr.encounter_name)
+        rr.run_id,
+        rr.representative_instance_id,
+        rr.start_time,
+        edr.encounter_name,
+        edr.player_name,
+        edr.player_class,
+        edr.player_spec,
+        edr.player_sub_spec,
+        edr.damage_done,
+        edr.healing_done,
+        edr.absorbed_done,
+        edr.duration_secs,
+        edr.log_hashed_slug,
+        edr.killed_at
+    FROM ranking_runs rr
+    JOIN encounter_dps_rankings edr
+      ON edr.instance_id = rr.representative_instance_id
+    JOIN selected_encounters selected ON selected.encounter_name = edr.encounter_name
+    JOIN wow_server_realms tenant_realm ON tenant_realm.id = rr.realm_id
+    WHERE edr.player_guid = @player_guid
+      AND edr.encounter_id IS NOT NULL
+      AND rr.instance_name = @instance_name
+      AND (@difficulty_name::text = '' OR rr.difficulty_name = @difficulty_name)
+      AND (@max_players::smallint = 0 OR rr.max_players = @max_players)
+    ORDER BY rr.run_id, edr.encounter_name,
+        (CASE WHEN @metric::text = 'hps' THEN edr.hps ELSE edr.dps END) DESC
+),
+parse_rows AS MATERIALIZED (
+    SELECT DISTINCT ON (psr.run_id, psr.encounter_name)
+        psr.run_id,
+        psr.encounter_name,
+        psr.precise_score
+    FROM parse_score_results psr
+    JOIN selected_encounters selected ON selected.encounter_name = psr.encounter_name
+    WHERE psr.tenant_id = @tenant_id
+      AND psr.player_guid = @player_guid
+      AND psr.metric = @metric
+      AND psr.status IN ('ok', 'low_confidence')
+    ORDER BY psr.run_id, psr.encounter_name, psr.created_at DESC, psr.precise_score DESC
+),
+per_run AS (
+    SELECT
+        raw.run_id,
+        raw.representative_instance_id,
+        MIN(raw.start_time)::timestamptz AS started_at,
+        MAX(raw.killed_at)::timestamptz AS killed_at,
+        ((array_agg(raw.player_name ORDER BY raw.damage_done DESC))[1])::text AS player_name,
+        ((array_agg(raw.player_class ORDER BY raw.damage_done DESC))[1])::text AS player_class,
+        CASE
+            WHEN COUNT(DISTINCT raw.player_spec) = 1 THEN MIN(raw.player_spec)
+            ELSE 'Mixed'
+        END::text AS player_spec,
+        CASE
+            WHEN COUNT(DISTINCT raw.player_spec) > 1 OR COUNT(DISTINCT raw.player_sub_spec) > 1 THEN 'Mixed'
+            ELSE MIN(raw.player_sub_spec)
+        END::text AS player_sub_spec,
+        COUNT(DISTINCT raw.encounter_name)::integer AS encounter_count,
+        SUM(raw.damage_done)::bigint AS damage_done,
+        SUM(raw.healing_done)::bigint AS healing_done,
+        SUM(raw.absorbed_done)::bigint AS absorbed_done,
+        SUM(raw.duration_secs)::double precision AS duration_secs,
+        (SUM(raw.damage_done)::double precision / NULLIF(SUM(raw.duration_secs), 0))::double precision AS dps,
+        (SUM(raw.healing_done + raw.absorbed_done)::double precision / NULLIF(SUM(raw.duration_secs), 0))::double precision AS hps,
+        ((array_agg(raw.log_hashed_slug ORDER BY raw.killed_at DESC))[1])::text AS log_hashed_slug,
+        COUNT(parse.precise_score)::integer AS parse_count,
+        COALESCE(AVG(parse.precise_score), 0)::double precision AS average_parse
+    FROM raw_rows raw
+    LEFT JOIN parse_rows parse
+      ON parse.run_id = raw.run_id
+     AND parse.encounter_name = raw.encounter_name
+    GROUP BY raw.run_id, raw.representative_instance_id
+)
+SELECT *
+FROM per_run
+WHERE encounter_count = (SELECT COUNT(*) FROM selected_encounters)
+  AND (CASE WHEN @metric::text = 'hps' THEN hps ELSE dps END) > 0
+ORDER BY started_at ASC, run_id ASC;
+
 -- name: InsertEncounterDpsRanking :exec
 INSERT INTO encounter_dps_rankings (
     encounter_id, instance_id, encounter_name, instance_name,
@@ -589,7 +768,7 @@ INSERT INTO encounter_dps_rankings (
     talent_build_id, difficulty_name, max_players,
     realm_id, realm_name, guild_id, guild_name,
     damage_done, duration_secs, dps, avg_ilvl,
-    healing_done, absorbed_done, hps,
+    healing_done, absorbed_done, hps, player_deaths, alive_percentage,
     log_hashed_slug, killed_at
 ) VALUES (
     @encounter_id, @instance_id, @encounter_name, @instance_name,
@@ -597,7 +776,7 @@ INSERT INTO encounter_dps_rankings (
     @talent_build_id, @difficulty_name, @max_players,
     @realm_id, @realm_name, @guild_id, @guild_name,
     @damage_done, @duration_secs, @dps, @avg_ilvl,
-    @healing_done, @absorbed_done, @hps,
+    @healing_done, @absorbed_done, @hps, @player_deaths, @alive_percentage,
     @log_hashed_slug, @killed_at
 ) ON CONFLICT (encounter_id, player_guid) DO NOTHING;
 

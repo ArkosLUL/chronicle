@@ -7,6 +7,8 @@ import { treeName } from "./util";
 
 interface IdentityHeaderProps {
   player: ArmoryPlayer;
+  /** Rendered beside the player name. */
+  titleAction?: React.ReactNode;
   /** Rendered below the identity meta line (e.g. the mode selector). */
   actions?: React.ReactNode;
   /** The score / journey stats card rendered to the right of the identity. */
@@ -17,7 +19,7 @@ interface IdentityHeaderProps {
  * Design-style overview header: identity on the left, headline stats card
  * bottom-aligned on the right.
  */
-export function IdentityHeader({ player, actions, children }: IdentityHeaderProps) {
+export function IdentityHeader({ player, titleAction, actions, children }: IdentityHeaderProps) {
   const iconBaseUrl = useIconBaseUrl();
   const classColor = getClassColorVar(player.class);
 
@@ -32,8 +34,8 @@ export function IdentityHeader({ player, actions, children }: IdentityHeaderProp
 
   return (
     <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center lg:gap-8">
-      <div className="flex items-center gap-4">
-        <div className="flex gap-1.5">
+      <div className="grid w-full min-w-0 gap-3 lg:grid-cols-[auto_minmax(0,1fr)] lg:gap-x-4 lg:gap-y-0">
+        <div className="row-start-2 flex w-full justify-center gap-1.5 lg:col-start-1 lg:row-span-2 lg:row-start-1 lg:w-auto lg:self-center">
           <img
             src={getRaceIconUrl(player.race, player.gender, iconBaseUrl)}
             alt={formatRaceLabel(player.race)}
@@ -50,12 +52,15 @@ export function IdentityHeader({ player, actions, children }: IdentityHeaderProp
             className="size-12 rounded border border-border bg-popover"
           />
         </div>
-        <div className="min-w-0">
-          <div
-            className="font-wow truncate text-4xl leading-none"
-            style={{ color: classColor }}
-          >
-            {player.name}
+        <div className="w-full min-w-0 text-center lg:col-start-2 lg:row-start-1 lg:text-left">
+          <div className="flex min-w-0 items-center justify-center gap-2 lg:justify-start">
+            <div
+              className="font-wow truncate text-4xl leading-none"
+              style={{ color: classColor }}
+            >
+              {player.name}
+            </div>
+            {titleAction}
           </div>
           <div className="mt-2 text-sm text-muted-foreground">
             {player.guild_name && (
@@ -79,8 +84,12 @@ export function IdentityHeader({ player, actions, children }: IdentityHeaderProp
             {specLabel}
             {formatClassLabel(player.class)} · {player.realm_name}
           </div>
-          {actions && <div className="mt-3">{actions}</div>}
         </div>
+        {actions && (
+          <div className="row-start-3 w-full lg:col-start-2 lg:row-start-2 lg:mt-3 lg:w-auto">
+            {actions}
+          </div>
+        )}
       </div>
       {children}
     </div>

@@ -1,13 +1,22 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { useLocation, useNavigate, useParams, Link } from "react-router-dom";
 import type { DeviceVisibility } from "@/api/typesGenerated";
-import { useGuildPage, useGuildSettings, useMyJoinRequest, useCreateJoinRequest } from "@/api/queries";
+import {
+  useCreateJoinRequest,
+  useGuildPage,
+  useGuildSettings,
+  useMyFavorites,
+  useMyJoinRequest,
+  useToggleFavoriteGuild,
+} from "@/api/queries";
 import { useAuth } from "@/hooks/useAuth";
 import { GuildPageCanvas, TabBar, GuildPageHeader, GuildActionsMenu } from "./components";
 import { Shield, PanelLeft, UserPlus, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { FavoriteButton } from "@/components/Favorites";
 import { useIsMobile } from "@/hooks/useIsMobile";
-import { orderGuildPageTabs } from "./guildPageTabs";
+import { ensureRequiredRaidsTab, orderGuildPageTabs } from "./guildPageTabs";
 
 // Helper to check if an item should be visible on current device
 function isVisibleOnDevice(visibility: DeviceVisibility | undefined, isMobile: boolean): boolean {
@@ -30,11 +39,14 @@ export function GuildPage() {
   const { isAuthenticated } = useAuth();
   const { data: pageConfig, isLoading, error } = useGuildPage(guildId);
   const { data: settings } = useGuildSettings(guildId);
+  const favorites = useMyFavorites({ enabled: isAuthenticated });
+  const toggleFavorite = useToggleFavoriteGuild();
+  const isFavorite = favorites.data?.guilds.some((guild) => guild.id === guildId) ?? false;
   const { data: myRequest } = useMyJoinRequest(guildId, isAuthenticated);
   const createJoinRequest = useCreateJoinRequest(guildId);
 
   // Filter tabs and panels based on device visibility.
-  const visibleTabs = orderGuildPageTabs(pageConfig?.tabs || [])
+  const visibleTabs = orderGuildPageTabs(ensureRequiredRaidsTab(pageConfig?.tabs || [], pageConfig?.id))
     .filter((tab) => isVisibleOnDevice(tab.visibility, isMobile))
     .map((tab) => ({
       ...tab,
@@ -91,10 +103,38 @@ export function GuildPage() {
 
   return (
     <div className="relative w-full px-4">
+      {isAuthenticated && (
+        <FavoriteButton
+          isFavorite={isFavorite}
+          isPending={toggleFavorite.isPending || favorites.isLoading}
+          label={pageConfig.guild.name}
+          onToggle={() => {
+            const favorite = !isFavorite;
+            toggleFavorite.mutate(
+              { guildID: guildId!, favorite },
+              {
+                onSuccess: () => toast.success(
+                  favorite
+                    ? `${pageConfig.guild.name} added to favorites`
+                    : `${pageConfig.guild.name} removed from favorites`,
+                ),
+                onError: (mutationError) => toast.error(mutationError.message, {
+                  classNames: {
+                    title: "!text-destructive",
+                    icon: "!text-destructive",
+                  },
+                }),
+              },
+            );
+          }}
+          className="absolute right-4 top-2 z-10"
+        />
+      )}
       <GuildActionsMenu
         guildId={guildId!}
         canEdit={pageConfig.guild.can_edit}
         canViewRoster={pageConfig.guild.can_view_roster}
+        hasFavoriteButton={isAuthenticated}
       />
 
       <GuildPageHeader

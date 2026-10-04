@@ -9,9 +9,20 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-// deriveSpellMetadata analyses imported spells and populates the derived spell
-// metadata tables used by the parser and technical pages.
-func (h *Handler) deriveSpellMetadata(ctx context.Context, datasetID uuid.UUID, spellDBC *chrondbc.SpellsDBC) error {
+// spellForDerivedMetadata returns the default spell view used by derived tables.
+// These tables do not carry difficulty context, so difficulty zero is the
+// explicit compatibility boundary. The resolved view keeps canonical powers
+// and variants intact while selecting only default effects and top-level fields.
+func spellForDerivedMetadata(spell *chrondbc.Spell) *chrondbc.Spell {
+	if spell == nil {
+		return nil
+	}
+	return spell.Resolve(0)
+}
+
+// deriveSpellMetadata analyses canonical imported spells and populates the
+// derived spell metadata tables used by the parser and technical pages.
+func (h *Handler) deriveSpellMetadata(ctx context.Context, datasetID uuid.UUID, spells []*chrondbc.Spell) error {
 	type extraAttackRow struct {
 		SpellID         int32
 		Name            string
@@ -38,9 +49,10 @@ func (h *Handler) deriveSpellMetadata(ctx context.Context, datasetID uuid.UUID, 
 	var vulnerabilities []vulnerabilitySpellRow
 	var cooldowns []cooldownSpellRow
 
-	err := spellDBC.Range(func(spell *chrondbc.Spell) bool {
+	for _, spell := range spells {
+		spell = spellForDerivedMetadata(spell)
 		if spell == nil {
-			return true
+			continue
 		}
 
 		// --- Major player cooldowns ---
@@ -56,12 +68,12 @@ func (h *Handler) deriveSpellMetadata(ctx context.Context, datasetID uuid.UUID, 
 
 		// --- Extra attacks ---
 		// Mirrors scripts/dbcdata/cli/extraattacks.go: collectExtraAttackSpells
-		for i, effect := range spell.Effect {
-			if effect == chrondbc.EffectAddExtraAttacks {
+		for _, effect := range spell.Effects {
+			if effect.Effect == chrondbc.EffectAddExtraAttacks {
 				extraAttacks = append(extraAttacks, extraAttackRow{
 					SpellID:         int32(spell.ID),
 					Name:            spell.String(),
-					NumExtraAttacks: spell.EffectBasePoints[i] + 1,
+					NumExtraAttacks: int32(effect.EffectiveBasePoints()),
 				})
 				break
 			}
@@ -81,20 +93,19 @@ func (h *Handler) deriveSpellMetadata(ctx context.Context, datasetID uuid.UUID, 
 		// --- Duration modifiers ---
 		// Mirrors scripts/dbcdata/cli/durationmodifiers.go: collectDurationModifiers
 		if !spell.Attrs.Has(chrondbc.Attr_Passive) {
-			return true
+			continue
 		}
-		for i, effect := range spell.Effect {
-			if effect != chrondbc.EffectApplyAura {
+		for _, effect := range spell.Effects {
+			if effect.Effect != chrondbc.EffectApplyAura {
 				continue
 			}
-			// EffectMiscValue == 1 means the modifier targets duration.
-			if spell.EffectMiscValue[i] != 1 {
+			if !effect.ModifiesDuration() {
 				continue
 			}
 
-			value := spell.EffectBasePoints[i] + 1
+			value := int32(effect.EffectiveBasePoints())
 			var pct, flat int32
-			switch spell.EffectAura[i] {
+			switch effect.EffectAura {
 			case chrondbc.AuraEffectAddPctModifier:
 				pct = value
 			case chrondbc.AuraEffectAddFlatModifier:
@@ -106,7 +117,7 @@ func (h *Handler) deriveSpellMetadata(ctx context.Context, datasetID uuid.UUID, 
 			// For modifier auras, EffectItemType holds the spell family
 			// flags bitmask. Mask to 32 bits to avoid sign-extension,
 			// then widen to int64 for BIGINT storage.
-			classMask := int64(uint32(spell.EffectItemType[i]))
+			classMask := int64(uint32(effect.EffectItemType))
 			if classMask == 0 {
 				continue
 			}
@@ -122,10 +133,6 @@ func (h *Handler) deriveSpellMetadata(ctx context.Context, datasetID uuid.UUID, 
 			})
 			break
 		}
-		return true
-	})
-	if err != nil {
-		return fmt.Errorf("iterate spells for derivation: %w", err)
 	}
 
 	// Wipe existing derived data for this dataset.

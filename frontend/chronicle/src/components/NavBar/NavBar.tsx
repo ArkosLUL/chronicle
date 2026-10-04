@@ -1,12 +1,13 @@
 import { useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Settings, Upload, LogOut, FileText, Shield, Key, Castle, Menu, Swords, Trophy, Database, Server, Users, Compass, Sparkles, Shirt } from "lucide-react";
+import { Settings, Upload, LogOut, FileText, Shield, Key, Castle, Menu, Swords, Trophy, ChartSpline, Database, Server, Users, Compass, Sparkles, Shirt } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { serverCapabilities } from "@/config/serverCapabilities";
 import { useAuth } from "@/hooks/useAuth";
-import { useAuthorizationCheck, useSiteConfig } from "@/api/queries";
+import { useAuthorizationCheck, useMyFavorites, useSiteConfig } from "@/api/queries";
 import type { Branding } from "@/api/typesGenerated";
 import { Button } from "../ui/button";
+import { FavoritesMenu } from "../Favorites";
 import {
   Sheet,
   SheetContent,
@@ -50,6 +51,8 @@ export function NavBar() {
   const hasAdminLogs = authz?.adminLogs ?? false;
 
   const { data: siteConfig } = useSiteConfig();
+  const { data: favorites } = useMyFavorites({ enabled: isAuthenticated });
+  const hasFavorites = !!favorites && (favorites.guilds.length > 0 || favorites.players.length > 0);
   const uploadsEnabled = !siteConfig?.client_uploads_disabled || hasAdminLogs;
 
   // Resolve branding: tenant overrides site-level.
@@ -69,6 +72,8 @@ export function NavBar() {
   ];
 
   const loginUrl = `/login?from=${encodeURIComponent(location.pathname + location.search)}`;
+  const isGuildPage = location.pathname.startsWith("/g/");
+  const siteName = branding?.display_name || "Chronicle";
 
   // Reusable menu item renderer for mobile menu
   const renderMenuItem = (item: NavItem, closeMobile?: () => void) => {
@@ -144,12 +149,12 @@ export function NavBar() {
                 Rankings
               </Link>
               <Link
-                to="/census"
+                to="/performance-history"
                 onClick={() => setMobileMenuOpen(false)}
                 className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors py-2"
               >
-                <Users className="h-4 w-4" />
-                Census
+                <ChartSpline className="h-4 w-4" />
+                Performance
               </Link>
               <Link
                 to="/talents"
@@ -166,6 +171,14 @@ export function NavBar() {
               >
                 <Shirt className="h-4 w-4" />
                 Gear Builder
+              </Link>
+              <Link
+                to="/census"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors py-2"
+              >
+                <Users className="h-4 w-4" />
+                Census
               </Link>
               {isAuthenticated && (
                 <>
@@ -202,8 +215,15 @@ export function NavBar() {
         )}
       </div>
 
-      {/* Center: Logo (hidden on guild pages) */}
-      {!location.pathname.startsWith("/g/") && (
+      {/* Center: Site logo, or a compact home link on guild pages */}
+      {isGuildPage ? (
+        <Link
+          to="/"
+          className="absolute left-1/2 -translate-x-1/2 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        >
+          Back to {siteName}
+        </Link>
+      ) : (
         <Link to="/" className="absolute left-1/2 -translate-x-1/2 flex items-center">
           {hasBranding ? (
             branding?.logo_wide ? (
@@ -256,9 +276,9 @@ export function NavBar() {
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-              <Link to="/census" className="flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                Census
+              <Link to="/performance-history" className="flex items-center gap-2">
+                <ChartSpline className="h-4 w-4" />
+                Performance
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
@@ -273,6 +293,12 @@ export function NavBar() {
                 Gear Builder
               </Link>
             </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link to="/census" className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                Census
+              </Link>
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
         {isLoading ? null : isAuthenticated ? (
@@ -282,7 +308,8 @@ export function NavBar() {
                 Account
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-[200px]">
+            <DropdownMenuContent align="end" className={hasFavorites ? "w-[300px]" : "w-[200px]"}>
+              <FavoritesMenu data={favorites} />
               {accountMenuItems.map((item) =>
                 "href" in item ? (
                   <DropdownMenuItem key={item.title} asChild>

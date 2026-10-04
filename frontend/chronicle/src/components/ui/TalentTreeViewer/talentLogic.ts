@@ -1,6 +1,8 @@
 // Pure talent tree logic and types, ported from chronicle-wiki.
 // No React imports — safe for use in tests, workers, and components.
 
+import type { WoWSpell } from "@emyrk/wow-tooltip-renderer";
+
 // ─── Types ────────────────────────────────────────────────────────
 
 export interface TalentEntry {
@@ -8,11 +10,15 @@ export interface TalentEntry {
   name: string;
   tierID: number;
   columnIndex: number;
+  /** Progression axis override for trees that unlock left-to-right. */
+  progressionIndex?: number;
   maxRank: number;
   tabIndex: number;
   spellRanks: number[];
   iconTexture: string;
   prereqTalent?: number[];
+  prereqAnyTalent?: number[];
+  visualPrereqTalent?: number[];
   prereqRank?: number[];
   description?: string;
   effect?: string;
@@ -36,13 +42,68 @@ export interface ClassTalentData {
   tabs: TalentTabData[];
 }
 
+export interface LegacyTalentEntry {
+  id: number;
+  name: string;
+  columnIndex: number;
+  rowIndex: number;
+  maxRank: number;
+  tabIndex: number;
+  spellRanks: number[];
+  iconTexture: string;
+  prereqTalent?: number[];
+  prereqAnyTalent?: number[];
+  visualPrereqTalent?: number[];
+}
+
+export interface LegacyTalentTreeData {
+  id: number;
+  name: string;
+  orderIndex: number;
+  talents: LegacyTalentEntry[];
+}
+
 export interface TalentTreeJSON {
   classes: Record<string, ClassTalentData>;
   pets?: Record<string, ClassTalentData>;
+  legacyTrees?: LegacyTalentTreeData[];
+  legacyMaxPoints?: number;
+  legacyPointsPerColumn?: number;
   /** Resolved dataset for this data (tenant-aware). */
   dataset_id?: string;
   /** Icon CDN base for the resolved dataset. */
   icon_base_url?: string;
+}
+
+export function legacyTreesToTalentData(trees: LegacyTalentTreeData[]): ClassTalentData {
+  return {
+    id: 0,
+    name: "Legacy",
+    tabs: [...trees]
+      .sort((a, b) => a.orderIndex - b.orderIndex)
+      .map((tree) => ({
+        id: tree.id,
+        name: tree.name,
+        backgroundFile: "",
+        orderIndex: tree.orderIndex,
+        iconTexture: tree.talents[0]?.iconTexture ?? "inv_misc_questionmark",
+        talents: tree.talents.map((talent) => ({
+          id: talent.id,
+          name: talent.name,
+          // Legacy trees keep their client layout and unlock left-to-right.
+          tierID: talent.rowIndex,
+          columnIndex: talent.columnIndex,
+          progressionIndex: talent.columnIndex,
+          maxRank: talent.maxRank,
+          tabIndex: talent.tabIndex,
+          spellRanks: talent.spellRanks,
+          iconTexture: talent.iconTexture,
+          prereqTalent: talent.prereqTalent,
+          prereqAnyTalent: talent.prereqAnyTalent,
+          visualPrereqTalent: talent.visualPrereqTalent,
+        })),
+      })),
+  };
 }
 
 export type TalentRanks = Record<number, number>;
@@ -102,39 +163,60 @@ export function talentGridHeight(rows: number) {
 
 export function prerequisiteArrows(talents: TalentEntry[]): TalentPrereqArrow[] {
   const byId = new Map(talents.map((talent) => [talent.id, talent]));
-  return talents.flatMap((talent) =>
-    (talent.prereqTalent ?? []).flatMap((prereqId) => {
+  return talents.flatMap((talent) => {
+    const requiredIds = new Set([
+      ...(talent.prereqTalent ?? []),
+      ...(talent.prereqAnyTalent ?? []),
+    ]);
+    const visualIds = new Set(talent.visualPrereqTalent ?? []);
+    return [...new Set([...requiredIds, ...visualIds])].flatMap((prereqId) => {
       const from = byId.get(prereqId);
       if (!from) return [];
-      return [{ from, to: talent, requiredRank: from.maxRank }];
-    }),
-  );
+      return [{
+        from,
+        to: talent,
+        requiredRank: requiredIds.has(prereqId) ? from.maxRank : 0,
+      }];
+    });
+  });
 }
 
 // ─── Talent point requirements ────────────────────────────────────
 
-export function rowPointRequirement(talent: Pick<TalentEntry, "tierID">, pointsPerRow = 5) {
-  return talent.tierID * pointsPerRow;
+function talentProgressionIndex(talent: Pick<TalentEntry, "tierID" | "progressionIndex">) {
+  return talent.progressionIndex ?? talent.tierID;
 }
 
-function pointsSpentBeforeRow(talents: TalentEntry[], ranks: TalentRanks, tierID: number) {
+export function rowPointRequirement(talent: Pick<TalentEntry, "tierID" | "progressionIndex">, pointsPerRow = 5) {
+  return talentProgressionIndex(talent) * pointsPerRow;
+}
+
+function pointsSpentBeforeRow(talents: TalentEntry[], ranks: TalentRanks, progressionIndex: number) {
   return talents.reduce((sum, talent) => {
-    if (talent.tierID >= tierID) return sum;
+    if (talentProgressionIndex(talent) >= progressionIndex) return sum;
     return sum + (ranks[talent.id] ?? 0);
   }, 0);
 }
 
 function prerequisitesMet(talent: TalentEntry, talents: TalentEntry[], ranks: TalentRanks) {
   const byId = new Map(talents.map((candidate) => [candidate.id, candidate]));
-  return (talent.prereqTalent ?? []).every((prereqId) => {
+  const allRequired = (talent.prereqTalent ?? []).every((prereqId) => {
     const prereq = byId.get(prereqId);
     if (!prereq) return true;
     return (ranks[prereq.id] ?? 0) >= prereq.maxRank;
   });
+  if (!allRequired) return false;
+
+  const anyPrereqs = (talent.prereqAnyTalent ?? [])
+    .map((prereqId) => byId.get(prereqId))
+    .filter((prereq): prereq is TalentEntry => Boolean(prereq));
+  return anyPrereqs.length === 0 || anyPrereqs.some(
+    (prereq) => (ranks[prereq.id] ?? 0) >= prereq.maxRank,
+  );
 }
 
 export function canUseTalent(talent: TalentEntry, talents: TalentEntry[], ranks: TalentRanks, pointsPerRow = 5) {
-  return pointsSpentBeforeRow(talents, ranks, talent.tierID) >= rowPointRequirement(talent, pointsPerRow) && prerequisitesMet(talent, talents, ranks);
+  return pointsSpentBeforeRow(talents, ranks, talentProgressionIndex(talent)) >= rowPointRequirement(talent, pointsPerRow) && prerequisitesMet(talent, talents, ranks);
 }
 
 function spentTalentsStillValid(talents: TalentEntry[], ranks: TalentRanks, pointsPerRow: number) {
@@ -646,6 +728,35 @@ export function talentTooltipPosition(rect: Pick<DOMRect, "left" | "top" | "righ
   return { left, top };
 }
 
+function talentUsesSharedRankSpell(talent: TalentEntry) {
+  return talent.maxRank > 1
+    && talent.spellRanks.length >= talent.maxRank
+    && talent.spellRanks.every((spellID) => spellID === talent.spellRanks[0]);
+}
+
+/**
+ * Modern Trait talents store one max-rank spell for every rank. Scale its exact
+ * effect values for the requested rank so the standard spell resolver produces
+ * the same rank-specific tooltip ladder as classic per-rank spell chains.
+ */
+export function spellForTalentRank(talent: TalentEntry, spell: WoWSpell, rank: number): WoWSpell {
+  if (!talentUsesSharedRankSpell(talent) || rank <= 0 || rank >= talent.maxRank) return spell;
+  const scale = rank / talent.maxRank;
+  const scaleValue = (value: number | undefined) => value === undefined ? undefined : value * scale;
+  return {
+    ...spell,
+    effects: spell.effects?.map((effect) => ({
+      ...effect,
+      effect_base_points: scaleValue(effect.effect_base_points) ?? effect.effect_base_points,
+      effect_base_points_f: scaleValue(effect.effect_base_points_f),
+      effect_real_points_per_level: scaleValue(effect.effect_real_points_per_level),
+    })),
+    effect_base_points: spell.effect_base_points.map((value) => scaleValue(value) ?? value),
+    effect_base_points_f: spell.effect_base_points_f?.map((value) => scaleValue(value) ?? value),
+    effect_real_points_per_level: spell.effect_real_points_per_level.map((value) => scaleValue(value) ?? value),
+  };
+}
+
 // ─── Tooltip text helpers ─────────────────────────────────────────
 
 export function talentDescription(talent: TalentEntry) {
@@ -769,6 +880,15 @@ export function lockedTalentReasons(
     if ((ranks[prereq.id] ?? 0) < prereq.maxRank) {
       reasons.push(`Requires ${prereq.name} at rank ${prereq.maxRank}/${prereq.maxRank}.`);
     }
+  }
+
+  const anyPrereqs = (talent.prereqAnyTalent ?? [])
+    .map((prereqId) => byId.get(prereqId))
+    .filter((prereq): prereq is TalentEntry => Boolean(prereq));
+  if (anyPrereqs.length > 0 && !anyPrereqs.some(
+    (prereq) => (ranks[prereq.id] ?? 0) >= prereq.maxRank,
+  )) {
+    reasons.push(`Requires one of: ${anyPrereqs.map((prereq) => prereq.name).join(", ")}.`);
   }
 
   return reasons.length > 0 ? reasons : ["Complete prerequisite requirements to unlock this talent."];

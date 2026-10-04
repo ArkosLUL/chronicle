@@ -13,6 +13,10 @@ import (
 )
 
 type sqlcQuerier interface {
+	// Serialize refresh snapshots and commits across logical-run identity changes.
+	AcquireRankingRunRefreshLock(ctx context.Context) error
+	AddUserFavoriteGuild(ctx context.Context, arg AddUserFavoriteGuildParams) (pgtype.Bool, error)
+	AddUserFavoritePlayer(ctx context.Context, arg AddUserFavoritePlayerParams) error
 	AdminListOutdatedParserVersionInstances(ctx context.Context, arg AdminListOutdatedParserVersionInstancesParams) ([]AdminListOutdatedParserVersionInstancesRow, error)
 	AssignWorldToServer(ctx context.Context, arg AssignWorldToServerParams) error
 	// Populate a pending snapshot's members from eligible encounter_dps_rankings rows.
@@ -35,9 +39,15 @@ type sqlcQuerier interface {
 	// JOINs wow_server_realms so RLS tenant filtering cascades.
 	CensusPlayerCounts(ctx context.Context, arg CensusPlayerCountsParams) ([]CensusPlayerCountsRow, error)
 	ClaimDiscordAnnouncementDelivery(ctx context.Context, id uuid.UUID) (GuildDiscordLogAnnouncement, error)
-	ClearDuplicateGroupID(ctx context.Context, id uuid.UUID) error
 	ClearResetToken(ctx context.Context, userAuthID uuid.UUID) error
+	// Canonical normalized rows produced by legacy Spell.dbc imports.
+	ClearSpellEffectsForDataset(ctx context.Context, datasetID uuid.UUID) error
+	ClearSpellPowersForDataset(ctx context.Context, datasetID uuid.UUID) error
+	ClearSpellVariantsForDataset(ctx context.Context, datasetID uuid.UUID) error
 	ConsumeGuildDiscordInstallState(ctx context.Context, state string) (GuildDiscordInstallState, error)
+	CopyLegacySpellEffects(ctx context.Context, arg []CopyLegacySpellEffectsParams) *CopyLegacySpellEffectsBatchResults
+	CopyLegacySpellPowers(ctx context.Context, arg []CopyLegacySpellPowersParams) *CopyLegacySpellPowersBatchResults
+	CopyLegacySpellVariants(ctx context.Context, arg []CopyLegacySpellVariantsParams) *CopyLegacySpellVariantsBatchResults
 	CountActiveRegressionJobs(ctx context.Context) (int64, error)
 	CountAllWoWLogGroups(ctx context.Context, arg CountAllWoWLogGroupsParams) (int32, error)
 	CountGuildDiscordInstallationsByDiscordGuildID(ctx context.Context, discordGuildID string) (int64, error)
@@ -74,6 +84,9 @@ type sqlcQuerier interface {
 	CreateUserTalentBuild(ctx context.Context, arg CreateUserTalentBuildParams) (UserTalentBuild, error)
 	DeleteAffectedAuraDurationsByDataset(ctx context.Context, datasetID uuid.UUID) error
 	DeleteAllParsedLogsByGroupID(ctx context.Context, id uuid.UUID) error
+	// Release representative IDs that moved to a different logical run before the
+	// state-based refresh upserts all desired rows in arbitrary UUID order.
+	DeleteConflictingRankingRunRepresentatives(ctx context.Context, arg DeleteConflictingRankingRunRepresentativesParams) ([]uuid.UUID, error)
 	DeleteConsumableDisambiguation(ctx context.Context, arg DeleteConsumableDisambiguationParams) error
 	DeleteConsumablesByDataset(ctx context.Context, datasetID uuid.UUID) error
 	DeleteDataGrant(ctx context.Context, arg DeleteDataGrantParams) error
@@ -95,6 +108,7 @@ type sqlcQuerier interface {
 	DeleteLogInstanceByIDAndGroup(ctx context.Context, arg DeleteLogInstanceByIDAndGroupParams) (uuid.UUID, error)
 	DeleteLogInstancesByIDs(ctx context.Context, ids []uuid.UUID) (int64, error)
 	DeleteModificationRequest(ctx context.Context, id uuid.UUID) error
+	DeleteObsoleteRankingRuns(ctx context.Context, arg DeleteObsoleteRankingRunsParams) ([]uuid.UUID, error)
 	// Remove parse score results for a tenant+instance (before re-computation).
 	// Scoped to tenant_id so one tenant's recompute cannot erase another's projections.
 	DeleteParseScoreResultsForTenantInstance(ctx context.Context, arg DeleteParseScoreResultsForTenantInstanceParams) error
@@ -119,6 +133,8 @@ type sqlcQuerier interface {
 	DeleteUploadKey(ctx context.Context, id uuid.UUID) error
 	DeleteUserCharacterLink(ctx context.Context, arg DeleteUserCharacterLinkParams) (UserCharacterLink, error)
 	DeleteUserCharacterLinksByUserAndSource(ctx context.Context, arg DeleteUserCharacterLinksByUserAndSourceParams) ([]UserCharacterLink, error)
+	DeleteUserFavoriteGuild(ctx context.Context, arg DeleteUserFavoriteGuildParams) error
+	DeleteUserFavoritePlayer(ctx context.Context, arg DeleteUserFavoritePlayerParams) error
 	DeleteUserPanelLayoutByID(ctx context.Context, id uuid.UUID) (int64, error)
 	DeleteUserTalentBuildByID(ctx context.Context, arg DeleteUserTalentBuildByIDParams) (int64, error)
 	DeleteWoWLogGroup(ctx context.Context, id uuid.UUID) error
@@ -153,6 +169,10 @@ type sqlcQuerier interface {
 	// so results are self-contained.
 	GearTrendsSlotItems(ctx context.Context, arg GearTrendsSlotItemsParams) ([]GearTrendsSlotItemsRow, error)
 	GetAppliedAuthzMigrations(ctx context.Context) ([]int32, error)
+	// Canonical database-backed spell lookups. Each base spell row carries its
+	// independently ordered normalized components without multiplying child rows.
+	GetCanonicalSpellByID(ctx context.Context, arg GetCanonicalSpellByIDParams) (GetCanonicalSpellByIDRow, error)
+	GetCanonicalSpellsByName(ctx context.Context, arg GetCanonicalSpellsByNameParams) ([]GetCanonicalSpellsByNameRow, error)
 	// Per-encounter kill aggregates for one character across all time.
 	// Rankings rows exist only for clean/partial kills; trash rows
 	// (encounter_id IS NULL) are excluded. Duplicate uploads of the same raid
@@ -172,6 +192,11 @@ type sqlcQuerier interface {
 	// The caller groups by (instance_name, encounter_name), takes best 3 per group,
 	// averages each group, then averages groups for the Score.
 	GetCharacterParseHistory(ctx context.Context, arg GetCharacterParseHistoryParams) ([]GetCharacterParseHistoryRow, error)
+	// Return complete canonical runs for one character and a selected boss set.
+	// Raw DPS/HPS is aggregated from the persisted representative upload. Cached
+	// per-boss parses are averaged when every selected encounter has a usable
+	// score. parse_count tells the caller whether the cached average is complete.
+	GetCharacterPerformanceRuns(ctx context.Context, arg GetCharacterPerformanceRunsParams) ([]GetCharacterPerformanceRunsRow, error)
 	GetCreatureTemplatesByEntries(ctx context.Context, arg GetCreatureTemplatesByEntriesParams) ([]WorldCreatureTemplate, error)
 	GetDBCItemDisplayInfoByID(ctx context.Context, arg GetDBCItemDisplayInfoByIDParams) (DbcItemDisplayInfo, error)
 	// Dataset queries. These run with AdminBypass context since the datasets table
@@ -401,9 +426,10 @@ type sqlcQuerier interface {
 	GetWorldsByServer(ctx context.Context, serverID uuid.UUID) ([]World, error)
 	// Returns the guild's single best full clear of each instance within the
 	// window, for the guild page "Best Performance" panel. @by_parse picks the
-	// winner by highest guild average parse instead of fastest clear. Duplicate
-	// uploads collapse to one run (fastest duration per group). Includes
-	// unqualified runs: qualification only affects the public leaderboard.
+	// winner by highest historical clear-time parse instead of fastest clear.
+	// Duplicate uploads collapse to one run (fastest duration per group). Includes
+	// unqualified runs: qualification only affects cohort and leaderboard membership,
+	// not whether a completed clear can receive a time parse.
 	// JOINs wow_server_realms so RLS tenant filtering cascades.
 	GuildBestRuns(ctx context.Context, arg GuildBestRunsParams) ([]GuildBestRunsRow, error)
 	// Queries backing guild page panels (roster, top parses, recent raid scores).
@@ -413,9 +439,10 @@ type sqlcQuerier interface {
 	// player_spec/player_role come from the character's most recent parse;
 	// spec_roles_json lists every distinct spec+role combo observed across the
 	// character's 3 most recent parsed instances (players often swap specs raid
-	// to raid), most recent first. avg_parse averages the best parse per
-	// encounter over the last @parse_window_days, using hps for healers and dps
-	// for everyone else (-1 when the character has no parses).
+	// to raid), most recent first. avg_parse matches the Armory score: deduplicate
+	// uploads by run, average the best 3 parses per encounter over the last
+	// @parse_window_days, then average those encounter scores. It uses hps for
+	// healers and dps for everyone else (-1 when the character has no parses).
 	// JOINs wow_server_realms so RLS tenant filtering cascades.
 	GuildCharacterRoster(ctx context.Context, arg GuildCharacterRosterParams) ([]GuildCharacterRosterRow, error)
 	// Per-encounter boss kill aggregates for a guild across all time, for the
@@ -615,11 +642,18 @@ type sqlcQuerier interface {
 	ListSnapshotMembersForInstance(ctx context.Context, arg ListSnapshotMembersForInstanceParams) ([]RankingSnapshotMember, error)
 	// List snapshot members for an instance, joining to encounter_dps_rankings for player name/role.
 	ListSnapshotMembersForInstanceWithNames(ctx context.Context, arg ListSnapshotMembersForInstanceWithNamesParams) ([]ListSnapshotMembersForInstanceWithNamesRow, error)
+	ListSpellEffectsForCheck(ctx context.Context, datasetID uuid.UUID) ([]ListSpellEffectsForCheckRow, error)
+	// Read-only source rows used by the spell dataset integrity checker.
+	ListSpellIDsForCheck(ctx context.Context, datasetID uuid.UUID) ([]int32, error)
+	ListSpellPowersForCheck(ctx context.Context, datasetID uuid.UUID) ([]ListSpellPowersForCheckRow, error)
+	ListSpellVariantsForCheck(ctx context.Context, datasetID uuid.UUID) ([]ListSpellVariantsForCheckRow, error)
 	ListTenants(ctx context.Context) ([]Tenant, error)
 	// Tenants that use this dataset, either directly (tenant.default_dataset_id)
 	// or via a server they own (wow_servers.default_dataset_id).
 	ListTenantsByDataset(ctx context.Context, defaultDatasetID uuid.NullUUID) ([]ListTenantsByDatasetRow, error)
 	ListUploadKeysByRealm(ctx context.Context, realmID uuid.UUID) ([]ListUploadKeysByRealmRow, error)
+	ListUserFavoriteGuilds(ctx context.Context, userID uuid.UUID) ([]ListUserFavoriteGuildsRow, error)
+	ListUserFavoritePlayers(ctx context.Context, userID uuid.UUID) ([]ListUserFavoritePlayersRow, error)
 	ListUserPanelLayouts(ctx context.Context, userID uuid.NullUUID) ([]ListUserPanelLayoutsRow, error)
 	ListUserTalentBuilds(ctx context.Context, arg ListUserTalentBuildsParams) ([]UserTalentBuild, error)
 	ListVulnerabilitySpellsByDataset(ctx context.Context, arg ListVulnerabilitySpellsByDatasetParams) ([]ListVulnerabilitySpellsByDatasetRow, error)
@@ -640,6 +674,11 @@ type sqlcQuerier interface {
 	PublishRankingSnapshot(ctx context.Context, id uuid.UUID) (RankingSnapshot, error)
 	// Transition a pending time-parse snapshot to published. Idempotent on already-published.
 	PublishTimeParseSnapshot(ctx context.Context, id uuid.UUID) (TimeParseSnapshot, error)
+	RankingRunByID(ctx context.Context, runID uuid.UUID) (RankingRun, error)
+	RankingRunIdentitiesByInstanceIDs(ctx context.Context, instanceIds []uuid.UUID) ([]RankingRunIdentitiesByInstanceIDsRow, error)
+	RankingRunIdentitiesByLogGroupID(ctx context.Context, logGroupID uuid.UUID) ([]RankingRunIdentitiesByLogGroupIDRow, error)
+	RankingRunRepairVerification(ctx context.Context, queryLimit int32) ([]RankingRunRepairVerificationRow, error)
+	RankingRunSources(ctx context.Context, affectedIds []uuid.UUID) ([]RankingRunSourcesRow, error)
 	// Returns box plot statistics (min, q1, median, q3, max, count) per class/spec.
 	// DPS is aggregated per run (sum damage / sum duration across encounters in one
 	// instance run), so each run is one data point. Matches leaderboard aggregation.
@@ -783,9 +822,11 @@ type sqlcQuerier interface {
 	// Returns instance and unique player counts per discoverable tenant within a
 	// time window. Used by the discovery endpoint to surface activity metrics.
 	TenantDiscoveryStats(ctx context.Context, since pgtype.Timestamptz) ([]TenantDiscoveryStatsRow, error)
+	TouchLogInstanceRankingSource(ctx context.Context, instanceID uuid.UUID) error
 	TouchUploadKeyLastUsed(ctx context.Context, id uuid.UUID) error
 	TrackUserPanelLayout(ctx context.Context, arg TrackUserPanelLayoutParams) (UserTrackedLayout, error)
 	UnassignWorldFromServer(ctx context.Context, arg UnassignWorldFromServerParams) error
+	UnlinkDuplicateGroup(ctx context.Context, id uuid.UUID) (UnlinkDuplicateGroupRow, error)
 	UnsetPrimaryUserCharacter(ctx context.Context, userID uuid.UUID) error
 	UntrackUserPanelLayout(ctx context.Context, arg UntrackUserPanelLayoutParams) (int64, error)
 	// Only non-null params are applied; NULL means "keep existing value".
@@ -844,6 +885,7 @@ type sqlcQuerier interface {
 	UpsertPendingModificationRequest(ctx context.Context, arg UpsertPendingModificationRequestParams) (ApplicationModificationRequest, error)
 	UpsertPlayerGearHistory(ctx context.Context, arg []UpsertPlayerGearHistoryParams) *UpsertPlayerGearHistoryBatchResults
 	UpsertPlayers(ctx context.Context, arg []UpsertPlayersParams) *UpsertPlayersBatchResults
+	UpsertRankingRun(ctx context.Context, arg UpsertRankingRunParams) (bool, error)
 	// Recompute and upsert the rankings summary for a single
 	// (instance, difficulty, max_players, tenant) combo.
 	// The caller sets tenant context so RLS on encounter_dps_rankings

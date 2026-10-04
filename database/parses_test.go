@@ -39,23 +39,25 @@ func setupParsesTest(t *testing.T) (*pgxpool.Pool, database.Store, uuid.UUID) {
 }
 
 type rankingOpts struct {
-	encounterName  string
-	instanceName   string
-	playerGUID     string
-	playerClass    string
-	playerSpec     string
-	playerSubSpec  string
-	difficultyName string
-	maxPlayers     int16
-	damageDone     int64
-	healingDone    int64
-	durationSecs   float64
-	dps            float64
-	hps            float64
-	killedAt       time.Time
-	isBoss         bool
-	instanceID     uuid.UUID
-	dupGroupID     *uuid.UUID
+	encounterName   string
+	instanceName    string
+	playerGUID      string
+	playerClass     string
+	playerSpec      string
+	playerSubSpec   string
+	difficultyName  string
+	maxPlayers      int16
+	damageDone      int64
+	healingDone     int64
+	durationSecs    float64
+	dps             float64
+	alivePercentage pgtype.Float8
+	playerDeaths    pgtype.Int4
+	hps             float64
+	killedAt        time.Time
+	isBoss          bool
+	instanceID      uuid.UUID
+	dupGroupID      *uuid.UUID
 }
 
 // insertRankingRow creates an encounter_dps_rankings row and supporting log data.
@@ -120,26 +122,28 @@ func insertRankingRow(t *testing.T, pool *pgxpool.Pool, store database.Store, re
 	}
 
 	err = store.InsertEncounterDpsRanking(ctx, database.InsertEncounterDpsRankingParams{
-		EncounterID:    encounterID,
-		InstanceID:     instanceID,
-		EncounterName:  opts.encounterName,
-		InstanceName:   opts.instanceName,
-		PlayerGuid:     opts.playerGUID,
-		PlayerName:     "Player-" + opts.playerGUID,
-		PlayerClass:    opts.playerClass,
-		PlayerSpec:     opts.playerSpec,
-		PlayerSubSpec:  opts.playerSubSpec,
-		DifficultyName: opts.difficultyName,
-		MaxPlayers:     opts.maxPlayers,
-		RealmID:        realmID,
-		RealmName:      "test-realm",
-		DamageDone:     opts.damageDone,
-		HealingDone:    opts.healingDone,
-		DurationSecs:   opts.durationSecs,
-		Dps:            opts.dps,
-		Hps:            opts.hps,
-		KilledAt:       database.Timestamptz(opts.killedAt),
-		LogHashedSlug:  "slug-" + uuid.NewString()[:8],
+		EncounterID:     encounterID,
+		InstanceID:      instanceID,
+		EncounterName:   opts.encounterName,
+		InstanceName:    opts.instanceName,
+		PlayerGuid:      opts.playerGUID,
+		PlayerName:      "Player-" + opts.playerGUID,
+		PlayerClass:     opts.playerClass,
+		PlayerSpec:      opts.playerSpec,
+		PlayerSubSpec:   opts.playerSubSpec,
+		DifficultyName:  opts.difficultyName,
+		MaxPlayers:      opts.maxPlayers,
+		RealmID:         realmID,
+		RealmName:       "test-realm",
+		DamageDone:      opts.damageDone,
+		HealingDone:     opts.healingDone,
+		AlivePercentage: opts.alivePercentage,
+		PlayerDeaths:    opts.playerDeaths,
+		DurationSecs:    opts.durationSecs,
+		Dps:             opts.dps,
+		Hps:             opts.hps,
+		KilledAt:        database.Timestamptz(opts.killedAt),
+		LogHashedSlug:   "slug-" + uuid.NewString()[:8],
 	})
 	require.NoError(t, err)
 }
@@ -165,7 +169,74 @@ func TestInstanceRankingRecordsIncludesZeroMetrics(t *testing.T) {
 	require.Len(t, rows, 1)
 	assert.Equal(t, "P-ROGGIA", rows[0].PlayerGuid)
 	assert.Zero(t, rows[0].Dps)
+	assert.False(t, rows[0].AlivePercentage.Valid)
+	assert.False(t, rows[0].PlayerDeaths.Valid)
 	assert.Zero(t, rows[0].Hps)
+}
+
+func TestInstanceRankingRecordsPreservePlayerDeathsNullability(t *testing.T) {
+	t.Parallel()
+
+	pool, store, realmID := setupParsesTest(t)
+	ctx := testutil.Context(t, testutil.WaitShort)
+	instanceID := uuid.New()
+	killedAt := time.Date(2026, 9, 21, 12, 0, 0, 0, time.UTC)
+
+	insertRankingRow(t, pool, store, realmID, rankingOpts{
+		encounterName: "Ragnaros", instanceName: "Molten Core",
+		playerGUID: "P-DEATHS", playerClass: "WARRIOR", playerSpec: "Fury",
+		durationSecs: 120, damageDone: 120_000, dps: 1_000,
+		alivePercentage: pgtype.Float8{Float64: 75, Valid: true},
+		playerDeaths:    pgtype.Int4{Int32: 2, Valid: true},
+		killedAt:        killedAt, isBoss: true, instanceID: instanceID,
+	})
+
+	rows, err := store.InstanceRankingRecords(ctx, instanceID)
+	require.NoError(t, err)
+	require.Len(t, rows, 1)
+	require.True(t, rows[0].AlivePercentage.Valid)
+	assert.InDelta(t, 75, rows[0].AlivePercentage.Float64, 0.001)
+	require.True(t, rows[0].PlayerDeaths.Valid)
+	assert.Equal(t, int32(2), rows[0].PlayerDeaths.Int32)
+}
+
+func TestTrashRankingsAllowDistinctSubSpecs(t *testing.T) {
+	t.Parallel()
+
+	pool, store, realmID := setupParsesTest(t)
+	ctx := testutil.Context(t, testutil.WaitShort)
+	instanceID := uuid.New()
+	killedAt := time.Date(2026, 9, 20, 15, 44, 32, 0, time.UTC)
+
+	insertRankingRow(t, pool, store, realmID, rankingOpts{
+		encounterName: "Trash", instanceName: "Molten Core",
+		playerGUID: "P-FERAL", playerClass: "DRUID", playerSpec: "Feral", playerSubSpec: "Cat",
+		durationSecs: 300, damageDone: 150_000, dps: 500,
+		killedAt: killedAt, instanceID: instanceID,
+	})
+
+	require.NoError(t, store.InsertEncounterDpsRanking(ctx, database.InsertEncounterDpsRankingParams{
+		InstanceID:    instanceID,
+		EncounterName: "Trash",
+		InstanceName:  "Molten Core",
+		PlayerGuid:    "P-FERAL",
+		PlayerName:    "Player-P-FERAL",
+		PlayerClass:   "DRUID",
+		PlayerSpec:    "Feral",
+		PlayerSubSpec: "Bear",
+		RealmID:       realmID,
+		RealmName:     "test-realm",
+		DamageDone:    120_000,
+		DurationSecs:  300,
+		Dps:           400,
+		KilledAt:      database.Timestamptz(killedAt.Add(time.Minute)),
+		LogHashedSlug: "sub-spec-regression",
+	}))
+
+	rows, err := store.InstanceRankingRecords(ctx, instanceID)
+	require.NoError(t, err)
+	require.Len(t, rows, 2)
+	assert.ElementsMatch(t, []string{"Cat", "Bear"}, []string{rows[0].PlayerSubSpec, rows[1].PlayerSubSpec})
 }
 
 func TestRankingsLeaderboardUsesSingleDuplicateInstance(t *testing.T) {
@@ -233,6 +304,22 @@ func TestRankingsLeaderboardUsesSingleDuplicateInstance(t *testing.T) {
 	insertEncounterRanking(duplicateID, "Lucifron", "PRIEST", "Holy", "Bear", 900, baseTime)
 	insertEncounterRanking(duplicateID, "Magmadar", "PRIEST", "Holy", "Bear", 900, baseTime.Add(time.Minute))
 	insertEncounterRanking(duplicateID, "Ragnaros", "PRIEST", "Holy", "Bear", 900, baseTime.Add(2*time.Minute))
+
+	equivalenceParams := database.RankingsLeaderboardParams{
+		Metric: "hps", QueryLimit: 10,
+		InstanceNames:  []string{"Molten Core"},
+		EncounterNames: []string{"Lucifron", "Magmadar", "Ragnaros"},
+	}
+	fallbackRows, err := store.RankingsLeaderboard(ctx, equivalenceParams)
+	require.NoError(t, err)
+	sources, err := store.RankingRunSources(ctx, []uuid.UUID{canonicalID, duplicateID})
+	require.NoError(t, err)
+	require.Len(t, sources, 1)
+	_, err = store.UpsertRankingRun(ctx, database.UpsertRankingRunParams(sources[0]))
+	require.NoError(t, err)
+	persistedRows, err := store.RankingsLeaderboard(ctx, equivalenceParams)
+	require.NoError(t, err)
+	assert.Equal(t, fallbackRows, persistedRows)
 
 	for _, params := range []database.RankingsLeaderboardParams{
 		{
@@ -681,6 +768,133 @@ func TestRankingSnapshots(t *testing.T) {
 	})
 
 	_ = ctx // parent context used for setup
+}
+
+func TestSnapshotExcludesUnknownCohorts(t *testing.T) {
+	t.Parallel()
+
+	pool, store, realmID := setupParsesTest(t)
+	ctx := testutil.Context(t, testutil.WaitMedium)
+	baseTime := time.Date(2026, 9, 20, 12, 0, 0, 0, time.UTC)
+
+	for _, opts := range []rankingOpts{
+		{
+			encounterName: "Known Cohort Boss", instanceName: "Test Raid",
+			playerGUID: "P-KNOWN", playerClass: "WARRIOR", playerSpec: "Fury",
+			damageDone: 30_000, durationSecs: 60, dps: 500,
+			killedAt: baseTime, isBoss: true,
+		},
+		{
+			encounterName: "Unknown Spec Boss", instanceName: "Test Raid",
+			playerGUID: "P-UNKNOWN-SPEC", playerClass: "WARRIOR", playerSpec: "Unknown",
+			damageDone: 24_000, durationSecs: 60, dps: 400,
+			killedAt: baseTime, isBoss: true,
+		},
+		{
+			encounterName: "Unknown Class Boss", instanceName: "Test Raid",
+			playerGUID: "P-UNKNOWN-CLASS", playerClass: "Unknown", playerSpec: "Fury",
+			damageDone: 18_000, durationSecs: 60, dps: 300,
+			killedAt: baseTime, isBoss: true,
+		},
+	} {
+		insertRankingRow(t, pool, store, realmID, opts)
+	}
+
+	cutoff := database.Timestamptz(baseTime.Add(time.Hour))
+	specStats, err := store.GetSnapshotSourceStats(ctx, database.GetSnapshotSourceStatsParams{
+		Cutoff:     cutoff,
+		CohortMode: "spec",
+	})
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), specStats.RowCount)
+
+	classStats, err := store.GetSnapshotSourceStats(ctx, database.GetSnapshotSourceStatsParams{
+		Cutoff:     cutoff,
+		CohortMode: "class",
+	})
+	require.NoError(t, err)
+	assert.Equal(t, int64(2), classStats.RowCount)
+
+	snapshot, err := store.InsertRankingSnapshot(ctx, database.InsertRankingSnapshotParams{
+		TenantID:      uuid.Nil,
+		Cutoff:        cutoff,
+		LookbackDays:  0,
+		CohortMode:    "spec",
+		PolicyVersion: 1,
+		QueryVersion:  1,
+	})
+	require.NoError(t, err)
+	require.NoError(t, store.BatchInsertSnapshotMembersFromRankings(ctx, snapshot.ID))
+
+	memberCount, err := store.CountSnapshotMembers(ctx, snapshot.ID)
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), memberCount)
+
+	// Simulate an older snapshot published before the membership filter existed.
+	// Cohort reads must still hide its Unknown class/spec rows.
+	_, err = pool.Exec(ctx, `
+		INSERT INTO ranking_snapshot_members (
+			snapshot_id, ranking_id, instance_id, run_id,
+			instance_name, encounter_name,
+			player_guid, player_class, player_spec, player_sub_spec,
+			difficulty_name, max_players,
+			killed_at, created_at_ranking,
+			damage_done, healing_done, absorbed_done,
+			duration_secs, dps, hps
+		)
+		SELECT
+			$1, id, instance_id, instance_id,
+			instance_name, encounter_name,
+			player_guid, player_class, player_spec, player_sub_spec,
+			difficulty_name, max_players,
+			killed_at, created_at,
+			damage_done, healing_done, absorbed_done,
+			duration_secs, dps, hps
+		FROM encounter_dps_rankings
+		WHERE player_guid IN ('P-UNKNOWN-SPEC', 'P-UNKNOWN-CLASS')
+	`, snapshot.ID)
+	require.NoError(t, err)
+
+	buckets, err := store.ListDistinctCohortBuckets(ctx, snapshot.ID)
+	require.NoError(t, err)
+	require.Len(t, buckets, 1)
+	assert.Equal(t, "WARRIOR", buckets[0].PlayerClass)
+	assert.Equal(t, "Fury", buckets[0].PlayerSpec)
+
+	unknownValues, err := store.GetSnapshotCohortValues(ctx, database.GetSnapshotCohortValuesParams{
+		SnapshotID:    snapshot.ID,
+		EncounterName: "Unknown Spec Boss",
+		PlayerClass:   "WARRIOR",
+		PlayerSpec:    pgtype.Text{String: "Unknown", Valid: true},
+		Metric:        "dps",
+	})
+	require.NoError(t, err)
+	assert.Empty(t, unknownValues)
+
+	classSnapshot, err := store.InsertRankingSnapshot(ctx, database.InsertRankingSnapshotParams{
+		TenantID:      uuid.Nil,
+		Cutoff:        cutoff,
+		LookbackDays:  0,
+		CohortMode:    "class",
+		PolicyVersion: 1,
+		QueryVersion:  1,
+	})
+	require.NoError(t, err)
+	require.NoError(t, store.BatchInsertSnapshotMembersFromRankings(ctx, classSnapshot.ID))
+
+	classMemberCount, err := store.CountSnapshotMembers(ctx, classSnapshot.ID)
+	require.NoError(t, err)
+	assert.Equal(t, int64(2), classMemberCount)
+
+	classValues, err := store.GetSnapshotCohortValues(ctx, database.GetSnapshotCohortValuesParams{
+		SnapshotID:    classSnapshot.ID,
+		EncounterName: "Unknown Spec Boss",
+		PlayerClass:   "WARRIOR",
+		Metric:        "dps",
+	})
+	require.NoError(t, err)
+	require.Len(t, classValues, 1)
+	assert.Equal(t, 400.0, classValues[0].MetricValue)
 }
 
 func TestSnapshotDedupe(t *testing.T) {

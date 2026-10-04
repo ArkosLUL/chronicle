@@ -6,6 +6,85 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestSpellEffectEffectiveBasePoints(t *testing.T) {
+	t.Parallel()
+
+	assert.Equal(t, float32(14), (SpellEffect{EffectBasePoints: 13}).EffectiveBasePoints())
+	exact := float32(0)
+	assert.Equal(t, float32(0), (SpellEffect{EffectBasePoints: 13, EffectBasePointsF: &exact}).EffectiveBasePoints())
+}
+
+func TestSpellEffectAbsorbSchoolMask(t *testing.T) {
+	t.Parallel()
+
+	mask, ok := (SpellEffect{EffectMiscValue: []int32{int32(SchoolFrost), int32(SchoolFire)}}).AbsorbSchoolMask()
+	assert.True(t, ok)
+	assert.Equal(t, SchoolFrost, mask)
+
+	_, ok = (SpellEffect{}).AbsorbSchoolMask()
+	assert.False(t, ok)
+}
+
+func TestSpellEffectPowerBurnPowerType(t *testing.T) {
+	t.Parallel()
+
+	powerType, ok := (SpellEffect{EffectMiscValue: []int32{0, 3}}).PowerBurnPowerType()
+	assert.True(t, ok)
+	assert.Equal(t, int32(0), powerType)
+
+	_, ok = (SpellEffect{}).PowerBurnPowerType()
+	assert.False(t, ok)
+}
+
+func TestSpellEffectModifiesDuration(t *testing.T) {
+	t.Parallel()
+
+	assert.True(t, (SpellEffect{EffectMiscValue: []int32{1, 2}}).ModifiesDuration())
+	assert.False(t, (SpellEffect{EffectMiscValue: []int32{2, 1}}).ModifiesDuration())
+	assert.False(t, (SpellEffect{}).ModifiesDuration())
+}
+
+func TestSpellEffectDamageTakenSchoolMask(t *testing.T) {
+	t.Parallel()
+
+	mask, ok := (SpellEffect{EffectMiscValue: []int32{int32(SchoolFire), int32(SchoolFrost)}}).DamageTakenSchoolMask()
+	assert.True(t, ok)
+	assert.Equal(t, SchoolFire, mask)
+
+	_, ok = (SpellEffect{}).DamageTakenSchoolMask()
+	assert.False(t, ok)
+}
+
+func TestSpellDefaultClassificationIgnoresNonzeroDifficulty(t *testing.T) {
+	t.Parallel()
+
+	spell := Spell{
+		Effects: []SpellEffect{
+			{DifficultyID: 0, EffectIndex: 0, Effect: EffectDistract},
+			{DifficultyID: 2, EffectIndex: 0, Effect: EffectSchoolDMG},
+			{
+				DifficultyID:    0,
+				EffectIndex:     4,
+				Effect:          EffectApplyAura,
+				EffectAura:      AuraEffectModDamagePercentTaken,
+				EffectMiscValue: []int32{int32(SchoolFrost), int32(SchoolFire)},
+			},
+			{
+				DifficultyID:    2,
+				EffectIndex:     4,
+				Effect:          EffectApplyAura,
+				EffectAura:      AuraEffectModDamagePercentTaken,
+				EffectMiscValue: []int32{int32(SchoolFire)},
+			},
+		},
+	}
+
+	assert.Equal(t, SpellDamageNoEngageCombat, spell.SpellDamageType())
+	assert.True(t, spell.Affects(Spell{School: SchoolFrost}))
+	assert.False(t, spell.Affects(Spell{School: SchoolFire}))
+	assert.Len(t, spell.Effects, 4, "classification must not mutate canonical effects")
+}
+
 func TestSpell_AttackOutcome(t *testing.T) {
 	t.Parallel()
 
@@ -88,20 +167,10 @@ func TestSpell_AttackOutcome(t *testing.T) {
 			name: "Hurricane",
 			spell: Spell{
 				DefenseType: DefenseTypeMagic,
-				Effect: [3]Effect{
-					EffectPersistentAA,
-					EffectPersistentAA,
-					EffectNone,
-				},
-				EffectAura: [3]AuraEffect{
-					AuraEffectPeriodicDamage,
-					AuraEffectModMeleeHaste,
-					AuraEffectNone,
-				},
-				ImplicitTargetA: [3]ImplicitTarget{
-					ImplicitTargetDestDynobjEnemy,
-					ImplicitTargetDestDynobjEnemy,
-					ImplicitTargetNone,
+				Effects: []SpellEffect{
+					{EffectIndex: 0, Effect: EffectPersistentAA, EffectAura: AuraEffectPeriodicDamage, ImplicitTarget: []int32{int32(ImplicitTargetDestDynobjEnemy)}},
+					{EffectIndex: 1, Effect: EffectPersistentAA, EffectAura: AuraEffectModMeleeHaste, ImplicitTarget: []int32{int32(ImplicitTargetDestDynobjEnemy)}},
+					{EffectIndex: 2},
 				},
 				Attrs: MakeSpellAttributes(AttrEx_Channeled1, AttrEx_CantBeRedirected, AttrEx_CantBeReflected,
 					AttrEx2_NoInitialThreat, AttrEx2_NotNeedShapeshift, Attr_NotShapeshift),
@@ -154,42 +223,37 @@ func TestSpell_SpellDamageNoEngageCombat_MutuallyExclusive(t *testing.T) {
 		{
 			name: "DistractOnly",
 			spell: Spell{
-				Effect: [3]Effect{EffectDistract},
+				Effects: []SpellEffect{{EffectIndex: 0, Effect: EffectDistract}},
 			},
 		},
 		{
 			name: "DistractAndDirectDamage",
 			spell: Spell{
-				Effect: [3]Effect{EffectDistract, EffectSchoolDMG},
+				Effects: []SpellEffect{{EffectIndex: 0, Effect: EffectDistract}, {EffectIndex: 1, Effect: EffectSchoolDMG}},
 			},
 		},
 		{
 			name: "DistractAndPeriodic",
 			spell: Spell{
-				Effect:     [3]Effect{EffectDistract, EffectApplyAura},
-				EffectAura: [3]AuraEffect{0, AuraEffectPeriodicDamage},
+				Effects: []SpellEffect{{EffectIndex: 0, Effect: EffectDistract}, {EffectIndex: 1, Effect: EffectApplyAura, EffectAura: AuraEffectPeriodicDamage}},
 			},
 		},
 		{
 			name: "DistractAndPeriodicTrigger",
 			spell: Spell{
-				Effect:     [3]Effect{EffectDistract, EffectApplyAura},
-				EffectAura: [3]AuraEffect{0, AuraEffectPeriodicTriggerSpell},
+				Effects: []SpellEffect{{EffectIndex: 0, Effect: EffectDistract}, {EffectIndex: 1, Effect: EffectApplyAura, EffectAura: AuraEffectPeriodicTriggerSpell}},
 			},
 		},
 		{
 			name: "DistractAndActiveDebuff",
 			spell: Spell{
-				Effect:          [3]Effect{EffectDistract, EffectApplyAura},
-				EffectAura:      [3]AuraEffect{0, AuraEffectModResistance},
-				ImplicitTargetA: [3]ImplicitTarget{0, ImplicitTargetUnitTargetEnemy},
+				Effects: []SpellEffect{{EffectIndex: 0, Effect: EffectDistract}, {EffectIndex: 1, Effect: EffectApplyAura, EffectAura: AuraEffectModResistance, ImplicitTarget: []int32{int32(ImplicitTargetUnitTargetEnemy)}}},
 			},
 		},
 		{
 			name: "ModDetectRangeOnly",
 			spell: Spell{
-				Effect:     [3]Effect{EffectApplyAura},
-				EffectAura: [3]AuraEffect{AuraEffectModDetectRange},
+				Effects: []SpellEffect{{EffectIndex: 0, Effect: EffectApplyAura, EffectAura: AuraEffectModDetectRange}},
 			},
 		},
 	}

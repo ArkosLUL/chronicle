@@ -24,7 +24,8 @@ CREATE TYPE log_format AS ENUM (
     'azerothcore-mod',
     '2.4.3-cc-addon',
     'v9-cleu',
-    'hermesproxy_1_14_2_cc'
+    'hermesproxy_1_14_2_cc',
+    'v22-cleu'
 );
 
 CREATE TYPE log_instance_event_type AS ENUM (
@@ -475,6 +476,46 @@ CREATE TABLE dbc_spell_durations (
     max_duration integer DEFAULT 0 NOT NULL
 );
 
+CREATE TABLE dbc_spell_effects (
+    dataset_id uuid NOT NULL,
+    spell_id integer NOT NULL,
+    difficulty_id integer NOT NULL,
+    effect_index integer NOT NULL,
+    source_id integer NOT NULL,
+    bonus_coefficient_from_ap real NOT NULL,
+    coefficient real NOT NULL,
+    effect integer NOT NULL,
+    effect_amplitude real NOT NULL,
+    effect_attributes integer NOT NULL,
+    effect_aura integer NOT NULL,
+    effect_aura_period integer NOT NULL,
+    effect_base_points_f real NOT NULL,
+    effect_bonus_coefficient real NOT NULL,
+    effect_chain_amplitude real NOT NULL,
+    effect_chain_targets integer NOT NULL,
+    effect_item_type integer NOT NULL,
+    effect_mechanic integer NOT NULL,
+    effect_misc_value integer[] NOT NULL,
+    effect_points_per_resource real NOT NULL,
+    effect_pos_facing real NOT NULL,
+    effect_radius_index integer[] NOT NULL,
+    effect_real_points_per_level real NOT NULL,
+    effect_spell_class_mask integer[] NOT NULL,
+    effect_trigger_spell integer NOT NULL,
+    group_size_base_points_coefficient real NOT NULL,
+    node_field_12_0_0_63534_001 integer NOT NULL,
+    pvp_multiplier real NOT NULL,
+    resource_coefficient real NOT NULL,
+    scaling_class integer NOT NULL,
+    implicit_target integer[] NOT NULL,
+    variance real NOT NULL,
+    effect_die_sides integer DEFAULT 0 NOT NULL,
+    effect_base_points integer DEFAULT 0 NOT NULL,
+    effect_points_per_combo real DEFAULT 0 NOT NULL,
+    effect_base_dice integer DEFAULT 0 NOT NULL,
+    effect_dice_per_level integer DEFAULT 0 NOT NULL
+);
+
 CREATE TABLE dbc_spell_focus_objects (
     dataset_id uuid NOT NULL,
     id integer NOT NULL,
@@ -511,6 +552,25 @@ CREATE TABLE dbc_spell_item_enchantment (
     dataset_id uuid NOT NULL
 );
 
+CREATE TABLE dbc_spell_powers (
+    dataset_id uuid NOT NULL,
+    spell_id integer NOT NULL,
+    order_index integer NOT NULL,
+    source_id integer NOT NULL,
+    alt_power_bar_id integer NOT NULL,
+    mana_cost integer NOT NULL,
+    mana_cost_per_level integer NOT NULL,
+    mana_per_second integer NOT NULL,
+    optional_cost integer NOT NULL,
+    optional_cost_pct real NOT NULL,
+    power_cost_max_pct real NOT NULL,
+    power_cost_pct real NOT NULL,
+    power_display_id integer NOT NULL,
+    power_pct_per_second real NOT NULL,
+    power_type integer NOT NULL,
+    required_aura_spell_id integer NOT NULL
+);
+
 CREATE TABLE dbc_spell_radii (
     dataset_id uuid NOT NULL,
     id integer NOT NULL,
@@ -527,6 +587,82 @@ CREATE TABLE dbc_spell_ranges (
     range_max real DEFAULT 0 NOT NULL,
     flags integer DEFAULT 0 NOT NULL,
     name text DEFAULT ''::text NOT NULL
+);
+
+CREATE TABLE dbc_spell_variants (
+    dataset_id uuid NOT NULL,
+    spell_id integer NOT NULL,
+    difficulty_id integer NOT NULL,
+    misc_id integer,
+    active_icon_file_data_id integer,
+    active_spell_visual_script integer,
+    attributes integer[],
+    casting_time_index integer,
+    content_tuning_id integer,
+    duration_index integer,
+    launch_delay real,
+    min_duration real,
+    pvp_duration_index integer,
+    range_index integer,
+    school_mask integer,
+    show_future_spell_player_condition_id integer,
+    speed real,
+    spell_icon_file_data_id integer,
+    spell_visual_script integer,
+    aura_options_id integer,
+    cumulative_aura integer,
+    proc_category_recovery integer,
+    proc_chance integer,
+    proc_charges integer,
+    proc_type_mask integer[],
+    spell_procs_per_minute_id integer,
+    aura_restrictions_id integer,
+    caster_aura_spell integer,
+    caster_aura_state integer,
+    caster_aura_type integer,
+    exclude_caster_aura_spell integer,
+    exclude_caster_aura_state integer,
+    exclude_caster_aura_type integer,
+    exclude_target_aura_spell integer,
+    exclude_target_aura_state integer,
+    exclude_target_aura_type integer,
+    target_aura_spell integer,
+    target_aura_state integer,
+    target_aura_type integer,
+    class_options_id integer,
+    modal_next_spell integer,
+    spell_class_set integer,
+    spell_class_mask integer[],
+    interrupts_id integer,
+    aura_interrupt_flags integer[],
+    channel_interrupt_flags integer[],
+    interrupt_flags integer,
+    categories_id integer,
+    category integer,
+    charge_category integer,
+    defense_type integer,
+    diminish_type integer,
+    dispel_type integer,
+    mechanic integer,
+    prevention_type integer,
+    start_recovery_category integer,
+    cooldowns_id integer,
+    aura_spell_id integer,
+    category_recovery_time integer,
+    recovery_time integer,
+    start_recovery_time integer,
+    levels_id integer,
+    base_level integer,
+    max_level integer,
+    max_passive_aura_level integer,
+    spell_level integer,
+    target_restrictions_id integer,
+    cone_degrees real,
+    max_target_level integer,
+    max_targets integer,
+    target_creature_type integer,
+    targets integer,
+    width real
 );
 
 CREATE TABLE dbc_spells (
@@ -563,11 +699,6 @@ CREATE TABLE dbc_spells (
     max_targets integer DEFAULT 0 NOT NULL,
     target_creature_type integer DEFAULT 0 NOT NULL,
     requires_spell_focus integer DEFAULT 0 NOT NULL,
-    power_type integer DEFAULT 0 NOT NULL,
-    mana_cost integer DEFAULT 0 NOT NULL,
-    mana_cost_pct integer DEFAULT 0 NOT NULL,
-    mana_cost_per_level integer DEFAULT 0 NOT NULL,
-    mana_per_second integer DEFAULT 0 NOT NULL,
     reagent integer[] DEFAULT '{}'::integer[] NOT NULL,
     reagent_count integer[] DEFAULT '{}'::integer[] NOT NULL,
     casting_time_index integer DEFAULT 0 NOT NULL,
@@ -585,63 +716,6 @@ CREATE TABLE dbc_spells (
     equipped_item_class integer DEFAULT 0 NOT NULL,
     equipped_item_subclass integer DEFAULT 0 NOT NULL,
     prevention_type integer DEFAULT 0 NOT NULL,
-    effect_0 integer DEFAULT 0 NOT NULL,
-    effect_die_sides_0 integer DEFAULT 0 NOT NULL,
-    effect_real_pts_per_level_0 real DEFAULT 0 NOT NULL,
-    effect_base_points_0 integer DEFAULT 0 NOT NULL,
-    effect_mechanic_0 integer DEFAULT 0 NOT NULL,
-    effect_radius_index_0 integer DEFAULT 0 NOT NULL,
-    effect_aura_0 integer DEFAULT 0 NOT NULL,
-    effect_aura_period_0 integer DEFAULT 0 NOT NULL,
-    effect_amplitude_0 real DEFAULT 0 NOT NULL,
-    effect_chain_targets_0 integer DEFAULT 0 NOT NULL,
-    effect_item_type_0 integer DEFAULT 0 NOT NULL,
-    effect_misc_value_0 integer DEFAULT 0 NOT NULL,
-    effect_trigger_spell_0 integer DEFAULT 0 NOT NULL,
-    effect_pts_per_combo_0 real DEFAULT 0 NOT NULL,
-    effect_base_dice_0 integer DEFAULT 0 NOT NULL,
-    effect_dice_per_level_0 integer DEFAULT 0 NOT NULL,
-    effect_chain_amplitude_0 real DEFAULT 0 NOT NULL,
-    implicit_target_a_0 integer DEFAULT 0 NOT NULL,
-    implicit_target_b_0 integer DEFAULT 0 NOT NULL,
-    effect_1 integer DEFAULT 0 NOT NULL,
-    effect_die_sides_1 integer DEFAULT 0 NOT NULL,
-    effect_real_pts_per_level_1 real DEFAULT 0 NOT NULL,
-    effect_base_points_1 integer DEFAULT 0 NOT NULL,
-    effect_mechanic_1 integer DEFAULT 0 NOT NULL,
-    effect_radius_index_1 integer DEFAULT 0 NOT NULL,
-    effect_aura_1 integer DEFAULT 0 NOT NULL,
-    effect_aura_period_1 integer DEFAULT 0 NOT NULL,
-    effect_amplitude_1 real DEFAULT 0 NOT NULL,
-    effect_chain_targets_1 integer DEFAULT 0 NOT NULL,
-    effect_item_type_1 integer DEFAULT 0 NOT NULL,
-    effect_misc_value_1 integer DEFAULT 0 NOT NULL,
-    effect_trigger_spell_1 integer DEFAULT 0 NOT NULL,
-    effect_pts_per_combo_1 real DEFAULT 0 NOT NULL,
-    effect_base_dice_1 integer DEFAULT 0 NOT NULL,
-    effect_dice_per_level_1 integer DEFAULT 0 NOT NULL,
-    effect_chain_amplitude_1 real DEFAULT 0 NOT NULL,
-    implicit_target_a_1 integer DEFAULT 0 NOT NULL,
-    implicit_target_b_1 integer DEFAULT 0 NOT NULL,
-    effect_2 integer DEFAULT 0 NOT NULL,
-    effect_die_sides_2 integer DEFAULT 0 NOT NULL,
-    effect_real_pts_per_level_2 real DEFAULT 0 NOT NULL,
-    effect_base_points_2 integer DEFAULT 0 NOT NULL,
-    effect_mechanic_2 integer DEFAULT 0 NOT NULL,
-    effect_radius_index_2 integer DEFAULT 0 NOT NULL,
-    effect_aura_2 integer DEFAULT 0 NOT NULL,
-    effect_aura_period_2 integer DEFAULT 0 NOT NULL,
-    effect_amplitude_2 real DEFAULT 0 NOT NULL,
-    effect_chain_targets_2 integer DEFAULT 0 NOT NULL,
-    effect_item_type_2 integer DEFAULT 0 NOT NULL,
-    effect_misc_value_2 integer DEFAULT 0 NOT NULL,
-    effect_trigger_spell_2 integer DEFAULT 0 NOT NULL,
-    effect_pts_per_combo_2 real DEFAULT 0 NOT NULL,
-    effect_base_dice_2 integer DEFAULT 0 NOT NULL,
-    effect_dice_per_level_2 integer DEFAULT 0 NOT NULL,
-    effect_chain_amplitude_2 real DEFAULT 0 NOT NULL,
-    implicit_target_a_2 integer DEFAULT 0 NOT NULL,
-    implicit_target_b_2 integer DEFAULT 0 NOT NULL,
     totems_id integer DEFAULT 0 NOT NULL,
     totem integer[] DEFAULT '{}'::integer[] NOT NULL,
     cast_ui integer DEFAULT 0 NOT NULL,
@@ -705,7 +779,9 @@ CREATE TABLE encounter_dps_rankings (
     healing_done bigint DEFAULT 0 NOT NULL,
     absorbed_done bigint DEFAULT 0 NOT NULL,
     hps double precision DEFAULT 0 NOT NULL,
-    player_sub_spec text DEFAULT ''::text NOT NULL
+    player_sub_spec text DEFAULT ''::text NOT NULL,
+    player_deaths integer,
+    alive_percentage double precision
 );
 
 ALTER TABLE ONLY encounter_dps_rankings FORCE ROW LEVEL SECURITY;
@@ -799,7 +875,8 @@ CREATE TABLE guild_discord_install_states (
     guild_id uuid NOT NULL,
     user_id uuid NOT NULL,
     expires_at timestamp with time zone NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    tenant_slug text
 );
 
 CREATE TABLE guild_discord_installations (
@@ -1113,6 +1190,7 @@ CREATE TABLE log_instances (
     dynamic_difficulty integer DEFAULT 0 NOT NULL,
     vehicle_control_intervals jsonb DEFAULT '{}'::jsonb NOT NULL,
     category text,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
     CONSTRAINT log_instances_category_check CHECK ((category = ANY (ARRAY['raid'::text, 'dungeon'::text])))
 );
 
@@ -1274,6 +1352,21 @@ CREATE TABLE raid_compositions (
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     CONSTRAINT raid_compositions_data_size_chk CHECK ((pg_column_size(data) <= 131072)),
     CONSTRAINT raid_compositions_name_length_chk CHECK (((char_length(name) >= 1) AND (char_length(name) <= 100)))
+);
+
+CREATE TABLE ranking_runs (
+    run_id uuid NOT NULL,
+    representative_instance_id uuid NOT NULL,
+    realm_id uuid NOT NULL,
+    instance_name text NOT NULL,
+    difficulty_name text NOT NULL,
+    max_players integer NOT NULL,
+    start_time timestamp with time zone,
+    end_time timestamp with time zone,
+    boss_coverage integer NOT NULL,
+    member_count integer NOT NULL,
+    source_updated_at timestamp with time zone NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
 CREATE TABLE ranking_snapshot_members (
@@ -1596,6 +1689,23 @@ CREATE TABLE user_character_links (
     link_source text DEFAULT 'manual'::text NOT NULL
 );
 
+CREATE TABLE user_favorite_guilds (
+    user_id uuid NOT NULL,
+    guild_id uuid NOT NULL,
+    tenant_id uuid,
+    tenant_scope_id uuid GENERATED ALWAYS AS (COALESCE(tenant_id, '00000000-0000-0000-0000-000000000000'::uuid)) STORED,
+    slot smallint NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT user_favorite_guilds_slot_check CHECK (((slot >= 1) AND (slot <= 3)))
+);
+
+CREATE TABLE user_favorite_players (
+    user_id uuid NOT NULL,
+    character_guid wow_guid NOT NULL,
+    realm_id uuid NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
 CREATE TABLE user_panel_layouts (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     user_id uuid,
@@ -1854,7 +1964,8 @@ CREATE TABLE world_item_template (
     scaling_stat_value integer DEFAULT 0 NOT NULL,
     item_limit_category integer DEFAULT 0 NOT NULL,
     holiday_id integer DEFAULT 0 NOT NULL,
-    dataset_id uuid NOT NULL
+    dataset_id uuid NOT NULL,
+    icon text DEFAULT ''::text NOT NULL
 );
 
 CREATE TABLE world_server (
@@ -1989,6 +2100,9 @@ ALTER TABLE ONLY dbc_spell_description_variables
 ALTER TABLE ONLY dbc_spell_durations
     ADD CONSTRAINT dbc_spell_durations_pkey PRIMARY KEY (dataset_id, id);
 
+ALTER TABLE ONLY dbc_spell_effects
+    ADD CONSTRAINT dbc_spell_effects_pkey PRIMARY KEY (dataset_id, spell_id, difficulty_id, effect_index, source_id);
+
 ALTER TABLE ONLY dbc_spell_focus_objects
     ADD CONSTRAINT dbc_spell_focus_objects_pkey PRIMARY KEY (dataset_id, id);
 
@@ -1998,11 +2112,17 @@ ALTER TABLE ONLY dbc_spell_icons
 ALTER TABLE ONLY dbc_spell_item_enchantment
     ADD CONSTRAINT dbc_spell_item_enchantment_pkey PRIMARY KEY (dataset_id, id);
 
+ALTER TABLE ONLY dbc_spell_powers
+    ADD CONSTRAINT dbc_spell_powers_pkey PRIMARY KEY (dataset_id, spell_id, order_index, source_id);
+
 ALTER TABLE ONLY dbc_spell_radii
     ADD CONSTRAINT dbc_spell_radii_pkey PRIMARY KEY (dataset_id, id);
 
 ALTER TABLE ONLY dbc_spell_ranges
     ADD CONSTRAINT dbc_spell_ranges_pkey PRIMARY KEY (dataset_id, id);
+
+ALTER TABLE ONLY dbc_spell_variants
+    ADD CONSTRAINT dbc_spell_variants_pkey PRIMARY KEY (dataset_id, spell_id, difficulty_id);
 
 ALTER TABLE ONLY dbc_spells
     ADD CONSTRAINT dbc_spells_pkey PRIMARY KEY (dataset_id, spell_id);
@@ -2151,6 +2271,9 @@ ALTER TABLE ONLY parsed_log_group
 ALTER TABLE ONLY raid_compositions
     ADD CONSTRAINT raid_compositions_pkey PRIMARY KEY (id);
 
+ALTER TABLE ONLY ranking_runs
+    ADD CONSTRAINT ranking_runs_pkey PRIMARY KEY (run_id);
+
 ALTER TABLE ONLY ranking_snapshot_members
     ADD CONSTRAINT ranking_snapshot_members_pkey PRIMARY KEY (id);
 
@@ -2261,6 +2384,15 @@ ALTER TABLE ONLY user_character_links
 
 ALTER TABLE ONLY user_character_links
     ADD CONSTRAINT user_character_links_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY user_favorite_guilds
+    ADD CONSTRAINT user_favorite_guilds_pkey PRIMARY KEY (user_id, guild_id);
+
+ALTER TABLE ONLY user_favorite_guilds
+    ADD CONSTRAINT user_favorite_guilds_slot_per_tenant UNIQUE (user_id, tenant_scope_id, slot);
+
+ALTER TABLE ONLY user_favorite_players
+    ADD CONSTRAINT user_favorite_players_pkey PRIMARY KEY (user_id, character_guid, realm_id);
 
 ALTER TABLE ONLY user_panel_layouts
     ADD CONSTRAINT user_panel_layouts_code_key UNIQUE (code);
@@ -2378,7 +2510,7 @@ CREATE INDEX idx_edr_player_guid ON encounter_dps_rankings USING btree (player_g
 
 CREATE INDEX idx_edr_realm ON encounter_dps_rankings USING btree (realm_id);
 
-CREATE UNIQUE INDEX idx_edr_trash_unique ON encounter_dps_rankings USING btree (instance_id, player_guid, player_spec) WHERE (encounter_id IS NULL);
+CREATE UNIQUE INDEX idx_edr_trash_unique ON encounter_dps_rankings USING btree (instance_id, player_guid, player_spec, player_sub_spec) WHERE (encounter_id IS NULL);
 
 CREATE INDEX idx_encounter_dps_rankings_instance_id ON encounter_dps_rankings USING btree (instance_id);
 
@@ -2427,6 +2559,8 @@ CREATE INDEX idx_log_instances_duplicate_group ON log_instances USING btree (dup
 CREATE INDEX idx_log_instances_guild ON log_instances USING btree (guild_id) WHERE (guild_id IS NOT NULL);
 
 CREATE INDEX idx_log_instances_log_group_id ON log_instances USING btree (log_group_id);
+
+CREATE INDEX idx_log_instances_logical_run ON log_instances USING btree (COALESCE(duplicate_group_id, id));
 
 CREATE INDEX idx_log_instances_realm_id ON log_instances USING btree (realm_id);
 
@@ -2521,6 +2655,12 @@ CREATE UNIQUE INDEX log_instance_youtube_timestamped_slug_idx ON log_instance_yo
 CREATE UNIQUE INDEX log_instances_hashed_slug_idx ON log_instances USING btree (hashed_slug) WHERE (hashed_slug IS NOT NULL);
 
 CREATE INDEX raid_compositions_user_tenant_idx ON raid_compositions USING btree (user_id, tenant_id);
+
+CREATE INDEX ranking_runs_instance_filter_idx ON ranking_runs USING btree (instance_name, difficulty_name, max_players, realm_id);
+
+CREATE INDEX ranking_runs_realm_end_time_idx ON ranking_runs USING btree (realm_id, end_time DESC);
+
+CREATE UNIQUE INDEX ranking_runs_representative_instance_idx ON ranking_runs USING btree (representative_instance_id);
 
 CREATE UNIQUE INDEX ranking_snapshots_published_key_idx ON ranking_snapshots USING btree (tenant_id, cutoff, lookback_days, cohort_mode, policy_version, query_version) WHERE (status = 'published'::text);
 
@@ -2634,6 +2774,9 @@ ALTER TABLE ONLY dbc_spell_description_variables
 ALTER TABLE ONLY dbc_spell_durations
     ADD CONSTRAINT dbc_spell_durations_dataset_id_fkey FOREIGN KEY (dataset_id) REFERENCES datasets(id) ON DELETE CASCADE;
 
+ALTER TABLE ONLY dbc_spell_effects
+    ADD CONSTRAINT dbc_spell_effects_dataset_id_fkey FOREIGN KEY (dataset_id) REFERENCES datasets(id) ON DELETE CASCADE;
+
 ALTER TABLE ONLY dbc_spell_focus_objects
     ADD CONSTRAINT dbc_spell_focus_objects_dataset_id_fkey FOREIGN KEY (dataset_id) REFERENCES datasets(id) ON DELETE CASCADE;
 
@@ -2643,11 +2786,17 @@ ALTER TABLE ONLY dbc_spell_icons
 ALTER TABLE ONLY dbc_spell_item_enchantment
     ADD CONSTRAINT dbc_spell_item_enchantment_dataset_id_fkey FOREIGN KEY (dataset_id) REFERENCES datasets(id);
 
+ALTER TABLE ONLY dbc_spell_powers
+    ADD CONSTRAINT dbc_spell_powers_dataset_id_fkey FOREIGN KEY (dataset_id) REFERENCES datasets(id) ON DELETE CASCADE;
+
 ALTER TABLE ONLY dbc_spell_radii
     ADD CONSTRAINT dbc_spell_radii_dataset_id_fkey FOREIGN KEY (dataset_id) REFERENCES datasets(id) ON DELETE CASCADE;
 
 ALTER TABLE ONLY dbc_spell_ranges
     ADD CONSTRAINT dbc_spell_ranges_dataset_id_fkey FOREIGN KEY (dataset_id) REFERENCES datasets(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY dbc_spell_variants
+    ADD CONSTRAINT dbc_spell_variants_dataset_id_fkey FOREIGN KEY (dataset_id) REFERENCES datasets(id) ON DELETE CASCADE;
 
 ALTER TABLE ONLY dbc_spells
     ADD CONSTRAINT dbc_spells_dataset_id_fkey FOREIGN KEY (dataset_id) REFERENCES datasets(id) ON DELETE CASCADE;
@@ -2841,6 +2990,12 @@ ALTER TABLE ONLY raid_compositions
 ALTER TABLE ONLY raid_compositions
     ADD CONSTRAINT raid_compositions_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
 
+ALTER TABLE ONLY ranking_runs
+    ADD CONSTRAINT ranking_runs_realm_id_fkey FOREIGN KEY (realm_id) REFERENCES wow_server_realms(id);
+
+ALTER TABLE ONLY ranking_runs
+    ADD CONSTRAINT ranking_runs_representative_instance_id_fkey FOREIGN KEY (representative_instance_id) REFERENCES log_instances(id) ON DELETE CASCADE;
+
 ALTER TABLE ONLY ranking_snapshot_members
     ADD CONSTRAINT ranking_snapshot_members_ranking_id_fkey FOREIGN KEY (ranking_id) REFERENCES encounter_dps_rankings(id) ON DELETE CASCADE;
 
@@ -2918,6 +3073,24 @@ ALTER TABLE ONLY user_character_links
 
 ALTER TABLE ONLY user_character_links
     ADD CONSTRAINT user_character_links_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY user_favorite_guilds
+    ADD CONSTRAINT user_favorite_guilds_guild_id_fkey FOREIGN KEY (guild_id) REFERENCES guilds(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY user_favorite_guilds
+    ADD CONSTRAINT user_favorite_guilds_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY user_favorite_guilds
+    ADD CONSTRAINT user_favorite_guilds_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY user_favorite_players
+    ADD CONSTRAINT user_favorite_players_character_guid_realm_id_fkey FOREIGN KEY (character_guid, realm_id) REFERENCES game_players(id, realm_id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY user_favorite_players
+    ADD CONSTRAINT user_favorite_players_realm_id_fkey FOREIGN KEY (realm_id) REFERENCES wow_server_realms(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY user_favorite_players
+    ADD CONSTRAINT user_favorite_players_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
 
 ALTER TABLE ONLY user_panel_layouts
     ADD CONSTRAINT user_panel_layouts_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;

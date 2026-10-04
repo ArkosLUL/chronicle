@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { ConsumeProcessorEvent, DamageProcessorEvent, HealProcessorEvent, ProcessorContext, ProcessorEvent } from "../processorTypes";
+import type { AbsorbedProcessorEvent, ConsumeProcessorEvent, DamageProcessorEvent, HealProcessorEvent, ProcessorContext, ProcessorEvent } from "../processorTypes";
 import { evaluateFilters, compileFilters, type PanelFilter } from "./filters";
 
 function createContext(overrides: Partial<ProcessorContext> = {}): ProcessorContext {
@@ -35,7 +35,7 @@ function createDamageEvent(overrides: Partial<DamageProcessorEvent> = {}): Damag
     target: "0xF130000000000001",
     hitType: 1,
     amount: 100,
-    school: 4,
+    schools: [4],
     tailers: [],
     tailerCount: 0,
     spellId: 133,
@@ -60,8 +60,31 @@ function createHealEvent(overrides: Partial<HealProcessorEvent> = {}): HealProce
     amount: 100,
     overheal: 0,
     absorbed: 0,
-    school: 3,
+    schools: [3],
     spellId: 2061,
+    ...overrides,
+  };
+}
+
+function createAbsorbedEvent(overrides: Partial<AbsorbedProcessorEvent> = {}): AbsorbedProcessorEvent {
+  return {
+    type: "absorbed",
+    index: 0,
+    offsetMilli: 0,
+    globalOffsetMilli: 0,
+    activity: [],
+    activityCount: 0,
+    isSynthetic: false,
+    attacker: "0xF130000000000001",
+    target: "0x0000000000000001",
+    damageSpellId: 1,
+    damageSpellName: "Melee",
+    caster: "0x0000000000000001",
+    absorbSpellId: 17,
+    absorbSpellName: "Power Word: Shield",
+    absorbSchools: [2],
+    amount: 100,
+    estimated: false,
     ...overrides,
   };
 }
@@ -217,9 +240,11 @@ describe("evaluateFilters", () => {
     const filters: PanelFilter[] = [
       { type: "ability_school", value: ["shadow", "fire"] },
     ];
-    expect(evaluateFilters(filters, createDamageEvent({ school: 4 }), createContext())).toBe(true);  // Fire
-    expect(evaluateFilters(filters, createDamageEvent({ school: 7 }), createContext())).toBe(true);  // Shadow
-    expect(evaluateFilters(filters, createDamageEvent({ school: 5 }), createContext())).toBe(false); // Nature
+    expect(evaluateFilters(filters, createDamageEvent({ schools: [4] }), createContext())).toBe(true);  // Fire
+    expect(evaluateFilters(filters, createDamageEvent({ schools: [7] }), createContext())).toBe(true);  // Shadow
+    expect(evaluateFilters(filters, createDamageEvent({ schools: [5] }), createContext())).toBe(false); // Nature
+    const frostFilters: PanelFilter[] = [{ type: "ability_school", value: "frost" }];
+    expect(evaluateFilters(frostFilters, createDamageEvent({ schools: [4, 6] }), createContext())).toBe(true);
   });
 
   it("negate works with any filter type", () => {
@@ -245,6 +270,7 @@ describe("evaluateFilters", () => {
     const ENEMY_PET_GUID = "0x0040000000000020";    // also a pet GUID
     const ENEMY_BOSS_GUID = "0xF130000000000001";   // high & 0x00f0 = 0x0030 = creature
     const ENEMY_OWNER_GUID = "0xF130000000000099";  // creature (non-player owner)
+    const VEHICLE_GUID = "0xF1500081420007AD";      // Pool of Tar (entry 33090), normalized by the WotLK parser
 
     function ctxWithUnits(): ProcessorContext {
       return createContext({
@@ -292,6 +318,18 @@ describe("evaluateFilters", () => {
       expect(evaluateFilters(filters, createDamageEvent({ caster: ENEMY_PET_GUID }), ctxWithUnits())).toBe(false);
     });
 
+    it("vehicle matches vehicle sources", () => {
+      const filters: PanelFilter[] = [{ type: "source_type", value: "vehicle" }];
+      expect(evaluateFilters(filters, createDamageEvent({ caster: VEHICLE_GUID }), ctxWithUnits())).toBe(true);
+      expect(evaluateFilters(filters, createDamageEvent({ caster: ENEMY_BOSS_GUID }), ctxWithUnits())).toBe(false);
+    });
+
+    it("negated vehicle filters out vehicle damage", () => {
+      const filters: PanelFilter[] = [{ type: "source_type", value: "vehicle", negate: true }];
+      expect(evaluateFilters(filters, createDamageEvent({ caster: VEHICLE_GUID }), ctxWithUnits())).toBe(false);
+      expect(evaluateFilters(filters, createDamageEvent({ caster: ENEMY_BOSS_GUID }), ctxWithUnits())).toBe(true);
+    });
+
     it("player,pet matches both players and friendly pets", () => {
       const filters: PanelFilter[] = [{ type: "source_type", value: ["player", "pet"] }];
       expect(evaluateFilters(filters, createDamageEvent({ caster: PLAYER_GUID }), ctxWithUnits())).toBe(true);
@@ -327,6 +365,37 @@ describe("evaluateFilters", () => {
       expect(evaluateFilters(filters, createDamageEvent({ caster: ENEMY_PET_GUID }), ctx)).toBe(false);
     });
 
+  });
+
+  describe("shield_caster", () => {
+    it("matches the shield caster on absorbed events", () => {
+      const shieldCaster = "0xF130000000000099";
+      const filters: PanelFilter[] = [{ type: "shield_caster", value: ["custom", shieldCaster] }];
+      const event = createAbsorbedEvent({
+        attacker: "0x0000000000000001",
+        target: "0x0000000000000001",
+        caster: shieldCaster,
+      });
+
+      expect(evaluateFilters(filters, event, createContext())).toBe(true);
+    });
+
+    it("rejects non-absorbed events even when their caster matches", () => {
+      const filters: PanelFilter[] = [{ type: "shield_caster", value: ["player"] }];
+
+      expect(evaluateFilters(filters, createDamageEvent(), createContext())).toBe(false);
+    });
+
+    it("can scope the filter to absorbed message types", () => {
+      const filters: PanelFilter[] = [{
+        type: "shield_caster",
+        value: ["player"],
+        applyTo: ["absorbed"],
+      }];
+
+      expect(evaluateFilters(filters, createAbsorbedEvent(), createContext())).toBe(true);
+      expect(evaluateFilters(filters, createDamageEvent(), createContext())).toBe(true);
+    });
   });
 
   it("matches ability_hittype using bitmask", () => {

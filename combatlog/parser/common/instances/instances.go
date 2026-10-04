@@ -435,6 +435,12 @@ var (
 		MapIDs:    []uint32{349},
 		Hostiles:  FromMap(MaraudonHostiles()),
 	}
+
+	ExcavationSiteWetlandsFactory = &CommonFactory{
+		Name:      "Excavation Site: Wetlands",
+		ZoneNames: []string{"excavation site: wetlands"},
+		Hostiles:  FromMap(ExcavationSiteWetlandsHostiles()),
+	}
 )
 
 //["Ahn'Qiraj"] = "安其拉",

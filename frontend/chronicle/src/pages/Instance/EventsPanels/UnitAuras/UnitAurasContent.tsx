@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Sparkles } from "lucide-react";
+import { Search, Sparkles, X } from "lucide-react";
 import { GenericPanel } from "../GenericPanel";
 import type { PanelRenderProps } from "../types";
 import { SpellIdTooltip } from "@/components/ui/SpellIdTooltip";
@@ -13,14 +13,20 @@ import {
   type UnitAuraEntry,
   type UnitAuraSegment,
   type UnitAurasResult,
+  unitAuraUptimeDurationMs,
 } from "./unitAuras.processor";
 import {
   compactAuraColors,
   compactAuraPercent,
   formatCompactAuraPercent,
 } from "./compactAura";
+import { fuzzyAuraNameMatch } from "./auraSearchMatch";
 import { mergeAdjacentAuraSegments, summarizeAuraSources, uniqueAuraAppliers } from "./sourceSummary";
-import { parseSelectedUnits, serializeSelectedUnits } from "./unitSelection";
+import {
+  parseAuraSearchQuery,
+  parseSelectedUnits,
+  serializeUnitAuraOptions,
+} from "./unitSelection";
 import { UnitIcon } from "./UnitIcon";
 import { UnitSearch, type UnitSearchOption } from "./UnitSearch";
 
@@ -275,14 +281,16 @@ function CompactAuraGrid({
 function AuraSection({
   title,
   rows,
-  durationMs,
+  uptimeDurationMs,
+  timelineDurationMs,
   players,
   units,
   encounterNames,
 }: {
   title: "Buffs" | "Debuffs";
   rows: AuraRow[];
-  durationMs: number;
+  uptimeDurationMs: number;
+  timelineDurationMs: number;
   players: PanelRenderProps<UnitAurasResult>["context"]["instance"]["players"];
   units: PanelRenderProps<UnitAurasResult>["context"]["instance"]["units"];
   encounterNames: ReadonlyMap<string, string>;
@@ -310,12 +318,12 @@ function AuraSection({
                 className="min-w-0 flex-1 truncate text-xs font-medium"
               />
               <div className="shrink-0 font-mono text-[11px] tabular-nums text-muted-foreground">
-                {formatPercent(row.totalUptimeMs, durationMs)}
+                {formatPercent(row.totalUptimeMs, uptimeDurationMs)}
               </div>
             </div>
             <AuraTimeline
               segments={row.segments}
-              durationMs={durationMs}
+              durationMs={timelineDurationMs}
               players={players}
               units={units}
               encounterNames={encounterNames}
@@ -332,27 +340,30 @@ function buildUnitAuraRows(
   unitGuid: string,
   byUnit: ReadonlyMap<string, { auras: Map<string, UnitAuraEntry> }>,
   encounterOffsets: ReadonlyMap<string, number>,
+  auraSearchQuery: string,
 ): { buffs: AuraRow[]; debuffs: AuraRow[] } {
   const unit = byUnit.get(unitGuid);
   if (!unit) return { buffs: [], debuffs: [] };
 
-  const mapped = [...unit.auras.values()].map((aura): AuraRow => ({
-    ...aura,
-    segments: mergeAdjacentAuraSegments(
-      [...aura.segments].sort((a, b) => {
-        const aOffset = encounterOffsets.get(a.encounterId) ?? 0;
-        const bOffset = encounterOffsets.get(b.encounterId) ?? 0;
-        return aOffset + a.startMs - (bOffset + b.startMs);
+  const mapped = [...unit.auras.values()]
+    .filter((aura) => fuzzyAuraNameMatch(auraSearchQuery, aura.spellName))
+    .map((aura): AuraRow => ({
+      ...aura,
+      segments: mergeAdjacentAuraSegments(
+        [...aura.segments].sort((a, b) => {
+          const aOffset = encounterOffsets.get(a.encounterId) ?? 0;
+          const bOffset = encounterOffsets.get(b.encounterId) ?? 0;
+          return aOffset + a.startMs - (bOffset + b.startMs);
+        }),
+      ).map((segment) => {
+        const offset = encounterOffsets.get(segment.encounterId) ?? 0;
+        return {
+          ...segment,
+          displayStartMs: offset + segment.startMs,
+          displayEndMs: offset + segment.endMs,
+        };
       }),
-    ).map((segment) => {
-      const offset = encounterOffsets.get(segment.encounterId) ?? 0;
-      return {
-        ...segment,
-        displayStartMs: offset + segment.startMs,
-        displayEndMs: offset + segment.endMs,
-      };
-    }),
-  }));
+    }));
 
   const byUptime = (a: AuraRow, b: AuraRow) => (
     b.totalUptimeMs - a.totalUptimeMs || a.spellName.localeCompare(b.spellName)
@@ -366,6 +377,7 @@ function buildUnitAuraRows(
 export function UnitAurasContent(props: PanelRenderProps<UnitAurasResult>) {
   const { context, durationMs, panelOption, setPanelOption, result, checkboxChecked } = props;
   const selectedGuids = useMemo(() => parseSelectedUnits(panelOption), [panelOption]);
+  const auraSearchQuery = useMemo(() => parseAuraSearchQuery(panelOption), [panelOption]);
   const selectedGuidSet = useMemo(() => new Set(selectedGuids), [selectedGuids]);
   const [activeTabGuid, setActiveTabGuid] = useState<string | null>(null);
   const playerSpecializations = usePlayerSpecializations();
@@ -439,9 +451,18 @@ export function UnitAurasContent(props: PanelRenderProps<UnitAurasResult>) {
     () => selectedGuids.map((guid) => unitLookup.get(guid)).filter((unit): unit is UnitSearchOption => Boolean(unit)),
     [selectedGuids, unitLookup],
   );
+  const uptimeDurationByUnit = useMemo(() => new Map(
+    selectedUnits.map((unit) => [
+      unit.guid,
+      unitAuraUptimeDurationMs(result, unit.guid, encounterEndOffsets),
+    ]),
+  ), [encounterEndOffsets, result, selectedUnits]);
   const rowsByUnit = useMemo(() => new Map(
-    selectedUnits.map((unit) => [unit.guid, buildUnitAuraRows(unit.guid, byUnit, encounterOffsets)]),
-  ), [byUnit, encounterOffsets, selectedUnits]);
+    selectedUnits.map((unit) => [
+      unit.guid,
+      buildUnitAuraRows(unit.guid, byUnit, encounterOffsets, auraSearchQuery),
+    ]),
+  ), [auraSearchQuery, byUnit, encounterOffsets, selectedUnits]);
   const detailedUnit = selectedUnits.find((unit) => unit.guid === activeTabGuid) ?? selectedUnits[0] ?? null;
   const detailedRows = detailedUnit ? rowsByUnit.get(detailedUnit.guid) : null;
 
@@ -449,19 +470,60 @@ export function UnitAurasContent(props: PanelRenderProps<UnitAurasResult>) {
     const next = selectedGuidSet.has(guid)
       ? selectedGuids.filter((selectedGuid) => selectedGuid !== guid)
       : [...selectedGuids, guid];
-    setPanelOption?.(serializeSelectedUnits(next));
+    setPanelOption?.(serializeUnitAuraOptions(next, auraSearchQuery));
     if (!selectedGuidSet.has(guid)) setActiveTabGuid(guid);
+  };
+
+  const setAuraSearchQuery = (query: string) => {
+    setPanelOption?.(serializeUnitAuraOptions(selectedGuids, query));
   };
 
   return (
     <GenericPanel {...props}>
       <div className="flex min-h-0 flex-1 flex-col gap-1.5">
-        <UnitSearch
-          units={searchUnits}
-          selectedGuids={selectedGuidSet}
-          onToggle={toggleUnit}
-          onClear={() => setPanelOption?.(null)}
-        />
+        <div className="grid shrink-0 grid-cols-2 gap-1.5">
+          <div className="min-w-0">
+            <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Players / units
+            </div>
+            <UnitSearch
+              units={searchUnits}
+              selectedGuids={selectedGuidSet}
+              onToggle={toggleUnit}
+              onClear={() => setPanelOption?.(serializeUnitAuraOptions([], auraSearchQuery))}
+            />
+          </div>
+
+          <div className="min-w-0">
+            <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Buffs / debuffs
+            </div>
+            <div className={cn(
+              "group flex h-8 items-center gap-2 rounded border border-border/80 bg-background/70 px-2",
+              "shadow-inner transition-colors focus-within:border-primary/60 focus-within:ring-1 focus-within:ring-primary/25",
+            )}>
+              <Search className="size-4 shrink-0 text-muted-foreground transition-colors group-focus-within:text-primary" />
+              <input
+                type="search"
+                aria-label="Filter auras by name"
+                placeholder="Search aura names…"
+                value={auraSearchQuery}
+                onChange={(event) => setAuraSearchQuery(event.target.value)}
+                className="min-w-0 flex-1 bg-transparent text-xs text-foreground outline-none placeholder:text-muted-foreground [&::-webkit-search-cancel-button]:hidden"
+              />
+              {auraSearchQuery && (
+                <button
+                  type="button"
+                  aria-label="Clear aura name filter"
+                  onClick={() => setAuraSearchQuery("")}
+                  className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                >
+                  <X className="size-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
 
         {selectedUnits.length === 0 ? (
           <div className="flex min-h-40 flex-1 flex-col items-center justify-center rounded-md border border-dashed border-border/70 bg-muted/10 px-6 text-center">
@@ -488,12 +550,18 @@ export function UnitAurasContent(props: PanelRenderProps<UnitAurasResult>) {
                         {rows.buffs.length} buffs · {rows.debuffs.length} debuffs
                       </span>
                     </div>
-                    <CompactAuraGrid
-                      rows={[...rows.buffs, ...rows.debuffs]}
-                      durationMs={durationMs}
-                      players={context.instance.players}
-                      units={context.instance.units}
-                    />
+                    {rows.buffs.length + rows.debuffs.length > 0 ? (
+                      <CompactAuraGrid
+                        rows={[...rows.buffs, ...rows.debuffs]}
+                        durationMs={uptimeDurationByUnit.get(unit.guid) ?? durationMs}
+                        players={context.instance.players}
+                        units={context.instance.units}
+                      />
+                    ) : (
+                      <div className="px-3 py-5 text-center text-xs text-muted-foreground">
+                        No auras match “{auraSearchQuery}”
+                      </div>
+                    )}
                   </section>
                 );
               })}
@@ -521,22 +589,32 @@ export function UnitAurasContent(props: PanelRenderProps<UnitAurasResult>) {
             </div>
             <ScrollArea className="min-h-0 flex-1 rounded border border-border/70 bg-background/25">
               <div className="min-w-0">
-                <AuraSection
-                  title="Buffs"
-                  rows={detailedRows.buffs}
-                  durationMs={durationMs}
-                  players={context.instance.players}
-                  units={context.instance.units}
-                  encounterNames={encounterNames}
-                />
-                <AuraSection
-                  title="Debuffs"
-                  rows={detailedRows.debuffs}
-                  durationMs={durationMs}
-                  players={context.instance.players}
-                  units={context.instance.units}
-                  encounterNames={encounterNames}
-                />
+                {detailedRows.buffs.length + detailedRows.debuffs.length > 0 ? (
+                  <>
+                    <AuraSection
+                      title="Buffs"
+                      rows={detailedRows.buffs}
+                      uptimeDurationMs={uptimeDurationByUnit.get(detailedUnit.guid) ?? durationMs}
+                      timelineDurationMs={durationMs}
+                      players={context.instance.players}
+                      units={context.instance.units}
+                      encounterNames={encounterNames}
+                    />
+                    <AuraSection
+                      title="Debuffs"
+                      rows={detailedRows.debuffs}
+                      uptimeDurationMs={uptimeDurationByUnit.get(detailedUnit.guid) ?? durationMs}
+                      timelineDurationMs={durationMs}
+                      players={context.instance.players}
+                      units={context.instance.units}
+                      encounterNames={encounterNames}
+                    />
+                  </>
+                ) : (
+                  <div className="px-3 py-8 text-center text-xs text-muted-foreground">
+                    No auras match “{auraSearchQuery}”
+                  </div>
+                )}
               </div>
             </ScrollArea>
           </div>

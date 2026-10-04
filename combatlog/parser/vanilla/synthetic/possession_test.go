@@ -147,6 +147,23 @@ func TestPossession_IgnoresNonPossessionSpells(t *testing.T) {
 	assert.Len(t, result, 2, "should not add any synthetic messages")
 }
 
+func TestIsControlSpellUsesDefaultDifficultyEffects(t *testing.T) {
+	t.Parallel()
+
+	nondefaultOnly := &chrondbc.Spell{Effects: []chrondbc.SpellEffect{
+		{DifficultyID: 0, EffectIndex: 0, Effect: chrondbc.EffectApplyAura, EffectAura: chrondbc.AuraEffectPeriodicDamage},
+		{DifficultyID: 198, EffectIndex: 0, Effect: chrondbc.EffectApplyAura, EffectAura: chrondbc.AuraEffectModPossess},
+	}}
+	assert.False(t, isControlSpell(nondefaultOnly))
+
+	defaultControl := &chrondbc.Spell{Effects: []chrondbc.SpellEffect{
+		{DifficultyID: 0, EffectIndex: 4, Effect: chrondbc.EffectApplyAura, EffectAura: chrondbc.AuraEffectModCharm},
+		{DifficultyID: 198, EffectIndex: 4, Effect: chrondbc.EffectApplyAura, EffectAura: chrondbc.AuraEffectPeriodicDamage},
+	}}
+	assert.True(t, isControlSpell(defaultControl))
+	assert.Len(t, defaultControl.Effects, 2)
+}
+
 func makeSpell(name string) *chrondbc.Spell {
 	return &chrondbc.Spell{
 		Name_lang: i18n.Text{i18n.English: name},
@@ -155,8 +172,7 @@ func makeSpell(name string) *chrondbc.Spell {
 
 func makePossessionSpell(name string) *chrondbc.Spell {
 	return &chrondbc.Spell{
-		Name_lang:  i18n.Text{i18n.English: name},
-		Effect:     [3]chrondbc.Effect{chrondbc.EffectApplyAura},
-		EffectAura: [3]chrondbc.AuraEffect{chrondbc.AuraEffectModPossess},
+		Name_lang: i18n.Text{i18n.English: name},
+		Effects:   []chrondbc.SpellEffect{{EffectIndex: 0, Effect: chrondbc.EffectApplyAura, EffectAura: chrondbc.AuraEffectModPossess}},
 	}
 }

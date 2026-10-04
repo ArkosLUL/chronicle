@@ -7,7 +7,9 @@ import (
 	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/common/messages"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/parsectx"
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
+	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/database/gamedb/chrondbc"
 	"github.com/stretchr/testify/require"
 )
@@ -17,16 +19,40 @@ func TestNewWithOptionsConfiguresOptionalAttribution(t *testing.T) {
 
 	s := NewWithOptions(context.Background(), slog.Default(), nil, nil, nil, Options{
 		CreditEarthShield: true,
+		CreditLifebloom:   true,
 		GenerateAbsorbs:   false,
 		DetectZone:        false,
 	})
 	require.NotNil(t, s.earthShield)
+	require.NotNil(t, s.lifebloom)
 	require.Nil(t, s.absorption)
 	require.Nil(t, s.zoneDetector)
+	require.Nil(t, s.feignDeath)
 
-	legacy := New(context.Background(), slog.Default(), nil, nil, nil, false)
-	require.Nil(t, legacy.earthShield)
-	require.NotNil(t, legacy.absorption)
+	wotlkCtx := parsectx.With(context.Background(), parsectx.Context{Format: database.LogFormat335aCcAddon})
+	wotlk := New(wotlkCtx, slog.Default(), nil, nil, nil)
+	require.Nil(t, wotlk.earthShield)
+	require.Nil(t, wotlk.lifebloom)
+	require.NotNil(t, wotlk.absorption)
+	require.NotNil(t, wotlk.feignDeath)
+
+	tbcCtx := parsectx.With(context.Background(), parsectx.Context{Format: database.LogFormat243CcAddon})
+	tbc := New(tbcCtx, slog.Default(), nil, nil, nil)
+	require.NotNil(t, tbc.earthShield)
+	require.NotNil(t, tbc.lifebloom)
+	require.Nil(t, tbc.feignDeath)
+
+	for _, format := range []database.LogFormat{
+		database.LogFormatAzerothcoreMod,
+		database.LogFormatV9Cleu,
+		database.LogFormatV22Cleu,
+	} {
+		ctx := parsectx.With(context.Background(), parsectx.Context{Format: format})
+		s := New(ctx, slog.Default(), nil, nil, nil)
+		require.Nil(t, s.earthShield, "format %s", format)
+		require.Nil(t, s.lifebloom, "format %s", format)
+		require.Nil(t, s.feignDeath, "format %s", format)
+	}
 }
 
 func TestEarthShieldCreditsOriginalCaster(t *testing.T) {

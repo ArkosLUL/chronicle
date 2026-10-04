@@ -190,6 +190,7 @@ func (f *Fetcher) SpellsByName(ctx context.Context, datasetID uuid.UUID, name st
 		result := make([]*chrondbc.Spell, 0, len(rows))
 		for i := range rows {
 			sp := rows[i].ToSpell()
+			f.cache.Add(spellKey{DatasetID: datasetID, SpellID: sp.ID}, entry{Spell: &sp})
 			result = append(result, &sp)
 		}
 		return result, nil

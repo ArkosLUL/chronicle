@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import type {
   RankingsInstanceSummary,
   RankingsEncounterSummary,
@@ -11,6 +11,7 @@ import type {
   SnapshotSummary,
   CohortDebugResponse,
   CharacterParseHistoryResponse,
+  CharacterPerformanceResponse,
   CharacterEncounterStatsResponse,
   RankingsFilterClass,
 } from "./typesGenerated";
@@ -62,6 +63,45 @@ export function useCharacterParses(playerGuid?: string, metric: "dps" | "hps" = 
     enabled: !!playerGuid,
     retry: retryUnlessClientError,
   });
+}
+
+export interface CharacterPerformanceParams {
+  playerGuid?: string;
+  instanceName?: string;
+  encounterNames: string[];
+  difficultyName?: string;
+  maxPlayers?: number;
+  metric: "dps" | "hps";
+}
+
+function characterPerformanceQuery(params: CharacterPerformanceParams) {
+  const searchParams = new URLSearchParams();
+  if (params.instanceName) searchParams.set("instance_name", params.instanceName);
+  if (params.encounterNames.length > 0) searchParams.set("encounter_names", params.encounterNames.join(","));
+  if (params.difficultyName) searchParams.set("difficulty_name", params.difficultyName);
+  if (params.maxPlayers) searchParams.set("max_players", String(params.maxPlayers));
+  searchParams.set("metric", params.metric);
+
+  return {
+    queryKey: ["rankings", "character-performance", params] as const,
+    queryFn: () =>
+      fetchJSON<CharacterPerformanceResponse>(
+        `/api/v1/rankings/characters/${encodeURIComponent(params.playerGuid!)}/performance?${searchParams.toString()}`,
+      ),
+    staleTime: RANKINGS_STALE_TIME,
+    enabled: !!params.playerGuid && !!params.instanceName && params.encounterNames.length > 0,
+    retry: retryUnlessClientError,
+  };
+}
+
+/** Canonical runs aggregated across a selected set of boss encounters. */
+export function useCharacterPerformance(params: CharacterPerformanceParams) {
+  return useQuery(characterPerformanceQuery(params));
+}
+
+/** Canonical runs for a dynamic list of characters. */
+export function useCharacterPerformances(params: readonly CharacterPerformanceParams[]) {
+  return useQueries({ queries: params.map(characterPerformanceQuery) });
 }
 
 /** Per-encounter kill aggregates for a character across all recorded logs. */

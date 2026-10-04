@@ -13,7 +13,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/consumers"
 	"github.com/Emyrk/chronicle/combatlog/parser/azerothcore"
 	azencounters "github.com/Emyrk/chronicle/combatlog/parser/azerothcore/encounters"
-	blizzardv9 "github.com/Emyrk/chronicle/combatlog/parser/blizzard/v9"
+	blizzardmodern "github.com/Emyrk/chronicle/combatlog/parser/blizzard/modern"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/creatures"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/encounters"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/registry"
@@ -91,6 +91,7 @@ func (w *WorkerLogParse) parseCombatLog(
 		return nil, fmt.Errorf("load aura duration modifiers: %w", err)
 	}
 	encountersState.Auras.SetDurationModifiers(durationModifiers)
+	encountersState.SetSpellFetcher(gameDB)
 
 	type consumableCatalogFetcher interface {
 		Consumables(context.Context) (*chrondbc.ConsumableCatalog, error)
@@ -232,39 +233,39 @@ func (w *WorkerLogParse) parseCombatLog(
 			logCapabilities = append(logCapabilities, "raidgroup")
 		}
 
-	case database.LogFormatV9Cleu, database.LogFormatHermesproxy1142Cc:
+	case database.LogFormatV9Cleu, database.LogFormatV22Cleu, database.LogFormatHermesproxy1142Cc:
 		logCapabilities = append(logCapabilities, "interrupt")
 		loadStart := time.Now()
 		data := preloadedFirst
 		if data == nil {
 			rdr, err := w.loadFile(ctx, files[0])
 			if err != nil {
-				return nil, fmt.Errorf("load v9 CLEU log file: %w", err)
+				return nil, fmt.Errorf("load modern Blizzard CLEU log file: %w", err)
 			}
 			data, err = io.ReadAll(rdr)
 			if err != nil {
-				return nil, fmt.Errorf("read v9 CLEU log file: %w", err)
+				return nil, fmt.Errorf("read modern Blizzard CLEU log file: %w", err)
 			}
 		}
 		loadFileDuration = time.Since(loadStart)
 
-		var p *blizzardv9.Parser
+		var p *blizzardmodern.Parser
 		var err error
 		if logFormat == database.LogFormatHermesproxy1142Cc {
-			p, err = blizzardv9.NewHermesProxy(ctx, logLogger, bytes.NewReader(data), gameDB, gameDB, reg)
+			p, err = blizzardmodern.NewHermesProxy(ctx, logLogger, bytes.NewReader(data), gameDB, gameDB, reg)
 			if err == nil {
 				p.SetRealmClockInfo(scanCompanionHeaderClock(data))
 			}
 		} else {
-			p, err = blizzardv9.New(ctx, logLogger, bytes.NewReader(data), gameDB, gameDB, reg)
+			p, err = blizzardmodern.New(ctx, logLogger, bytes.NewReader(data), gameDB, gameDB, reg)
 		}
 		if err != nil {
-			return nil, fmt.Errorf("create v9 CLEU parser: %w", err)
+			return nil, fmt.Errorf("create modern Blizzard CLEU parser: %w", err)
 		}
 		c.Advancer = p
 		consumeErr = c.ConsumeAll(ctx, p)
 		if consumeErr != nil && !errors.Is(consumeErr, io.EOF) {
-			return nil, fmt.Errorf("consume v9 CLEU log: %w", consumeErr)
+			return nil, fmt.Errorf("consume modern Blizzard CLEU log: %w", consumeErr)
 		}
 		totalLines = p.Metrics().TotalLinesParsed
 		if p.SawRaidGroup() {

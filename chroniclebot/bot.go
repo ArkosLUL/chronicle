@@ -30,9 +30,10 @@ type Config struct {
 
 // Bot represents a Discord bot instance.
 type Bot struct {
-	session *discordgo.Session
-	logger  *slog.Logger
-	config  Config
+	session         *discordgo.Session
+	httpDiagnostics *discordHTTPDiagnostics
+	logger          *slog.Logger
+	config          Config
 
 	mu       sync.RWMutex
 	handlers []func()
@@ -59,10 +60,13 @@ func New(ctx context.Context, logger *slog.Logger, config Config) (*Bot, error) 
 		return nil, err
 	}
 
+	httpDiagnostics := newDiscordHTTPDiagnostics(session.Client.Transport, config.Token)
+	session.Client.Transport = httpDiagnostics
 	bot := &Bot{
-		session: session,
-		logger:  logger.With(slog.String("component", "discord-bot")),
-		config:  config,
+		session:         session,
+		httpDiagnostics: httpDiagnostics,
+		logger:          logger.With(slog.String("component", "discord-bot")),
+		config:          config,
 	}
 
 	// Register default handlers
@@ -127,8 +131,9 @@ func (b *Bot) Open(ctx context.Context) error {
 		discordgo.IntentsGuildMessages |
 		discordgo.IntentsDirectMessages
 
+	b.httpDiagnostics.reset()
 	if err := b.session.Open(); err != nil {
-		return fmt.Errorf("open discord session: %w", err)
+		return fmt.Errorf("open discord session: %w", b.httpDiagnostics.annotate(err))
 	}
 
 	var username, discriminator string
@@ -244,17 +249,49 @@ func (b *Bot) LeaveGuild(guildID string) error {
 	return nil
 }
 
-func hasDiscordAnnouncementPermissions(permissions int64) bool {
-	const required = discordgo.PermissionViewChannel |
-		discordgo.PermissionSendMessages |
-		discordgo.PermissionEmbedLinks |
-		discordgo.PermissionCreatePublicThreads |
-		discordgo.PermissionSendMessagesInThreads
-	return permissions&required == required
+type DiscordChannelEligibility struct {
+	Channel *discordgo.Channel
+	Reasons []string
 }
 
-// WritableTextChannels returns text channels where the bot can send announcements and create public threads.
-func (b *Bot) WritableTextChannels(guildID string) ([]*discordgo.Channel, error) {
+var discordAnnouncementPermissions = []struct {
+	permission int64
+	label      string
+}{
+	{permission: discordgo.PermissionViewChannel, label: "View Channel"},
+	{permission: discordgo.PermissionSendMessages, label: "Send Messages"},
+	{permission: discordgo.PermissionEmbedLinks, label: "Embed Links"},
+}
+
+func missingDiscordAnnouncementPermissions(permissions int64) []string {
+	missing := make([]string, 0, len(discordAnnouncementPermissions))
+	for _, required := range discordAnnouncementPermissions {
+		if permissions&required.permission == 0 {
+			missing = append(missing, "Missing "+required.label+" permission")
+		}
+	}
+	return missing
+}
+
+func hasDiscordAnnouncementPermissions(permissions int64) bool {
+	return len(missingDiscordAnnouncementPermissions(permissions)) == 0
+}
+
+func discordAnnouncementChannelTypeReason(channelType discordgo.ChannelType) (string, bool) {
+	switch channelType {
+	case discordgo.ChannelTypeGuildText:
+		return "", true
+	case discordgo.ChannelTypeGuildNews:
+		return "Announcement channels are not supported", true
+	case discordgo.ChannelTypeGuildForum:
+		return "Forum channels are not supported", true
+	default:
+		return "", false
+	}
+}
+
+// TextChannelEligibility returns text-like channels and explains why each channel can or cannot be used for announcements.
+func (b *Bot) TextChannelEligibility(guildID string) ([]DiscordChannelEligibility, error) {
 	if !b.Available() || b.session == nil || b.session.State == nil || b.session.State.User == nil {
 		return nil, fmt.Errorf("discord bot is unavailable")
 	}
@@ -262,17 +299,38 @@ func (b *Bot) WritableTextChannels(guildID string) ([]*discordgo.Channel, error)
 	if err != nil {
 		return nil, fmt.Errorf("get Discord guild channels: %w", err)
 	}
-	writable := make([]*discordgo.Channel, 0, len(channels))
+	eligibility := make([]DiscordChannelEligibility, 0, len(channels))
 	for _, channel := range channels {
-		if channel.Type != discordgo.ChannelTypeGuildText {
+		typeReason, include := discordAnnouncementChannelTypeReason(channel.Type)
+		if !include {
+			continue
+		}
+		result := DiscordChannelEligibility{Channel: channel}
+		if typeReason != "" {
+			result.Reasons = []string{typeReason}
+			eligibility = append(eligibility, result)
 			continue
 		}
 		permissions, err := b.session.UserChannelPermissions(b.session.State.User.ID, channel.ID)
 		if err != nil {
 			return nil, fmt.Errorf("get Discord channel %s permissions: %w", channel.ID, err)
 		}
-		if hasDiscordAnnouncementPermissions(permissions) {
-			writable = append(writable, channel)
+		result.Reasons = missingDiscordAnnouncementPermissions(permissions)
+		eligibility = append(eligibility, result)
+	}
+	return eligibility, nil
+}
+
+// WritableTextChannels returns text channels where the bot can send announcements.
+func (b *Bot) WritableTextChannels(guildID string) ([]*discordgo.Channel, error) {
+	eligibility, err := b.TextChannelEligibility(guildID)
+	if err != nil {
+		return nil, err
+	}
+	writable := make([]*discordgo.Channel, 0, len(eligibility))
+	for _, channel := range eligibility {
+		if len(channel.Reasons) == 0 {
+			writable = append(writable, channel.Channel)
 		}
 	}
 	return writable, nil

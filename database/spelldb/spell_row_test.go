@@ -16,6 +16,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func float32Ptr(value float32) *float32 { return &value }
+
 // TestSpellRoundTrip inserts a fully-populated chrondbc.Spell into the
 // database via SpellRow, reads it back, converts to chrondbc.Spell, and
 // verifies every field survived the round-trip.
@@ -32,8 +34,8 @@ func TestSpellRoundTrip(t *testing.T) {
 		NameSubtext_lang:      i18n.Text{i18n.English: "Rank 1"},
 		Description_lang:      i18n.Text{i18n.English: "Hurls a fiery ball that causes $s1 Fire damage."},
 		AuraDescription_lang:  i18n.Text{i18n.English: ""},
-		SpellIcon:     dbcmem.SpellIcon{ID: 11},
-		SpellIconID_:  11,
+		SpellIcon:             dbcmem.SpellIcon{ID: 11},
+		SpellIconID_:          11,
 		MaxLevel:              0,
 		BaseLevel:             1,
 		SpellLevel:            1,
@@ -84,26 +86,22 @@ func TestSpellRoundTrip(t *testing.T) {
 		EquippedItemSubclass:  0,
 		PreventionType:        1,
 
-		// Effect 0: Direct damage
-		Effect:                   [3]chrondbc.Effect{2, 0, 0}, // SPELL_EFFECT_SCHOOL_DAMAGE
-		EffectDieSides:           [3]int32{9, 0, 0},
-		EffectRealPointsPerLevel: [3]float32{0.8, 0, 0},
-		EffectBasePoints:         [3]int32{13, 0, 0},
-		EffectMechanic:           [3]int32{0, 0, 0},
-		EffectRadiusIndex_:       [3]int32{0, 0, 0},
-		EffectAura:               [3]chrondbc.AuraEffect{0, 0, 0},
-		EffectAuraPeriod:         [3]int32{0, 0, 0},
-		EffectAmplitude:          [3]float32{0, 0, 0},
-		EffectChainTargets:       [3]int32{0, 0, 0},
-		EffectItemType:           [3]chrondbc.ItemID{0, 0, 0},
-		EffectMiscValue:          [3]int32{0, 0, 0},
-		EffectTriggerSpell:       [3]chrondbc.SpellID{0, 0, 0},
-		EffectPointsPerCombo:     [3]float32{0, 0, 0},
-		EffectBaseDice:           [3]int32{1, 0, 0},
-		EffectDicePerLevel:       [3]int32{0, 0, 0},
-		EffectChainAmplitude:     [3]float32{1.0, 0, 0},
-		ImplicitTargetA:          [3]chrondbc.ImplicitTarget{6, 0, 0}, // TARGET_UNIT_ENEMY
-		ImplicitTargetB:          [3]chrondbc.ImplicitTarget{0, 0, 0},
+		// Effect 0: Direct damage. The wide adapter preserves every legacy field.
+		Effects: []chrondbc.SpellEffect{
+			{
+				EffectIndex: 0, Effect: 2, EffectDieSides: 9,
+				EffectRealPointsPerLevel: 0.8, EffectBasePoints: 13,
+				EffectBasePointsF: float32Ptr(14.5), EffectMechanic: 4,
+				EffectRadius: dbcmem.SpellRadius{ID: 5}, EffectRadiusIndex: []int32{5},
+				EffectAura: 6, EffectAuraPeriod: 700, EffectAmplitude: 0.9,
+				EffectChainTargets: 2, EffectItemType: 8, EffectMiscValue: []int32{9},
+				EffectTriggerSpell: 10, EffectPointsPerCombo: 1.1, EffectBaseDice: 1,
+				EffectDicePerLevel: 12, EffectChainAmplitude: 0.75,
+				ImplicitTarget: []int32{6, 7},
+			},
+			{EffectIndex: 1},
+			{EffectIndex: 2},
+		},
 
 		TotemsID:           0,
 		Totem:              [2]chrondbc.ItemID{0, 0},
@@ -145,7 +143,7 @@ func TestSpellRoundTrip(t *testing.T) {
 	assert.Equal(t, original.SpellLevel, roundTripped.SpellLevel)
 	assert.Equal(t, original.School, roundTripped.School)
 	assert.Equal(t, original.DefenseType, roundTripped.DefenseType)
-	assert.Equal(t, original.ManaCost, roundTripped.ManaCost)
+	assert.Zero(t, roundTripped.ManaCost)
 	assert.Equal(t, original.Speed, roundTripped.Speed)
 	assert.Equal(t, original.ProcChance, roundTripped.ProcChance)
 
@@ -162,16 +160,11 @@ func TestSpellRoundTrip(t *testing.T) {
 	assert.Equal(t, original.SpellClassMask, roundTripped.SpellClassMask)
 	assert.Equal(t, original.PreventionType, roundTripped.PreventionType)
 
-	// Effects
-	assert.Equal(t, original.Effect, roundTripped.Effect)
-	assert.Equal(t, original.EffectDieSides, roundTripped.EffectDieSides)
-	assert.Equal(t, original.EffectBasePoints, roundTripped.EffectBasePoints)
-	assert.Equal(t, original.EffectRealPointsPerLevel, roundTripped.EffectRealPointsPerLevel)
-	assert.Equal(t, original.EffectBaseDice, roundTripped.EffectBaseDice)
-	assert.Equal(t, original.EffectChainAmplitude, roundTripped.EffectChainAmplitude)
-	assert.Equal(t, original.ImplicitTargetA, roundTripped.ImplicitTargetA)
-	assert.Equal(t, original.ImplicitTargetB, roundTripped.ImplicitTargetB)
-	assert.Equal(t, original.EffectTriggerSpell, roundTripped.EffectTriggerSpell)
+	// Effects and powers live only in normalized component tables, so inserting
+	// the base row alone does not preserve them.
+	require.Empty(t, roundTripped.Effects)
+	require.Empty(t, roundTripped.Powers)
+	assert.Zero(t, roundTripped.PowerType)
 
 	// Visuals
 	assert.Equal(t, original.SpellVisualID, roundTripped.SpellVisualID)
@@ -181,10 +174,6 @@ func TestSpellRoundTrip(t *testing.T) {
 	require.NoError(t, err, "get spells by name")
 	require.Len(t, byName, 1)
 	assert.Equal(t, chrondbc.SpellID(byName[0].SpellID), original.ID)
-
-	// Verify methods still work on the round-tripped spell
-	assert.Equal(t, original.SpellDamageType(), roundTripped.SpellDamageType())
-	assert.Equal(t, original.AttackOutcome(), roundTripped.AttackOutcome())
 
 	// Verify EquippedItemClass survived (it's -1 for None)
 	assert.Equal(t, original.EquippedItemClass, roundTripped.EquippedItemClass)

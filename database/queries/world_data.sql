@@ -38,10 +38,12 @@ LIMIT 25;
 -- instead and usually leave the inventory mask zero.
 SELECT DISTINCT e.id, e.name_lang
 FROM dbc_spell_item_enchantment e
-JOIN dbc_spells s ON s.dataset_id = e.dataset_id
-    AND ((s.effect_0 = 53 AND s.effect_misc_value_0 = e.id)
-      OR (s.effect_1 = 53 AND s.effect_misc_value_1 = e.id)
-      OR (s.effect_2 = 53 AND s.effect_misc_value_2 = e.id))
+JOIN dbc_spell_effects se ON se.dataset_id = e.dataset_id
+    AND se.difficulty_id = 0
+    AND se.effect = 53
+    AND e.id = ANY(se.effect_misc_value)
+JOIN dbc_spells s ON s.dataset_id = se.dataset_id
+    AND s.spell_id = se.spell_id
 WHERE e.dataset_id = @dataset_id
   AND (@search_term::text = '' OR e.name_lang ILIKE '%' || @search_term::text || '%')
   AND (
@@ -69,12 +71,12 @@ SELECT entry, name, inventory_type FROM world_item_template WHERE dataset_id = @
 -- falls back to name lookup but only if the name is unique in the table.
 -- Pass paired arrays where item_ids[i] corresponds to item_names[i].
 WITH by_id AS (
-  SELECT wit.entry, wit.name, wit.quality, wit.display_id, wit.item_level
+  SELECT wit.entry, wit.name, wit.quality, wit.display_id, wit.item_level, wit.icon
   FROM world_item_template wit
   WHERE wit.dataset_id = @dataset_id AND wit.entry = ANY(@item_ids::int[])
 ),
 by_name AS (
-  SELECT wit.entry, wit.name, wit.quality, wit.display_id, wit.item_level
+  SELECT wit.entry, wit.name, wit.quality, wit.display_id, wit.item_level, wit.icon
   FROM world_item_template wit
   WHERE wit.dataset_id = @dataset_id
     AND wit.name = ANY(@item_names::text[])
@@ -89,7 +91,7 @@ SELECT
   c.name,
   c.quality,
   c.item_level,
-  COALESCE(NULLIF(wdi.icon, ''), dbi.inventory_icon ->> 0, '') :: TEXT as icon
+  COALESCE(NULLIF(c.icon, ''), NULLIF(wdi.icon, ''), dbi.inventory_icon ->> 0, '') :: TEXT as icon
 FROM combined c
   LEFT JOIN world_display_info wdi ON wdi.dataset_id = @dataset_id AND wdi.id = c.display_id
   LEFT JOIN dbc_item_display_info dbi ON dbi.dataset_id = @dataset_id AND dbi.id = c.display_id;
@@ -115,7 +117,7 @@ SELECT
     ORDER BY enchant.id
     LIMIT 1
   ), 0)::int AS gem_enchant_id,
-  COALESCE(NULLIF(wdi.icon, ''), dbi.inventory_icon ->> 0, '') :: TEXT as icon
+  COALESCE(NULLIF(wit.icon, ''), NULLIF(wdi.icon, ''), dbi.inventory_icon ->> 0, '') :: TEXT as icon
 FROM world_item_template wit
   LEFT JOIN world_display_info wdi ON wdi.dataset_id = @dataset_id AND wdi.id = wit.display_id
   LEFT JOIN dbc_item_display_info dbi ON dbi.dataset_id = @dataset_id AND dbi.id = wit.display_id
@@ -177,7 +179,7 @@ LIMIT 25;
 -- Returns set pieces with item details for a specific set.
 SELECT
   wit.entry, wit.name, wit.quality, wit.inventory_type,
-  COALESCE(NULLIF(wdi.icon, ''), dbi.inventory_icon ->> 0, '') :: TEXT as icon
+  COALESCE(NULLIF(wit.icon, ''), NULLIF(wdi.icon, ''), dbi.inventory_icon ->> 0, '') :: TEXT as icon
 FROM dbc_item_set_item isi
   JOIN world_item_template wit ON wit.dataset_id = @dataset_id AND wit.entry = isi.item_entry
   LEFT JOIN world_display_info wdi ON wdi.dataset_id = @dataset_id AND wdi.id = wit.display_id

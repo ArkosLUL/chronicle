@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient, keepPreviousData, type UseQueryOptions } from "@tanstack/react-query";
+import { useQueries, useQuery, useMutation, useQueryClient, keepPreviousData, type UseQueryOptions } from "@tanstack/react-query";
 import type { WoWSpell } from "./wowdb";
 import type { WoWServer, WoWServerRealm, UploadKey, CreateWoWServerRequest, CreateWoWServerRealmRequest, CreateUploadKeyRequest, RetentionPolicy, RetentionPreviewResponse, RetentionPreviewRequest, SupportedInstance, CensusEntry, Tenant, UpsertTenantRequest, ServerApplication, CreateServerApplicationRequest, CreateModificationRequestPayload, ApplicationAdminEntry, GuildCharacterRosterResponse, ListRaidCompositionsResponse, RaidComposition, CreateRaidCompositionRequest, UpdateRaidCompositionRequest, UpdateRaidCompositionSharingRequest, InstanceItemPricesResponse } from "./typesGenerated";
 import type { 
@@ -77,6 +77,7 @@ import type {
   UpdateSiteConfigRequest,
   Dataset,
   UpsertDatasetRequest,
+  UserFavoritesResponse,
 } from "./typesGenerated";
 
 // Re-export types for convenience
@@ -196,6 +197,58 @@ function buildAPIError(defaultMessage: string, error: unknown): RequestError {
   }
 
   return new Error(defaultMessage) as RequestError;
+}
+
+export function useMyFavorites(
+  options?: Omit<UseQueryOptions<UserFavoritesResponse>, "queryKey" | "queryFn">
+) {
+  return useQuery({
+    queryKey: ["my-favorites"],
+    queryFn: async () => {
+      const response = await fetch("/api/v1/me/favorites", { credentials: "include" });
+      if (!response.ok) {
+        throw buildAPIError("Failed to fetch favorites", await response.json().catch(() => null));
+      }
+      return response.json() as Promise<UserFavoritesResponse>;
+    },
+    ...options,
+  });
+}
+
+export function useToggleFavoriteGuild() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ guildID, favorite }: { guildID: string; favorite: boolean }) => {
+      const response = await fetch(`/api/v1/me/favorites/guilds/${encodeURIComponent(guildID)}`, {
+        method: favorite ? "PUT" : "DELETE",
+        credentials: "include",
+      });
+      if (!response.ok) {
+        throw buildAPIError("Failed to update favorite guild", await response.json().catch(() => null));
+      }
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["my-favorites"] }),
+  });
+}
+
+export function useToggleFavoritePlayer() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ realmID, characterGUID, favorite }: {
+      realmID: string;
+      characterGUID: string;
+      favorite: boolean;
+    }) => {
+      const response = await fetch(
+        `/api/v1/me/favorites/players/${encodeURIComponent(realmID)}/${encodeURIComponent(characterGUID)}`,
+        { method: favorite ? "PUT" : "DELETE", credentials: "include" },
+      );
+      if (!response.ok) {
+        throw buildAPIError("Failed to update favorite player", await response.json().catch(() => null));
+      }
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["my-favorites"] }),
+  });
 }
 
 export function useUserPanelLayouts(
@@ -1594,9 +1647,9 @@ export function useArmorySearch(
   });
 }
 
-export function useArmoryPlayer(realmName?: string, playerIdentifier?: string) {
-  return useQuery({
-    queryKey: ["armory", realmName, playerIdentifier],
+function armoryPlayerQuery(realmName?: string, playerIdentifier?: string) {
+  return {
+    queryKey: ["armory", realmName, playerIdentifier] as const,
     queryFn: async () => {
       const response = await fetch(
         `/api/v1/armory/${encodeURIComponent(realmName!)}/${encodeURIComponent(playerIdentifier!)}`,
@@ -1609,6 +1662,16 @@ export function useArmoryPlayer(realmName?: string, playerIdentifier?: string) {
     enabled: !!realmName && !!playerIdentifier,
     staleTime: 5 * 60 * 1000,
     retry: false,
+  };
+}
+
+export function useArmoryPlayer(realmName?: string, playerIdentifier?: string) {
+  return useQuery(armoryPlayerQuery(realmName, playerIdentifier));
+}
+
+export function useArmoryPlayers(realmName: string, playerIdentifiers: readonly string[]) {
+  return useQueries({
+    queries: playerIdentifiers.slice(0, 5).map((playerIdentifier) => armoryPlayerQuery(realmName, playerIdentifier)),
   });
 }
 

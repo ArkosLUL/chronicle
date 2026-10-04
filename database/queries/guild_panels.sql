@@ -7,9 +7,10 @@
 -- player_spec/player_role come from the character's most recent parse;
 -- spec_roles_json lists every distinct spec+role combo observed across the
 -- character's 3 most recent parsed instances (players often swap specs raid
--- to raid), most recent first. avg_parse averages the best parse per
--- encounter over the last @parse_window_days, using hps for healers and dps
--- for everyone else (-1 when the character has no parses).
+-- to raid), most recent first. avg_parse matches the Armory score: deduplicate
+-- uploads by run, average the best 3 parses per encounter over the last
+-- @parse_window_days, then average those encounter scores. It uses hps for
+-- healers and dps for everyone else (-1 when the character has no parses).
 -- JOINs wow_server_realms so RLS tenant filtering cascades.
 SELECT
     gp.id,
@@ -57,18 +58,38 @@ LEFT JOIN LATERAL (
     ) combos
 ) latest ON true
 LEFT JOIN LATERAL (
-    SELECT AVG(best.precise_score)::float8 AS avg_parse
+    SELECT AVG(encounter_scores.avg_parse)::float8 AS avg_parse
     FROM (
-        SELECT DISTINCT ON (psr.instance_name, psr.encounter_name)
-            psr.precise_score
-        FROM parse_score_results psr
-        WHERE psr.tenant_id = @tenant_id
-          AND psr.player_guid = gp.id::text
-          AND psr.metric = CASE WHEN latest.player_role = 'heal' THEN 'hps' ELSE 'dps' END
-          AND psr.status IN ('ok', 'low_confidence')
-          AND psr.killed_at >= now() - make_interval(days => @parse_window_days::int)
-        ORDER BY psr.instance_name, psr.encounter_name, psr.precise_score DESC
-    ) best
+        SELECT
+            ranked.instance_name,
+            ranked.encounter_name,
+            AVG(ranked.precise_score)::float8 AS avg_parse
+        FROM (
+            SELECT
+                deduped.instance_name,
+                deduped.encounter_name,
+                deduped.precise_score,
+                ROW_NUMBER() OVER (
+                    PARTITION BY deduped.instance_name, deduped.encounter_name
+                    ORDER BY deduped.precise_score DESC
+                ) AS score_rank
+            FROM (
+                SELECT DISTINCT ON (psr.run_id, psr.encounter_name)
+                    psr.instance_name,
+                    psr.encounter_name,
+                    psr.precise_score
+                FROM parse_score_results psr
+                WHERE psr.tenant_id = @tenant_id
+                  AND psr.player_guid = gp.id::text
+                  AND psr.metric = CASE WHEN latest.player_role = 'heal' THEN 'hps' ELSE 'dps' END
+                  AND psr.status IN ('ok', 'low_confidence')
+                  AND psr.killed_at >= now() - make_interval(days => @parse_window_days::int)
+                ORDER BY psr.run_id, psr.encounter_name, psr.created_at DESC, psr.precise_score DESC
+            ) deduped
+        ) ranked
+        WHERE ranked.score_rank <= 3
+        GROUP BY ranked.instance_name, ranked.encounter_name
+    ) encounter_scores
 ) scores ON true
 WHERE gp.guild_id = @guild_id::uuid
   AND CASE
@@ -150,9 +171,10 @@ LIMIT @row_limit;
 -- name: GuildBestRuns :many
 -- Returns the guild's single best full clear of each instance within the
 -- window, for the guild page "Best Performance" panel. @by_parse picks the
--- winner by highest guild average parse instead of fastest clear. Duplicate
--- uploads collapse to one run (fastest duration per group). Includes
--- unqualified runs: qualification only affects the public leaderboard.
+-- winner by highest historical clear-time parse instead of fastest clear.
+-- Duplicate uploads collapse to one run (fastest duration per group). Includes
+-- unqualified runs: qualification only affects cohort and leaderboard membership,
+-- not whether a completed clear can receive a time parse.
 -- JOINs wow_server_realms so RLS tenant filtering cascades.
 WITH clears AS (
     SELECT DISTINCT ON (COALESCE(li.duplicate_group_id, li.id))
@@ -162,6 +184,7 @@ WITH clears AS (
         sr.instance_name,
         li.difficulty_name,
         li.max_players,
+        li.start_time AS instance_start_time,
         sr.ranked_duration_ms::bigint AS duration_ms,
         sr.ranked_completion_time::timestamptz AS completion_time
     FROM instance_speedruns sr
@@ -177,26 +200,36 @@ WITH clears AS (
 ), scored AS (
     SELECT
         c.*,
-        COALESCE(p.avg_parse, -1)::float8 AS avg_parse,
-        COALESCE(p.parse_count, 0)::bigint AS parse_count
+        CASE
+            WHEN COALESCE(cohort.sample_size, 0) >= @min_parse_sample::bigint
+                THEN (cohort.at_least_as_slow::float8 / cohort.sample_size::float8) * 100.0
+            ELSE -1
+        END::float8 AS clear_time_parse,
+        COALESCE(cohort.sample_size, 0)::bigint AS parse_sample_size
     FROM clears c
     LEFT JOIN LATERAL (
-        SELECT AVG(d.precise_score) AS avg_parse, COUNT(*) AS parse_count
-        FROM (
-            SELECT DISTINCT ON (psr.encounter_name, psr.player_guid)
-                psr.precise_score
-            FROM parse_score_results psr
-            WHERE psr.tenant_id = @tenant_id
-              AND psr.run_id = c.run_id
-              AND psr.guild_id = @guild_id::uuid
-              AND psr.status IN ('ok', 'low_confidence')
-              AND (
-                  (psr.player_role = 'heal' AND psr.metric = 'hps')
-                  OR (psr.player_role != 'heal' AND psr.metric = 'dps')
-              )
-            ORDER BY psr.encounter_name, psr.player_guid, psr.created_at DESC, psr.precise_score DESC
-        ) d
-    ) p ON true
+        SELECT tps.id
+        FROM time_parse_snapshots tps
+        WHERE @by_parse::boolean
+          AND tps.tenant_id = @tenant_id
+          AND tps.lookback_days = @lookback_days::int
+          AND tps.policy_version = @policy_version::smallint
+          AND tps.query_version = @query_version::smallint
+          AND tps.status = 'published'
+          AND tps.cutoff <= c.instance_start_time
+        ORDER BY tps.cutoff DESC
+        LIMIT 1
+    ) snapshot ON true
+    LEFT JOIN LATERAL (
+        SELECT
+            COUNT(*)::bigint AS sample_size,
+            COUNT(*) FILTER (WHERE member.duration_ms >= c.duration_ms)::bigint AS at_least_as_slow
+        FROM time_parse_clear_time_members member
+        WHERE member.snapshot_id = snapshot.id
+          AND member.instance_name = c.instance_name
+          AND member.difficulty_name = c.difficulty_name
+          AND member.max_players = c.max_players
+    ) cohort ON true
 )
 SELECT DISTINCT ON (instance_name)
     run_id,
@@ -207,11 +240,11 @@ SELECT DISTINCT ON (instance_name)
     max_players,
     duration_ms,
     completion_time,
-    avg_parse,
-    parse_count
+    clear_time_parse,
+    parse_sample_size
 FROM scored
 ORDER BY instance_name,
-    CASE WHEN @by_parse::boolean THEN -avg_parse ELSE duration_ms::float8 END ASC,
+    CASE WHEN @by_parse::boolean THEN -clear_time_parse ELSE duration_ms::float8 END ASC,
     duration_ms ASC;
 
 -- name: GuildEncounterKills :many

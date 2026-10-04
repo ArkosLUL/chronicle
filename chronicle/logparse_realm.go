@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"strings"
 
-	blizzardv9 "github.com/Emyrk/chronicle/combatlog/parser/blizzard/v9"
+	blizzardmodern "github.com/Emyrk/chronicle/combatlog/parser/blizzard/modern"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/instances"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/realm"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/realmclock"
@@ -98,9 +98,24 @@ func resolveRealmByName(
 // from the combatlog packages where possible. Returns "" if no realm info is
 // found. Scans the entire file — realm info can appear at any point depending
 // on format.
-func scanRealmName(logFormat database.LogFormat, data []byte) string {
-	if logFormat == database.LogFormatV9Cleu {
-		return blizzardv9.DominantEngagedRealm(data)
+func scanRealmName(logFormat database.LogFormat, flavor database.WoWFlavor, data []byte) string {
+	return normalizeRealmNameForFlavor(flavor, scanRawRealmName(logFormat, data))
+}
+
+func normalizeRealmNameForFlavor(flavor database.WoWFlavor, name string) string {
+	if !flavor.Has(database.FlavorWoWForever) {
+		return name
+	}
+	trimmed := strings.TrimRight(name, "0123456789")
+	if trimmed == "" {
+		return name
+	}
+	return trimmed
+}
+
+func scanRawRealmName(logFormat database.LogFormat, data []byte) string {
+	if logFormat == database.LogFormatV9Cleu || logFormat == database.LogFormatV22Cleu {
+		return blizzardmodern.DominantEngagedRealm(data)
 	}
 
 	scanner := bufio.NewScanner(bytes.NewReader(data))
